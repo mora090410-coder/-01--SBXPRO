@@ -1,7 +1,7 @@
 var __defProp = Object.defineProperty;
 var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 
-// ../.wrangler/tmp/bundle-yxRRP1/checked-fetch.js
+// ../.wrangler/tmp/bundle-YxDzyf/checked-fetch.js
 var urls = /* @__PURE__ */ new Set();
 function checkURL(request, init) {
   const url = request instanceof URL ? request : new URL(
@@ -152,6 +152,25 @@ var onRequestPost2 = /* @__PURE__ */ __name(async (context) => {
     const adminToken = authHeader?.replace("Bearer ", "") || "";
     const data = await context.request.json();
     if (!data) throw new Error("Missing payload data");
+    const leagueName = data.game?.title?.trim();
+    if (!leagueName) {
+      return new Response(JSON.stringify({ error: "League name is required" }), {
+        status: 400,
+        headers: { ...corsHeaders2, "Content-Type": "application/json" }
+      });
+    }
+    const normalizedName = leagueName.toLowerCase().replace(/\s+/g, "-");
+    const existingPool = await context.env.POOLS.get(`name:${normalizedName}`);
+    if (existingPool) {
+      return new Response(JSON.stringify({
+        error: "League name already exists",
+        message: `A league named "${leagueName}" already exists. Please choose a different name.`
+      }), {
+        status: 409,
+        // Conflict
+        headers: { ...corsHeaders2, "Content-Type": "application/json" }
+      });
+    }
     const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     let poolId = "";
     const randomValues = new Uint32Array(8);
@@ -168,6 +187,7 @@ var onRequestPost2 = /* @__PURE__ */ __name(async (context) => {
       data
     };
     await context.env.POOLS.put(`pool:${poolId}`, JSON.stringify(payload));
+    await context.env.POOLS.put(`name:${normalizedName}`, poolId);
     return new Response(JSON.stringify({ poolId, success: true }), {
       status: 200,
       headers: {
@@ -717,7 +737,7 @@ var jsonError = /* @__PURE__ */ __name(async (request, env, _ctx, middlewareCtx)
 }, "jsonError");
 var middleware_miniflare3_json_error_default = jsonError;
 
-// ../.wrangler/tmp/bundle-yxRRP1/middleware-insertion-facade.js
+// ../.wrangler/tmp/bundle-YxDzyf/middleware-insertion-facade.js
 var __INTERNAL_WRANGLER_MIDDLEWARE__ = [
   middleware_ensure_req_body_drained_default,
   middleware_miniflare3_json_error_default
@@ -749,7 +769,7 @@ function __facade_invoke__(request, env, ctx, dispatch, finalMiddleware) {
 }
 __name(__facade_invoke__, "__facade_invoke__");
 
-// ../.wrangler/tmp/bundle-yxRRP1/middleware-loader.entry.ts
+// ../.wrangler/tmp/bundle-YxDzyf/middleware-loader.entry.ts
 var __Facade_ScheduledController__ = class ___Facade_ScheduledController__ {
   constructor(scheduledTime, cron, noRetry) {
     this.scheduledTime = scheduledTime;

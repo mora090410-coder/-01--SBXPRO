@@ -28,8 +28,31 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     const adminToken = authHeader?.replace('Bearer ', '') || '';
 
     const data = await context.request.json();
-    
+
     if (!data) throw new Error("Missing payload data");
+
+    // Normalize the league name for duplicate checking
+    const leagueName = data.game?.title?.trim();
+    if (!leagueName) {
+      return new Response(JSON.stringify({ error: 'League name is required' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    const normalizedName = leagueName.toLowerCase().replace(/\s+/g, '-');
+
+    // Check if a league with this name already exists
+    const existingPool = await context.env.POOLS.get(`name:${normalizedName}`);
+    if (existingPool) {
+      return new Response(JSON.stringify({
+        error: 'League name already exists',
+        message: `A league named "${leagueName}" already exists. Please choose a different name.`
+      }), {
+        status: 409, // Conflict
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
 
     // Generate an 8-character safe ID
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -48,19 +71,20 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       data
     };
 
-    // Store in KV
+    // Store in KV: both the pool data and the name index
     await context.env.POOLS.put(`pool:${poolId}`, JSON.stringify(payload));
+    await context.env.POOLS.put(`name:${normalizedName}`, poolId);
 
     return new Response(JSON.stringify({ poolId, success: true }), {
       status: 200,
-      headers: { 
+      headers: {
         ...corsHeaders,
         'Content-Type': 'application/json',
         'Cache-Control': 'no-store'
       },
     });
   } catch (err: any) {
-    return new Response(JSON.stringify({ error: 'Failed to create pool', message: err.message }), { 
+    return new Response(JSON.stringify({ error: 'Failed to create pool', message: err.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });

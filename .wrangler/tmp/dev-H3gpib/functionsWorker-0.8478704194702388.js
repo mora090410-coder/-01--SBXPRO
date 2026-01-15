@@ -177,6 +177,25 @@ var onRequestPost2 = /* @__PURE__ */ __name2(async (context) => {
     const adminToken = authHeader?.replace("Bearer ", "") || "";
     const data = await context.request.json();
     if (!data) throw new Error("Missing payload data");
+    const leagueName = data.game?.title?.trim();
+    if (!leagueName) {
+      return new Response(JSON.stringify({ error: "League name is required" }), {
+        status: 400,
+        headers: { ...corsHeaders2, "Content-Type": "application/json" }
+      });
+    }
+    const normalizedName = leagueName.toLowerCase().replace(/\s+/g, "-");
+    const existingPool = await context.env.POOLS.get(`name:${normalizedName}`);
+    if (existingPool) {
+      return new Response(JSON.stringify({
+        error: "League name already exists",
+        message: `A league named "${leagueName}" already exists. Please choose a different name.`
+      }), {
+        status: 409,
+        // Conflict
+        headers: { ...corsHeaders2, "Content-Type": "application/json" }
+      });
+    }
     const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     let poolId = "";
     const randomValues = new Uint32Array(8);
@@ -193,6 +212,7 @@ var onRequestPost2 = /* @__PURE__ */ __name2(async (context) => {
       data
     };
     await context.env.POOLS.put(`pool:${poolId}`, JSON.stringify(payload));
+    await context.env.POOLS.put(`name:${normalizedName}`, poolId);
     return new Response(JSON.stringify({ poolId, success: true }), {
       status: 200,
       headers: {
