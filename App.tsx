@@ -818,7 +818,7 @@ const AppContent: React.FC = () => {
       )}
 
       {showLanding ? (
-        <LandingPage onCreate={openSetupWizard} onJoin={() => setShowJoinModal(true)} />
+        <LandingPage onCreate={openSetupWizard} />
       ) : (
         <>
           <header className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-white/10 bg-black/60 backdrop-blur-md z-50">
