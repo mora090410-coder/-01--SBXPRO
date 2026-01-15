@@ -1,0 +1,7 @@
+{
+  "name": "SBXPRO",
+  "description": "Professional-grade football squares pool with live ESPN sync and automatic quarter-winner tracking.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
