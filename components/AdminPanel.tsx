@@ -85,7 +85,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
         game: localGame,
         board: parsedBoardData
       });
-      alert("Board successfully published to live stadium!");
+      console.log("Board successfully published to live stadium!");
     } catch (e: any) {
       console.error("Publishing Error:", e);
       alert(`Publish Failed: ${e.message || "Network Error"}`);
