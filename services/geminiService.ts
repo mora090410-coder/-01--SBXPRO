@@ -3,10 +3,10 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { BoardData } from "../types";
 
 export async function parseBoardImage(base64Image: string): Promise<BoardData> {
-// Casting as 'any' specifically for the build process satisfies the strict tsc check
-const ai = new GoogleGenAI({ apiKey: (import.meta as any).env.VITE_GEMINI_API_KEY });
-  
-  
+  // Casting as 'any' specifically for the build process satisfies the strict tsc check
+  const ai = new GoogleGenAI({ apiKey: (import.meta as any).env.VITE_GEMINI_API_KEY });
+
+
   const response = await ai.models.generateContent({
     model: "gemini-3-flash-preview",
     contents: {
@@ -65,10 +65,10 @@ const ai = new GoogleGenAI({ apiKey: (import.meta as any).env.VITE_GEMINI_API_KE
 
   const text = response.text;
   if (!text) throw new Error("AI failed to generate a response");
-  
+
   try {
     const rawData = JSON.parse(text);
-    
+
     return {
       bearsAxis: rawData.bearsAxis,
       oppAxis: rawData.oppAxis,

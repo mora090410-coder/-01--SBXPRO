@@ -83,6 +83,30 @@ export const getContrastYIQ = (hex: string): 'black' | 'white' => {
   return yiq >= 128 ? 'black' : 'white';
 };
 
+const ensureMinLuminance = (hex: string, minLum: number = 0.6): string => {
+  const cleanHex = hex.replace('#', '');
+  let r = parseInt(cleanHex.substring(0, 2), 16);
+  let g = parseInt(cleanHex.substring(2, 4), 16);
+  let b = parseInt(cleanHex.substring(4, 6), 16);
+
+  // Simple relative luminance
+  const getLum = (r: number, g: number, b: number) => (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+
+  let lum = getLum(r, g, b);
+  let loopCount = 0;
+
+  // Brighten loop
+  while (lum < minLum && loopCount < 20) {
+    r = Math.min(255, r + 15);
+    g = Math.min(255, g + 15);
+    b = Math.min(255, b + 15);
+    lum = getLum(r, g, b);
+    loopCount++;
+  }
+
+  return `rgb(${r}, ${g}, ${b})`;
+};
+
 class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
   public state: ErrorBoundaryState = { hasError: false };
 
@@ -111,7 +135,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
           </div>
           <h1 className="text-2xl font-black text-white uppercase italic tracking-tighter mb-4">Application Encountered an Error</h1>
           <p className="text-gray-400 text-sm max-w-xs mb-8">We've encountered a script error. Try recovering your session below.</p>
-          <button 
+          <button
             onClick={() => window.location.reload()}
             className="btn-cardinal px-10 py-4 rounded-full text-sm font-black uppercase tracking-widest shadow-xl"
           >
@@ -152,13 +176,13 @@ const AppContent: React.FC = () => {
   const [poolError, setPoolError] = useState<string | null>(null);
   const [activePoolId, setActivePoolId] = useState<string | null>(urlPoolId);
   const [adminToken, setAdminToken] = useState('');
-  
+
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [showWizardModal, setShowWizardModal] = useState(false);
   const [showAdminView, setShowAdminView] = useState(false);
-  
+
   const [copyFeedback, setCopyFeedback] = useState(false);
   const [authInput, setAuthInput] = useState('');
   const [joinInput, setJoinInput] = useState('');
@@ -200,26 +224,30 @@ const AppContent: React.FC = () => {
       if (TEAM_THEMES[k]) return k;
       if (k === 'WSH') return 'WAS';
       if (k === 'LA') return 'LAR';
-      return 'DAL'; 
+      return 'DAL';
     };
     const leftTheme = TEAM_THEMES[resolveKey(game.leftAbbr.toUpperCase())] || TEAM_THEMES['DAL'];
     const topTheme = TEAM_THEMES[resolveKey(game.topAbbr.toUpperCase())] || TEAM_THEMES['WAS'];
     const root = document.documentElement.style;
+
     root.setProperty('--left-primary', leftTheme.primary);
     root.setProperty('--left-secondary', leftTheme.secondary);
     root.setProperty('--left-rgb', hexToRgb(leftTheme.primary));
     root.setProperty('--text-contrast-left', getContrastYIQ(leftTheme.primary));
+    root.setProperty('--left-primary-bright', ensureMinLuminance(leftTheme.primary, 0.6));
+
     root.setProperty('--top-primary', topTheme.primary);
     root.setProperty('--top-secondary', topTheme.secondary);
     root.setProperty('--top-rgb', hexToRgb(topTheme.primary));
     root.setProperty('--text-contrast-top', getContrastYIQ(topTheme.primary));
+    root.setProperty('--top-primary-bright', ensureMinLuminance(topTheme.primary, 0.6));
   }, [game.leftAbbr, game.topAbbr]);
 
   useEffect(() => {
     const loadData = async () => {
       const currentParams = new URLSearchParams(window.location.search);
       const poolId = currentParams.get('poolId');
-      
+
       if (poolId) {
         setLoadingPool(true);
         try {
@@ -293,7 +321,7 @@ const AppContent: React.FC = () => {
         const comps = e?.competitions?.[0]?.competitors || [];
         const abbrs: string[] = comps.map((c: any) => normalizeAbbr(c.team?.abbreviation));
         return abbrs.some((a: string) => a === targetLeft || (targetLeft === 'WAS_WSH_ALIAS' && (a === 'WAS' || a === 'WSH'))) &&
-               abbrs.some((a: string) => a === targetTop || (targetTop === 'WAS_WSH_ALIAS' && (a === 'WAS' || a === 'WSH')));
+          abbrs.some((a: string) => a === targetTop || (targetTop === 'WAS_WSH_ALIAS' && (a === 'WAS' || a === 'WSH')));
       });
       if (!event) { setLiveStatus(`NO MATCH FOUND`); setIsSynced(false); setLiveData(null); return; }
       const comp = event.competitions[0];
@@ -337,7 +365,7 @@ const AppContent: React.FC = () => {
     const getWinnerKey = (qIdx: number) => {
       let lSum = 0; let tSum = 0;
       for (let i = 0; i <= qIdx; i++) {
-        const qKey = `Q${i+1}` as keyof typeof quarterScores;
+        const qKey = `Q${i + 1}` as keyof typeof quarterScores;
         lSum += (quarterScores[qKey]?.left || 0);
         tSum += (quarterScores[qKey]?.top || 0);
       }
@@ -367,7 +395,7 @@ const AppContent: React.FC = () => {
     e.preventDefault();
     const tokenToVerify = authInput.trim();
     if (!tokenToVerify) return;
-    
+
     const currentId = activePoolId || joinInput.trim().toUpperCase();
     if (!currentId) {
       alert("No active pool identified. Please join a game first.");
@@ -379,7 +407,7 @@ const AppContent: React.FC = () => {
       // PERFORM HANDSHAKE: Change to POST method for verification.
       const response = await fetch(`${API_URL}/${currentId}`, {
         method: 'POST',
-        headers: { 
+        headers: {
           'Authorization': `Bearer ${tokenToVerify}`,
           'Content-Type': 'application/json'
         }
@@ -390,17 +418,17 @@ const AppContent: React.FC = () => {
         const storedTokens = JSON.parse(localStorage.getItem('sbxpro_tokens') || '{}');
         storedTokens[currentId] = tokenToVerify;
         localStorage.setItem('sbxpro_tokens', JSON.stringify(storedTokens));
-        
+
         setAdminToken(tokenToVerify);
         setAuthInput('');
         setShowAuthModal(false);
         setShowAdminView(true);
-        
+
         // SYNC URL & STATE
         const newUrl = new URL(window.location.href);
         if (newUrl.searchParams.get('poolId') !== currentId) {
-            newUrl.searchParams.set('poolId', currentId);
-            window.history.replaceState({ poolId: currentId }, '', newUrl.toString());
+          newUrl.searchParams.set('poolId', currentId);
+          window.history.replaceState({ poolId: currentId }, '', newUrl.toString());
         }
         setActivePoolId(currentId);
       } else {
@@ -413,7 +441,7 @@ const AppContent: React.FC = () => {
       const storedTokens = JSON.parse(localStorage.getItem('sbxpro_tokens') || '{}');
       if (currentId) delete storedTokens[currentId];
       localStorage.setItem('sbxpro_tokens', JSON.stringify(storedTokens));
-      
+
       alert(err.message || "Authentication Error");
       setAuthInput('');
       setAdminToken('');
@@ -434,7 +462,7 @@ const AppContent: React.FC = () => {
       const storedTokens = JSON.parse(localStorage.getItem('sbxpro_tokens') || '{}');
       const newUrl = new URL(window.location.href);
       newUrl.searchParams.set('poolId', targetId);
-      
+
       if (storedTokens[targetId]) {
         // Security: We load it into state but don't force auto-login to Hub
         // Subsequent server actions will verify if this token is actually correct.
@@ -486,12 +514,12 @@ const AppContent: React.FC = () => {
       clearTimeout(timeoutId);
       if (!res.ok) {
         if (res.status === 401 || res.status === 403) {
-           const storedTokens = JSON.parse(localStorage.getItem('sbxpro_tokens') || '{}');
-           if (activePoolId) delete storedTokens[activePoolId];
-           localStorage.setItem('sbxpro_tokens', JSON.stringify(storedTokens));
-           setAdminToken('');
-           setShowAdminView(false);
-           throw new Error('Unauthorized: Admin Session Expired. Please log in again.');
+          const storedTokens = JSON.parse(localStorage.getItem('sbxpro_tokens') || '{}');
+          if (activePoolId) delete storedTokens[activePoolId];
+          localStorage.setItem('sbxpro_tokens', JSON.stringify(storedTokens));
+          setAdminToken('');
+          setShowAdminView(false);
+          throw new Error('Unauthorized: Admin Session Expired. Please log in again.');
         }
         const errJson = await res.json().catch(() => ({}));
         throw new Error(errJson.message || `Server Error: ${res.status}`);
@@ -518,41 +546,41 @@ const AppContent: React.FC = () => {
   };
 
   const handleWizardInitialize = async (manualBoard?: BoardData, manualCover?: string) => {
-      setWizardError(null);
-      setIsCreating(true);
-      try {
-          const leagueTitle = game.title?.trim();
-          const pass = wizardPassword?.trim();
-          if (!leagueTitle || !pass) throw new Error("League Name and Password are required.");
-          
-          const targetBoard = manualBoard || board;
-          const targetCover = manualCover !== undefined ? manualCover : (game.coverImage || '');
+    setWizardError(null);
+    setIsCreating(true);
+    try {
+      const leagueTitle = game.title?.trim();
+      const pass = wizardPassword?.trim();
+      if (!leagueTitle || !pass) throw new Error("League Name and Password are required.");
 
-          const newId = await handlePublish(pass, { game: { ...game, title: leagueTitle, coverImage: targetCover }, board: targetBoard });
-          if (!newId) throw new Error("Game initialization failed to assign a unique ID.");
-          
-          setBoard(targetBoard);
-          setGame(prev => ({ ...prev, title: leagueTitle, coverImage: targetCover }));
-          setWizardSuccess(true);
-          setIsInitialized(true);
-          setShowAdminView(false); 
-          setActiveTab('board');
-          
-          const newUrl = new URL(window.location.href);
-          newUrl.searchParams.set('poolId', newId);
-          window.history.replaceState({ poolId: newId }, '', newUrl.toString());
-          
-          setTimeout(() => {
-            setHasEnteredApp(true);
-            setShowWizardModal(false);
-            setShowShareModal(true);
-          }, 1800);
-      } catch (e: any) {
-          setWizardError(e.message || "Initialization failed. Please check your connection and try again.");
-          setIsCreating(false);
-      } finally {
-          setIsCreating(false);
-      }
+      const targetBoard = manualBoard || board;
+      const targetCover = manualCover !== undefined ? manualCover : (game.coverImage || '');
+
+      const newId = await handlePublish(pass, { game: { ...game, title: leagueTitle, coverImage: targetCover }, board: targetBoard });
+      if (!newId) throw new Error("Game initialization failed to assign a unique ID.");
+
+      setBoard(targetBoard);
+      setGame(prev => ({ ...prev, title: leagueTitle, coverImage: targetCover }));
+      setWizardSuccess(true);
+      setIsInitialized(true);
+      setShowAdminView(false);
+      setActiveTab('board');
+
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.set('poolId', newId);
+      window.history.replaceState({ poolId: newId }, '', newUrl.toString());
+
+      setTimeout(() => {
+        setHasEnteredApp(true);
+        setShowWizardModal(false);
+        setShowShareModal(true);
+      }, 1800);
+    } catch (e: any) {
+      setWizardError(e.message || "Initialization failed. Please check your connection and try again.");
+      setIsCreating(false);
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   const handleLogout = () => {
@@ -564,7 +592,7 @@ const AppContent: React.FC = () => {
     setActivePoolId(null);
     setIsInitialized(false);
     setShowAdminView(false);
-    setBoard(SAMPLE_BOARD); 
+    setBoard(SAMPLE_BOARD);
     const newUrl = new URL(window.location.href);
     newUrl.searchParams.delete('poolId');
     window.history.pushState({}, '', newUrl);
@@ -586,192 +614,192 @@ const AppContent: React.FC = () => {
     <div className="h-screen w-full bg-transparent overflow-hidden flex flex-col font-sans text-white">
       {showAuthModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-            <div className="liquid-glass p-6 w-full max-w-xs animate-in zoom-in duration-300 border-gold-glass">
+          <div className="liquid-glass p-6 w-full max-w-xs animate-in zoom-in duration-300 border-gold-glass">
             <form onSubmit={handleAuthSubmit} className="space-y-4">
-                <div className="flex justify-between items-center mb-1">
+              <div className="flex justify-between items-center mb-1">
                 <h3 className="text-sm font-black text-white uppercase tracking-widest">Commissioner Access</h3>
                 <button type="button" onClick={() => !isAuthenticating && setShowAuthModal(false)} className="text-gray-400 hover:text-white">&times;</button>
-                </div>
-                <input autoFocus type="password" value={authInput} onChange={(e) => setAuthInput(e.target.value)} placeholder="Enter Password" disabled={isAuthenticating}
+              </div>
+              <input autoFocus type="password" value={authInput} onChange={(e) => setAuthInput(e.target.value)} placeholder="Enter Password" disabled={isAuthenticating}
                 className="w-full bg-black/40 border border-white/10 rounded px-3 py-2 text-sm text-white focus:border-gold-glass outline-none transition-colors disabled:opacity-50" />
-                <button type="submit" disabled={isAuthenticating} className="w-full btn-cardinal py-2 rounded text-xs font-black uppercase tracking-widest shadow-lg disabled:opacity-50 flex items-center justify-center gap-2">
-                  {isAuthenticating ? 'VERIFYING...' : 'Unlock Dashboard'}
-                </button>
+              <button type="submit" disabled={isAuthenticating} className="w-full btn-cardinal py-2 rounded text-xs font-black uppercase tracking-widest shadow-lg disabled:opacity-50 flex items-center justify-center gap-2">
+                {isAuthenticating ? 'VERIFYING...' : 'Unlock Dashboard'}
+              </button>
             </form>
-            </div>
+          </div>
         </div>
       )}
 
       {showJoinModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-            <div className="liquid-glass p-6 w-full max-w-xs animate-in zoom-in duration-300 border-white/20">
-                <form onSubmit={handleJoinSubmit} className="space-y-4">
-                    <div className="flex justify-between items-center mb-1">
-                        <h3 className="text-sm font-black text-white uppercase tracking-widest">Join Game</h3>
-                        <button type="button" onClick={() => setShowJoinModal(false)} className="text-gray-400 hover:text-white">&times;</button>
-                    </div>
-                    <p className="text-[10px] text-gray-400 font-medium">Enter the Game Code shared by your Commissioner.</p>
-                    <input autoFocus type="text" value={joinInput} onChange={(e) => setJoinInput(e.target.value)} placeholder="Game Code (e.g. A7X9...)"
-                        className="w-full bg-black/40 border border-white/10 rounded px-3 py-2 text-sm text-white focus:border-white/40 outline-none transition-colors font-mono uppercase" />
-                    <button type="submit" disabled={isRefreshing} className="w-full btn-cardinal py-3 rounded text-xs font-black uppercase tracking-widest shadow-lg transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50">
-                        {isRefreshing ? 'Verifying...' : (knownAdminToken ? 'Enter Commissioner Hub' : 'Enter Stadium')}
-                    </button>
-                </form>
-            </div>
+          <div className="liquid-glass p-6 w-full max-w-xs animate-in zoom-in duration-300 border-white/20">
+            <form onSubmit={handleJoinSubmit} className="space-y-4">
+              <div className="flex justify-between items-center mb-1">
+                <h3 className="text-sm font-black text-white uppercase tracking-widest">Join Game</h3>
+                <button type="button" onClick={() => setShowJoinModal(false)} className="text-gray-400 hover:text-white">&times;</button>
+              </div>
+              <p className="text-[10px] text-gray-400 font-medium">Enter the Game Code shared by your Commissioner.</p>
+              <input autoFocus type="text" value={joinInput} onChange={(e) => setJoinInput(e.target.value)} placeholder="Game Code (e.g. A7X9...)"
+                className="w-full bg-black/40 border border-white/10 rounded px-3 py-2 text-sm text-white focus:border-white/40 outline-none transition-colors font-mono uppercase" />
+              <button type="submit" disabled={isRefreshing} className="w-full btn-cardinal py-3 rounded text-xs font-black uppercase tracking-widest shadow-lg transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50">
+                {isRefreshing ? 'Verifying...' : (knownAdminToken ? 'Enter Commissioner Hub' : 'Enter Stadium')}
+              </button>
+            </form>
+          </div>
         </div>
       )}
 
       {showWizardModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-md p-4">
-            <div className="liquid-glass w-full max-w-md overflow-hidden flex flex-col animate-in slide-in-from-bottom-4 duration-500 border-gold-glass shadow-[0_0_50px_rgba(157,34,53,0.3)]">
-                <div className="p-6 border-b border-white/10 bg-[#9D2235]/10">
-                    <div className="flex justify-between items-center">
-                         <h2 className="text-xl font-black text-white italic tracking-tighter">LEAGUE SETUP</h2>
-                         {!wizardSuccess && <button onClick={() => setShowWizardModal(false)} className="text-gray-400 hover:text-white text-xs uppercase font-bold tracking-widest">CANCEL</button>}
-                    </div>
-                    <div className="flex gap-2 mt-4">
-                        {[1, 2, 3].map(step => (
-                            <div key={step} className={`h-1 flex-1 rounded-full transition-all duration-500 ${wizardStep >= step ? 'bg-[#FFC72C]' : 'bg-white/10'}`}></div>
-                        ))}
-                    </div>
-                </div>
-                <div className="p-6 flex-1 min-h-[300px] flex flex-col justify-center">
-                    {wizardSuccess ? (
-                        <div className="flex flex-col items-center justify-center space-y-4 animate-in zoom-in duration-500 text-center">
-                            <div className="w-20 h-20 rounded-full bg-green-500 flex items-center justify-center shadow-[0_0_30px_rgba(34,197,94,0.4)]">
-                                <svg className="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                </svg>
-                            </div>
-                            <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter">Ready to Launch!</h3>
-                            <p className="text-sm text-gray-400 font-bold uppercase tracking-widest">Redirecting to your Stadium Seats...</p>
-                        </div>
-                    ) : wizardError ? (
-                        <div className="flex flex-col items-center justify-center space-y-4 animate-in zoom-in duration-300 text-center">
-                            <div className="w-16 h-16 rounded-full bg-red-900/30 flex items-center justify-center border border-red-500/30 shadow-lg">
-                                <svg className="w-8 h-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                                </svg>
-                            </div>
-                            <h3 className="text-lg font-black text-white uppercase tracking-tight">Setup Notice</h3>
-                            <p className="text-xs text-gray-400 font-medium max-w-xs">{wizardError}</p>
-                            <button onClick={() => setWizardError(null)} className="btn-cardinal px-8 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest">Acknowledge</button>
-                        </div>
-                    ) : (
-                        <>
-                            {wizardStep === 1 && (
-                                <div className="space-y-4 animate-in fade-in slide-in-from-right-4">
-                                    <h3 className="text-lg font-bold text-white">Step 1: Secure Your League</h3>
-                                    <div className="space-y-1 pt-2">
-                                        <label className="text-[9px] font-black text-gold uppercase tracking-widest">League Name</label>
-                                        <input autoFocus type="text" value={game.title} onChange={(e) => setGame(prev => ({ ...prev, title: e.target.value }))}
-                                            className="w-full bg-black/40 border border-white/10 rounded p-3 text-white focus:border-gold-glass outline-none transition-colors" placeholder="e.g. SB LIX Party" />
-                                    </div>
-                                    <div className="space-y-1 pt-2">
-                                        <label className="text-[9px] font-black text-gold uppercase tracking-widest">Admin Password</label>
-                                        <input type="password" value={wizardPassword} onChange={(e) => setWizardPassword(e.target.value)}
-                                            className="w-full bg-black/40 border border-white/10 rounded p-3 text-white focus:border-gold-glass outline-none transition-colors" placeholder="Make it strong..." />
-                                    </div>
-                                    <div className="pt-4">
-                                        <button disabled={!wizardPassword || !game.title} onClick={() => setWizardStep(2)}
-                                            className="w-full btn-cardinal py-3 rounded text-xs font-black uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed">Next: Matchup</button>
-                                    </div>
-                                </div>
-                            )}
-                            {wizardStep === 2 && (
-                                <div className="space-y-4 animate-in fade-in slide-in-from-right-4">
-                                    <h3 className="text-lg font-bold text-white">Step 2: The Matchup</h3>
-                                    <div className="space-y-1 pt-2">
-                                        <label className="text-[9px] font-black text-gold uppercase tracking-widest">Game Date</label>
-                                        <input type="date" value={game.dates} onChange={(e) => setGame(prev => ({...prev, dates: e.target.value}))}
-                                            className="w-full bg-black/40 border border-white/10 rounded p-3 text-white text-xs focus:border-gold-glass outline-none transition-colors" />
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4 pt-2">
-                                        <select value={game.leftAbbr} onChange={(e) => handleTeamChange('left', e.target.value)} className="w-full bg-black/40 border border-white/10 rounded p-2 text-xs text-white">
-                                            {NFL_TEAMS.map(t => <option key={t.abbr} value={t.abbr}>{t.abbr}</option>)}
-                                        </select>
-                                        <select value={game.topAbbr} onChange={(e) => handleTeamChange('top', e.target.value)} className="w-full bg-black/40 border border-white/10 rounded p-2 text-xs text-white">
-                                            {NFL_TEAMS.map(t => <option key={t.abbr} value={t.abbr}>{t.abbr}</option>)}
-                                        </select>
-                                    </div>
-                                    <div className="pt-4 flex gap-3">
-                                        <button onClick={() => setWizardStep(1)} className="flex-1 py-3 bg-white/5 border border-white/10 rounded text-xs font-bold uppercase tracking-widest">BACK</button>
-                                        <button onClick={() => setWizardStep(3)} className="flex-[2] btn-cardinal py-3 rounded text-xs font-black uppercase tracking-widest">Next: Board Cover</button>
-                                    </div>
-                                </div>
-                            )}
-                            {wizardStep === 3 && (
-                                <div className="space-y-4 animate-in fade-in slide-in-from-right-4">
-                                    <h3 className="text-lg font-bold text-white">Step 3: Board Cover & Auto-Scan</h3>
-                                    <div onClick={() => wizardFileRef.current?.click()} className="border-2 border-dashed border-white/20 rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer min-h-[160px] relative overflow-hidden group transition-all hover:border-gold-glass">
-                                        <input type="file" ref={wizardFileRef} className="hidden" accept=".jpg,.jpeg,.png,.webp" onChange={async (e) => {
-                                            const file = e.target.files?.[0];
-                                            if (file) {
-                                              setWizardError(null);
-                                              setIsCreating(true);
-                                              const reader = new FileReader();
-                                              reader.onload = async (ev) => {
-                                                try {
-                                                    const rawBase64 = ev.target!.result as string;
-                                                    const compressed = await compressImage(rawBase64);
-                                                    setGame(p => ({ ...p, coverImage: compressed }));
-                                                    const scannedBoard = await parseBoardImage(compressed);
-                                                    setBoard(scannedBoard);
-                                                } catch (err: any) {
-                                                    console.warn("Scan failure:", err);
-                                                    setWizardError("Image processed as cover, but AI scan failed: " + (err.message || "Invalid grid format"));
-                                                } finally {
-                                                    setIsCreating(false);
-                                                }
-                                              };
-                                              reader.readAsDataURL(file);
-                                            }
-                                        }} />
-                                        {game.coverImage ? (
-                                            <>
-                                                <img src={game.coverImage} className="absolute inset-0 w-full h-full object-cover opacity-60" />
-                                                <span className="relative z-10 text-xs font-black text-white bg-black/70 px-4 py-2 rounded-full backdrop-blur-md">Change Image</span>
-                                            </>
-                                        ) : (
-                                            <div className="flex flex-col items-center gap-2">
-                                                <span className="text-[10px] font-black uppercase text-gray-500 group-hover:text-gold transition-colors">Click to Upload Image</span>
-                                                <span className="text-[8px] font-bold text-gray-600 uppercase tracking-widest">OCR WILL AUTO-POPULATE GRID</span>
-                                            </div>
-                                        )}
-                                    </div>
-                                    <p className="text-[9px] text-gray-500 font-bold text-center uppercase tracking-widest">High quality photos work best. PDF is not supported.</p>
-                                    <div className="pt-4 space-y-3">
-                                        <button 
-                                          onClick={() => {
-                                            if (!game.coverImage) {
-                                              setWizardError("Please upload an image to use the auto-scanner, or click 'Skip Scan' below to enter names manually.");
-                                              return;
-                                            }
-                                            handleWizardInitialize();
-                                          }} 
-                                          disabled={isCreating} 
-                                          className={`w-full btn-cardinal py-4 rounded text-sm font-black uppercase tracking-widest shadow-xl flex items-center justify-center gap-2 transition-all ${!game.coverImage ? 'opacity-50 grayscale-[0.5]' : ''}`}
-                                        >
-                                            {isCreating ? (board.squares.every(s => s.length === 0) ? "SCANNING GRID..." : "INITIALIZING...") : "FINISH & INITIALIZE"}
-                                        </button>
-                                        
-                                        {!isCreating && (
-                                          <button 
-                                            onClick={() => handleWizardInitialize(EMPTY_BOARD, '')} 
-                                            className="w-full text-center text-[10px] text-[#FFC72C] uppercase font-black tracking-widest hover:underline opacity-80 hover:opacity-100 transition-all py-1"
-                                          >
-                                            Skip Scan & Setup Manually
-                                          </button>
-                                        )}
-
-                                        <button onClick={() => !isCreating && setWizardStep(2)} className="w-full text-center text-[10px] text-gray-500 uppercase font-bold tracking-widest underline">BACK</button>
-                                    </div>
-                                </div>
-                            )}
-                        </>
-                    )}
-                </div>
+          <div className="liquid-glass w-full max-w-md overflow-hidden flex flex-col animate-in slide-in-from-bottom-4 duration-500 border-gold-glass shadow-[0_0_50px_rgba(157,34,53,0.3)]">
+            <div className="p-6 border-b border-white/10 bg-[#9D2235]/10">
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-black text-white italic tracking-tighter">LEAGUE SETUP</h2>
+                {!wizardSuccess && <button onClick={() => setShowWizardModal(false)} className="text-gray-400 hover:text-white text-xs uppercase font-bold tracking-widest">CANCEL</button>}
+              </div>
+              <div className="flex gap-2 mt-4">
+                {[1, 2, 3].map(step => (
+                  <div key={step} className={`h-1 flex-1 rounded-full transition-all duration-500 ${wizardStep >= step ? 'bg-[#FFC72C]' : 'bg-white/10'}`}></div>
+                ))}
+              </div>
             </div>
+            <div className="p-6 flex-1 min-h-[300px] flex flex-col justify-center">
+              {wizardSuccess ? (
+                <div className="flex flex-col items-center justify-center space-y-4 animate-in zoom-in duration-500 text-center">
+                  <div className="w-20 h-20 rounded-full bg-green-500 flex items-center justify-center shadow-[0_0_30px_rgba(34,197,94,0.4)]">
+                    <svg className="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter">Ready to Launch!</h3>
+                  <p className="text-sm text-gray-400 font-bold uppercase tracking-widest">Redirecting to your Stadium Seats...</p>
+                </div>
+              ) : wizardError ? (
+                <div className="flex flex-col items-center justify-center space-y-4 animate-in zoom-in duration-300 text-center">
+                  <div className="w-16 h-16 rounded-full bg-red-900/30 flex items-center justify-center border border-red-500/30 shadow-lg">
+                    <svg className="w-8 h-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-black text-white uppercase tracking-tight">Setup Notice</h3>
+                  <p className="text-xs text-gray-400 font-medium max-w-xs">{wizardError}</p>
+                  <button onClick={() => setWizardError(null)} className="btn-cardinal px-8 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest">Acknowledge</button>
+                </div>
+              ) : (
+                <>
+                  {wizardStep === 1 && (
+                    <div className="space-y-4 animate-in fade-in slide-in-from-right-4">
+                      <h3 className="text-lg font-bold text-white">Step 1: Secure Your League</h3>
+                      <div className="space-y-1 pt-2">
+                        <label className="text-[9px] font-black text-gold uppercase tracking-widest">League Name</label>
+                        <input autoFocus type="text" value={game.title} onChange={(e) => setGame(prev => ({ ...prev, title: e.target.value }))}
+                          className="w-full bg-black/40 border border-white/10 rounded p-3 text-white focus:border-gold-glass outline-none transition-colors" placeholder="e.g. SB LIX Party" />
+                      </div>
+                      <div className="space-y-1 pt-2">
+                        <label className="text-[9px] font-black text-gold uppercase tracking-widest">Admin Password</label>
+                        <input type="password" value={wizardPassword} onChange={(e) => setWizardPassword(e.target.value)}
+                          className="w-full bg-black/40 border border-white/10 rounded p-3 text-white focus:border-gold-glass outline-none transition-colors" placeholder="Make it strong..." />
+                      </div>
+                      <div className="pt-4">
+                        <button disabled={!wizardPassword || !game.title} onClick={() => setWizardStep(2)}
+                          className="w-full btn-cardinal py-3 rounded text-xs font-black uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed">Next: Matchup</button>
+                      </div>
+                    </div>
+                  )}
+                  {wizardStep === 2 && (
+                    <div className="space-y-4 animate-in fade-in slide-in-from-right-4">
+                      <h3 className="text-lg font-bold text-white">Step 2: The Matchup</h3>
+                      <div className="space-y-1 pt-2">
+                        <label className="text-[9px] font-black text-gold uppercase tracking-widest">Game Date</label>
+                        <input type="date" value={game.dates} onChange={(e) => setGame(prev => ({ ...prev, dates: e.target.value }))}
+                          className="w-full bg-black/40 border border-white/10 rounded p-3 text-white text-xs focus:border-gold-glass outline-none transition-colors" />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4 pt-2">
+                        <select value={game.leftAbbr} onChange={(e) => handleTeamChange('left', e.target.value)} className="w-full bg-black/40 border border-white/10 rounded p-2 text-xs text-white">
+                          {NFL_TEAMS.map(t => <option key={t.abbr} value={t.abbr}>{t.abbr}</option>)}
+                        </select>
+                        <select value={game.topAbbr} onChange={(e) => handleTeamChange('top', e.target.value)} className="w-full bg-black/40 border border-white/10 rounded p-2 text-xs text-white">
+                          {NFL_TEAMS.map(t => <option key={t.abbr} value={t.abbr}>{t.abbr}</option>)}
+                        </select>
+                      </div>
+                      <div className="pt-4 flex gap-3">
+                        <button onClick={() => setWizardStep(1)} className="flex-1 py-3 bg-white/5 border border-white/10 rounded text-xs font-bold uppercase tracking-widest">BACK</button>
+                        <button onClick={() => setWizardStep(3)} className="flex-[2] btn-cardinal py-3 rounded text-xs font-black uppercase tracking-widest">Next: Board Cover</button>
+                      </div>
+                    </div>
+                  )}
+                  {wizardStep === 3 && (
+                    <div className="space-y-4 animate-in fade-in slide-in-from-right-4">
+                      <h3 className="text-lg font-bold text-white">Step 3: Board Cover & Auto-Scan</h3>
+                      <div onClick={() => wizardFileRef.current?.click()} className="border-2 border-dashed border-white/20 rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer min-h-[160px] relative overflow-hidden group transition-all hover:border-gold-glass">
+                        <input type="file" ref={wizardFileRef} className="hidden" accept=".jpg,.jpeg,.png,.webp" onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            setWizardError(null);
+                            setIsCreating(true);
+                            const reader = new FileReader();
+                            reader.onload = async (ev) => {
+                              try {
+                                const rawBase64 = ev.target!.result as string;
+                                const compressed = await compressImage(rawBase64);
+                                setGame(p => ({ ...p, coverImage: compressed }));
+                                const scannedBoard = await parseBoardImage(compressed);
+                                setBoard(scannedBoard);
+                              } catch (err: any) {
+                                console.warn("Scan failure:", err);
+                                setWizardError("Image processed as cover, but AI scan failed: " + (err.message || "Invalid grid format"));
+                              } finally {
+                                setIsCreating(false);
+                              }
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }} />
+                        {game.coverImage ? (
+                          <>
+                            <img src={game.coverImage} className="absolute inset-0 w-full h-full object-cover opacity-60" />
+                            <span className="relative z-10 text-xs font-black text-white bg-black/70 px-4 py-2 rounded-full backdrop-blur-md">Change Image</span>
+                          </>
+                        ) : (
+                          <div className="flex flex-col items-center gap-2">
+                            <span className="text-[10px] font-black uppercase text-gray-500 group-hover:text-gold transition-colors">Click to Upload Image</span>
+                            <span className="text-[8px] font-bold text-gray-600 uppercase tracking-widest">OCR WILL AUTO-POPULATE GRID</span>
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-[9px] text-gray-500 font-bold text-center uppercase tracking-widest">High quality photos work best. PDF is not supported.</p>
+                      <div className="pt-4 space-y-3">
+                        <button
+                          onClick={() => {
+                            if (!game.coverImage) {
+                              setWizardError("Please upload an image to use the auto-scanner, or click 'Skip Scan' below to enter names manually.");
+                              return;
+                            }
+                            handleWizardInitialize();
+                          }}
+                          disabled={isCreating}
+                          className={`w-full btn-cardinal py-4 rounded text-sm font-black uppercase tracking-widest shadow-xl flex items-center justify-center gap-2 transition-all ${!game.coverImage ? 'opacity-50 grayscale-[0.5]' : ''}`}
+                        >
+                          {isCreating ? (board.squares.every(s => s.length === 0) ? "SCANNING GRID..." : "INITIALIZING...") : "FINISH & INITIALIZE"}
+                        </button>
+
+                        {!isCreating && (
+                          <button
+                            onClick={() => handleWizardInitialize(EMPTY_BOARD, '')}
+                            className="w-full text-center text-[10px] text-[#FFC72C] uppercase font-black tracking-widest hover:underline opacity-80 hover:opacity-100 transition-all py-1"
+                          >
+                            Skip Scan & Setup Manually
+                          </button>
+                        )}
+
+                        <button onClick={() => !isCreating && setWizardStep(2)} className="w-full text-center text-[10px] text-gray-500 uppercase font-bold tracking-widest underline">BACK</button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
@@ -795,16 +823,16 @@ const AppContent: React.FC = () => {
         <>
           <header className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-white/10 bg-black/60 backdrop-blur-md z-50">
             <div className="flex flex-col">
-              <h1 className="text-2xl md:text-3xl font-black tracking-tighter italic text-white leading-none">SBX<span className="text-team-top">PRO</span></h1>
+              <h1 className="text-2xl md:text-3xl font-black tracking-tighter italic text-white leading-none">SBX<span className="text-team-top-bright">PRO</span></h1>
               <div className="flex items-center gap-2 mt-1">
                 {isSynced && <div className="live-indicator w-1.5 h-1.5"></div>}
-                <span className={`text-[8px] font-bold uppercase tracking-[0.2em] ${isSynced ? 'text-team-top' : 'text-gray-400'}`}>{liveStatus}</span>
+                <span className={`text-[8px] font-bold uppercase tracking-[0.2em] ${isSynced ? 'text-team-top-bright' : 'text-gray-400'}`}>{liveStatus}</span>
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <button onClick={() => setShowShareModal(true)} className="p-2 bg-white/5 border border-white/10 rounded-full text-team-top"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg></button>
+              <button onClick={() => setShowShareModal(true)} className="p-2 bg-white/5 border border-white/10 rounded-full text-team-top-bright"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg></button>
               {adminToken ? (
-                <button onClick={() => setShowAdminView(!showAdminView)} className={`p-2 rounded-full transition-colors ${showAdminView ? 'bg-[#9D2235] text-white shadow-lg' : 'bg-white/10 text-team-top hover:bg-white/20'}`} title={showAdminView ? "Switch to Player View" : "Open Commissioner Dashboard"}>
+                <button onClick={() => setShowAdminView(!showAdminView)} className={`p-2 rounded-full transition-colors ${showAdminView ? 'bg-[#9D2235] text-white shadow-lg' : 'bg-white/10 text-team-top-bright hover:bg-white/20'}`} title={showAdminView ? "Switch to Player View" : "Open Commissioner Dashboard"}>
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572-1.065z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -837,48 +865,48 @@ const AppContent: React.FC = () => {
               <div className="p-4 md:p-6 max-w-lg mx-auto w-full space-y-6 pb-20">
                 <InfoCards.Scoreboard game={game} live={liveData} onRefresh={fetchLive} isRefreshing={isRefreshing} liveStatus={liveStatus} />
                 <div className="liquid-glass p-5 relative overflow-hidden group glass-top">
-                    <div className="text-[10px] font-black text-team-top uppercase tracking-widest mb-2 flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>{currentLiveWinner?.state === 'post' ? 'Final Winner' : 'Live Winner'}</div>
-                    <div className="flex items-end justify-between">
-                        <div><div className="text-2xl font-black text-white leading-none mb-1">{currentLiveWinner?.owners.length ? currentLiveWinner.owners.join(', ') : (liveData ? 'No Owner' : '—')}</div><div className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Square Owner</div></div>
-                        <div className="text-right"><div className="text-xl font-black text-team-top font-mono">{currentLiveWinner?.key || '?-?'}</div><div className="text-[9px] font-bold text-gray-500 uppercase">Coord</div></div>
-                    </div>
+                  <div className="text-[10px] font-black text-team-top uppercase tracking-widest mb-2 flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>{currentLiveWinner?.state === 'post' ? 'Final Winner' : 'Live Winner'}</div>
+                  <div className="flex items-end justify-between">
+                    <div><div className="text-2xl font-black text-white leading-none mb-1">{currentLiveWinner?.owners.length ? currentLiveWinner.owners.join(', ') : (liveData ? 'No Owner' : '—')}</div><div className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Square Owner</div></div>
+                    <div className="text-right"><div className="text-xl font-black text-team-top font-mono">{currentLiveWinner?.key || '?-?'}</div><div className="text-[9px] font-bold text-gray-500 uppercase">Coord</div></div>
+                  </div>
                 </div>
                 <InfoCards.Payouts liveStatus={liveStatus} lastUpdated={lastUpdated} highlights={highlights} board={board} live={liveData} />
                 <div className="space-y-4">
-                   <ScenarioPanel.LeftScenarios game={game} board={board} live={liveData} onScenarioHover={setHighlightedCoords} />
-                   <ScenarioPanel.TopScenarios game={game} board={board} live={liveData} onScenarioHover={setHighlightedCoords} />
+                  <ScenarioPanel.LeftScenarios game={game} board={board} live={liveData} onScenarioHover={setHighlightedCoords} />
+                  <ScenarioPanel.TopScenarios game={game} board={board} live={liveData} onScenarioHover={setHighlightedCoords} />
                 </div>
               </div>
             )}
             {activeTab === 'board' && (
-               <div className="flex flex-col h-full relative">
-                  <div className="flex-shrink-0 p-2 md:p-4 z-30"><PlayerFilter board={board} selected={selectedPlayer} setSelected={setSelectedPlayer} /></div>
-                  <div className="flex-1 flex items-center justify-center p-2 min-h-0 relative">
-                    <BoardGrid board={board} highlights={highlights} live={liveData} selectedPlayer={selectedPlayer} leftTeamName={game.leftName} topTeamName={game.topName} highlightedCoords={highlightedCoords} />
-                    
-                    {isEmptyBoard && !!adminToken && (
-                      <div className="absolute inset-0 z-40 bg-black/60 backdrop-blur-sm flex items-center justify-center p-6">
-                        <div className="liquid-glass max-w-sm p-8 text-center space-y-6 border-gold-glass animate-in zoom-in duration-500">
-                          <div className="w-16 h-16 bg-[#FFC72C]/10 rounded-full flex items-center justify-center mx-auto text-gold border border-gold-glass">
-                            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                          </div>
-                          <div>
-                            <h3 className="text-xl font-black text-white uppercase italic tracking-tighter">Empty Board Detected</h3>
-                            <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-2">Initialize your game by adding player names manually in the Hub.</p>
-                          </div>
-                          <button 
-                            onClick={() => setShowAdminView(true)}
-                            className="w-full btn-cardinal py-4 rounded-full text-xs font-black uppercase tracking-widest shadow-xl transition-all hover:scale-105 active:scale-95"
-                          >
-                            Open Commissioner Hub
-                          </button>
+              <div className="flex flex-col h-full relative">
+                <div className="flex-shrink-0 p-2 md:p-4 z-30"><PlayerFilter board={board} selected={selectedPlayer} setSelected={setSelectedPlayer} /></div>
+                <div className="flex-1 flex items-center justify-center p-2 min-h-0 relative">
+                  <BoardGrid board={board} highlights={highlights} live={liveData} selectedPlayer={selectedPlayer} leftTeamName={game.leftName} topTeamName={game.topName} highlightedCoords={highlightedCoords} />
+
+                  {isEmptyBoard && !!adminToken && (
+                    <div className="absolute inset-0 z-40 bg-black/60 backdrop-blur-sm flex items-center justify-center p-6">
+                      <div className="liquid-glass max-w-sm p-8 text-center space-y-6 border-gold-glass animate-in zoom-in duration-500">
+                        <div className="w-16 h-16 bg-[#FFC72C]/10 rounded-full flex items-center justify-center mx-auto text-gold border border-gold-glass">
+                          <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
                         </div>
+                        <div>
+                          <h3 className="text-xl font-black text-white uppercase italic tracking-tighter">Empty Board Detected</h3>
+                          <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-2">Initialize your game by adding player names manually in the Hub.</p>
+                        </div>
+                        <button
+                          onClick={() => setShowAdminView(true)}
+                          className="w-full btn-cardinal py-4 rounded-full text-xs font-black uppercase tracking-widest shadow-xl transition-all hover:scale-105 active:scale-95"
+                        >
+                          Open Commissioner Hub
+                        </button>
                       </div>
-                    )}
-                  </div>
-               </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             )}
           </div>
         </>
