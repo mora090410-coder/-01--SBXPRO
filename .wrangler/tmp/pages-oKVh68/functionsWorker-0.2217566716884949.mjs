@@ -1,7 +1,7 @@
 var __defProp = Object.defineProperty;
 var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 
-// ../.wrangler/tmp/bundle-YAhcw6/checked-fetch.js
+// ../.wrangler/tmp/bundle-tBsNNb/checked-fetch.js
 var urls = /* @__PURE__ */ new Set();
 function checkURL(request, init) {
   const url = request instanceof URL ? request : new URL(
@@ -27,7 +27,7 @@ globalThis.fetch = new Proxy(globalThis.fetch, {
   }
 });
 
-// api/pools/login.ts
+// api/pools/check-name.ts
 var corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, PUT, OPTIONS",
@@ -42,51 +42,21 @@ var onRequestOptions = /* @__PURE__ */ __name(async () => {
 }, "onRequestOptions");
 var onRequestPost = /* @__PURE__ */ __name(async (context) => {
   try {
-    const { leagueName, password } = await context.request.json();
-    if (!leagueName || !password) {
+    const { leagueName } = await context.request.json();
+    if (!leagueName) {
       return new Response(JSON.stringify({
-        error: "Missing credentials",
-        message: "League name and password are required."
+        error: "Missing league name",
+        available: false
       }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
     const normalizedName = leagueName.trim().toLowerCase().replace(/\s+/g, "-");
-    const poolId = await context.env.POOLS.get(`name:${normalizedName}`);
-    if (!poolId) {
-      return new Response(JSON.stringify({
-        error: "League not found",
-        message: "No league exists with that name."
-      }), {
-        status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
-      });
-    }
-    const poolData = await context.env.POOLS.get(`pool:${poolId}`);
-    if (!poolData) {
-      return new Response(JSON.stringify({
-        error: "Pool data not found",
-        message: "League data could not be retrieved."
-      }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
-      });
-    }
-    const parsed = JSON.parse(poolData);
-    if (password !== parsed.adminToken) {
-      return new Response(JSON.stringify({
-        error: "Invalid password",
-        message: "The password you entered is incorrect."
-      }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
-      });
-    }
+    const existingPool = await context.env.POOLS.get(`name:${normalizedName}`);
     return new Response(JSON.stringify({
-      success: true,
-      poolId,
-      message: "Authentication successful"
+      available: !existingPool,
+      leagueName: leagueName.trim()
     }), {
       status: 200,
       headers: {
@@ -97,8 +67,9 @@ var onRequestPost = /* @__PURE__ */ __name(async (context) => {
     });
   } catch (err) {
     return new Response(JSON.stringify({
-      error: "Login failed",
-      message: err.message || "An unexpected error occurred."
+      error: "Check failed",
+      message: err.message,
+      available: false
     }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" }
@@ -106,7 +77,7 @@ var onRequestPost = /* @__PURE__ */ __name(async (context) => {
   }
 }, "onRequestPost");
 
-// api/pools/[id].ts
+// api/pools/login.ts
 var corsHeaders2 = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, PUT, OPTIONS",
@@ -119,100 +90,73 @@ var onRequestOptions2 = /* @__PURE__ */ __name(async () => {
     headers: corsHeaders2
   });
 }, "onRequestOptions");
-var onRequestGet = /* @__PURE__ */ __name(async (context) => {
-  const poolId = context.params.id;
-  const val = await context.env.POOLS.get(`pool:${poolId}`);
-  if (!val) {
-    return new Response(JSON.stringify({ error: "Pool not found" }), {
-      status: 404,
-      headers: { ...corsHeaders2, "Content-Type": "application/json" }
-    });
-  }
-  const parsed = JSON.parse(val);
-  const { adminToken: _, ...publicPayload } = parsed;
-  return new Response(JSON.stringify(publicPayload), {
-    status: 200,
-    headers: {
-      ...corsHeaders2,
-      "Content-Type": "application/json",
-      "Cache-Control": "no-store"
-    }
-  });
-}, "onRequestGet");
 var onRequestPost2 = /* @__PURE__ */ __name(async (context) => {
-  const poolId = context.params.id;
-  const authHeader = context.request.headers.get("Authorization");
-  const token = authHeader?.replace("Bearer ", "");
-  if (!token) {
-    return new Response(JSON.stringify({ error: "Unauthorized: Missing Token" }), {
-      status: 401,
-      headers: { ...corsHeaders2, "Content-Type": "application/json" }
-    });
-  }
-  const val = await context.env.POOLS.get(`pool:${poolId}`);
-  if (!val) {
-    return new Response(JSON.stringify({ error: "Pool not found" }), {
-      status: 404,
-      headers: { ...corsHeaders2, "Content-Type": "application/json" }
-    });
-  }
-  const parsed = JSON.parse(val);
-  if (token !== parsed.adminToken) {
-    return new Response(JSON.stringify({ error: "Unauthorized: Invalid Password" }), {
-      status: 401,
-      headers: { ...corsHeaders2, "Content-Type": "application/json" }
-    });
-  }
-  return new Response(JSON.stringify({ success: true, message: "Authentication Verified" }), {
-    status: 200,
-    headers: { ...corsHeaders2, "Content-Type": "application/json" }
-  });
-}, "onRequestPost");
-var onRequestPut = /* @__PURE__ */ __name(async (context) => {
-  const poolId = context.params.id;
-  const authHeader = context.request.headers.get("Authorization");
-  const token = authHeader?.replace("Bearer ", "");
-  if (!token) {
-    return new Response(JSON.stringify({ error: "Unauthorized: Missing Token" }), {
-      status: 401,
-      headers: { ...corsHeaders2, "Content-Type": "application/json" }
-    });
-  }
   try {
-    const existing = await context.env.POOLS.get(`pool:${poolId}`);
-    if (!existing) {
-      return new Response(JSON.stringify({ error: "Pool not found" }), {
+    const { leagueName, password } = await context.request.json();
+    if (!leagueName || !password) {
+      return new Response(JSON.stringify({
+        error: "Missing credentials",
+        message: "League name and password are required."
+      }), {
+        status: 400,
+        headers: { ...corsHeaders2, "Content-Type": "application/json" }
+      });
+    }
+    const normalizedName = leagueName.trim().toLowerCase().replace(/\s+/g, "-");
+    const poolId = await context.env.POOLS.get(`name:${normalizedName}`);
+    if (!poolId) {
+      return new Response(JSON.stringify({
+        error: "League not found",
+        message: "No league exists with that name."
+      }), {
         status: 404,
         headers: { ...corsHeaders2, "Content-Type": "application/json" }
       });
     }
-    const parsed = JSON.parse(existing);
-    if (token !== parsed.adminToken) {
-      return new Response(JSON.stringify({ error: "Unauthorized: Invalid Token" }), {
+    const poolData = await context.env.POOLS.get(`pool:${poolId}`);
+    if (!poolData) {
+      return new Response(JSON.stringify({
+        error: "Pool data not found",
+        message: "League data could not be retrieved."
+      }), {
+        status: 500,
+        headers: { ...corsHeaders2, "Content-Type": "application/json" }
+      });
+    }
+    const parsed = JSON.parse(poolData);
+    if (password !== parsed.adminToken) {
+      return new Response(JSON.stringify({
+        error: "Invalid password",
+        message: "The password you entered is incorrect."
+      }), {
         status: 401,
         headers: { ...corsHeaders2, "Content-Type": "application/json" }
       });
     }
-    const data = await context.request.json();
-    const updated = {
-      ...parsed,
-      updatedAt: (/* @__PURE__ */ new Date()).toISOString(),
-      data
-    };
-    await context.env.POOLS.put(`pool:${poolId}`, JSON.stringify(updated));
-    return new Response(JSON.stringify({ ok: true }), {
+    return new Response(JSON.stringify({
+      success: true,
+      poolId,
+      message: "Authentication successful"
+    }), {
       status: 200,
-      headers: { ...corsHeaders2, "Content-Type": "application/json" }
+      headers: {
+        ...corsHeaders2,
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store"
+      }
     });
   } catch (err) {
-    return new Response(JSON.stringify({ error: "Failed to update pool", message: err.message }), {
+    return new Response(JSON.stringify({
+      error: "Login failed",
+      message: err.message || "An unexpected error occurred."
+    }), {
       status: 500,
       headers: { ...corsHeaders2, "Content-Type": "application/json" }
     });
   }
-}, "onRequestPut");
+}, "onRequestPost");
 
-// api/pools.ts
+// api/pools/[id].ts
 var corsHeaders3 = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, PUT, OPTIONS",
@@ -225,7 +169,113 @@ var onRequestOptions3 = /* @__PURE__ */ __name(async () => {
     headers: corsHeaders3
   });
 }, "onRequestOptions");
+var onRequestGet = /* @__PURE__ */ __name(async (context) => {
+  const poolId = context.params.id;
+  const val = await context.env.POOLS.get(`pool:${poolId}`);
+  if (!val) {
+    return new Response(JSON.stringify({ error: "Pool not found" }), {
+      status: 404,
+      headers: { ...corsHeaders3, "Content-Type": "application/json" }
+    });
+  }
+  const parsed = JSON.parse(val);
+  const { adminToken: _, ...publicPayload } = parsed;
+  return new Response(JSON.stringify(publicPayload), {
+    status: 200,
+    headers: {
+      ...corsHeaders3,
+      "Content-Type": "application/json",
+      "Cache-Control": "no-store"
+    }
+  });
+}, "onRequestGet");
 var onRequestPost3 = /* @__PURE__ */ __name(async (context) => {
+  const poolId = context.params.id;
+  const authHeader = context.request.headers.get("Authorization");
+  const token = authHeader?.replace("Bearer ", "");
+  if (!token) {
+    return new Response(JSON.stringify({ error: "Unauthorized: Missing Token" }), {
+      status: 401,
+      headers: { ...corsHeaders3, "Content-Type": "application/json" }
+    });
+  }
+  const val = await context.env.POOLS.get(`pool:${poolId}`);
+  if (!val) {
+    return new Response(JSON.stringify({ error: "Pool not found" }), {
+      status: 404,
+      headers: { ...corsHeaders3, "Content-Type": "application/json" }
+    });
+  }
+  const parsed = JSON.parse(val);
+  if (token !== parsed.adminToken) {
+    return new Response(JSON.stringify({ error: "Unauthorized: Invalid Password" }), {
+      status: 401,
+      headers: { ...corsHeaders3, "Content-Type": "application/json" }
+    });
+  }
+  return new Response(JSON.stringify({ success: true, message: "Authentication Verified" }), {
+    status: 200,
+    headers: { ...corsHeaders3, "Content-Type": "application/json" }
+  });
+}, "onRequestPost");
+var onRequestPut = /* @__PURE__ */ __name(async (context) => {
+  const poolId = context.params.id;
+  const authHeader = context.request.headers.get("Authorization");
+  const token = authHeader?.replace("Bearer ", "");
+  if (!token) {
+    return new Response(JSON.stringify({ error: "Unauthorized: Missing Token" }), {
+      status: 401,
+      headers: { ...corsHeaders3, "Content-Type": "application/json" }
+    });
+  }
+  try {
+    const existing = await context.env.POOLS.get(`pool:${poolId}`);
+    if (!existing) {
+      return new Response(JSON.stringify({ error: "Pool not found" }), {
+        status: 404,
+        headers: { ...corsHeaders3, "Content-Type": "application/json" }
+      });
+    }
+    const parsed = JSON.parse(existing);
+    if (token !== parsed.adminToken) {
+      return new Response(JSON.stringify({ error: "Unauthorized: Invalid Token" }), {
+        status: 401,
+        headers: { ...corsHeaders3, "Content-Type": "application/json" }
+      });
+    }
+    const data = await context.request.json();
+    const updated = {
+      ...parsed,
+      updatedAt: (/* @__PURE__ */ new Date()).toISOString(),
+      data
+    };
+    await context.env.POOLS.put(`pool:${poolId}`, JSON.stringify(updated));
+    return new Response(JSON.stringify({ ok: true }), {
+      status: 200,
+      headers: { ...corsHeaders3, "Content-Type": "application/json" }
+    });
+  } catch (err) {
+    return new Response(JSON.stringify({ error: "Failed to update pool", message: err.message }), {
+      status: 500,
+      headers: { ...corsHeaders3, "Content-Type": "application/json" }
+    });
+  }
+}, "onRequestPut");
+
+// api/pools.ts
+var corsHeaders4 = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, PUT, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  "Access-Control-Max-Age": "86400"
+};
+var onRequestOptions4 = /* @__PURE__ */ __name(async () => {
+  return new Response(null, {
+    status: 204,
+    headers: corsHeaders4
+  });
+}, "onRequestOptions");
+var onRequestPost4 = /* @__PURE__ */ __name(async (context) => {
   try {
     const authHeader = context.request.headers.get("Authorization");
     const adminToken = authHeader?.replace("Bearer ", "") || "";
@@ -235,7 +285,7 @@ var onRequestPost3 = /* @__PURE__ */ __name(async (context) => {
     if (!leagueName) {
       return new Response(JSON.stringify({ error: "League name is required" }), {
         status: 400,
-        headers: { ...corsHeaders3, "Content-Type": "application/json" }
+        headers: { ...corsHeaders4, "Content-Type": "application/json" }
       });
     }
     const normalizedName = leagueName.toLowerCase().replace(/\s+/g, "-");
@@ -247,7 +297,7 @@ var onRequestPost3 = /* @__PURE__ */ __name(async (context) => {
       }), {
         status: 409,
         // Conflict
-        headers: { ...corsHeaders3, "Content-Type": "application/json" }
+        headers: { ...corsHeaders4, "Content-Type": "application/json" }
       });
     }
     const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -270,7 +320,7 @@ var onRequestPost3 = /* @__PURE__ */ __name(async (context) => {
     return new Response(JSON.stringify({ poolId, success: true }), {
       status: 200,
       headers: {
-        ...corsHeaders3,
+        ...corsHeaders4,
         "Content-Type": "application/json",
         "Cache-Control": "no-store"
       }
@@ -278,7 +328,7 @@ var onRequestPost3 = /* @__PURE__ */ __name(async (context) => {
   } catch (err) {
     return new Response(JSON.stringify({ error: "Failed to create pool", message: err.message }), {
       status: 500,
-      headers: { ...corsHeaders3, "Content-Type": "application/json" }
+      headers: { ...corsHeaders4, "Content-Type": "application/json" }
     });
   }
 }, "onRequestPost");
@@ -286,18 +336,32 @@ var onRequestPost3 = /* @__PURE__ */ __name(async (context) => {
 // ../.wrangler/tmp/pages-oKVh68/functionsRoutes-0.21298254409567952.mjs
 var routes = [
   {
-    routePath: "/api/pools/login",
+    routePath: "/api/pools/check-name",
     mountPath: "/api/pools",
     method: "OPTIONS",
     middlewares: [],
     modules: [onRequestOptions]
   },
   {
-    routePath: "/api/pools/login",
+    routePath: "/api/pools/check-name",
     mountPath: "/api/pools",
     method: "POST",
     middlewares: [],
     modules: [onRequestPost]
+  },
+  {
+    routePath: "/api/pools/login",
+    mountPath: "/api/pools",
+    method: "OPTIONS",
+    middlewares: [],
+    modules: [onRequestOptions2]
+  },
+  {
+    routePath: "/api/pools/login",
+    mountPath: "/api/pools",
+    method: "POST",
+    middlewares: [],
+    modules: [onRequestPost2]
   },
   {
     routePath: "/api/pools/:id",
@@ -311,14 +375,14 @@ var routes = [
     mountPath: "/api/pools",
     method: "OPTIONS",
     middlewares: [],
-    modules: [onRequestOptions2]
+    modules: [onRequestOptions3]
   },
   {
     routePath: "/api/pools/:id",
     mountPath: "/api/pools",
     method: "POST",
     middlewares: [],
-    modules: [onRequestPost2]
+    modules: [onRequestPost3]
   },
   {
     routePath: "/api/pools/:id",
@@ -332,14 +396,14 @@ var routes = [
     mountPath: "/api",
     method: "OPTIONS",
     middlewares: [],
-    modules: [onRequestOptions3]
+    modules: [onRequestOptions4]
   },
   {
     routePath: "/api/pools",
     mountPath: "/api",
     method: "POST",
     middlewares: [],
-    modules: [onRequestPost3]
+    modules: [onRequestPost4]
   }
 ];
 
@@ -830,7 +894,7 @@ var jsonError = /* @__PURE__ */ __name(async (request, env, _ctx, middlewareCtx)
 }, "jsonError");
 var middleware_miniflare3_json_error_default = jsonError;
 
-// ../.wrangler/tmp/bundle-YAhcw6/middleware-insertion-facade.js
+// ../.wrangler/tmp/bundle-tBsNNb/middleware-insertion-facade.js
 var __INTERNAL_WRANGLER_MIDDLEWARE__ = [
   middleware_ensure_req_body_drained_default,
   middleware_miniflare3_json_error_default
@@ -862,7 +926,7 @@ function __facade_invoke__(request, env, ctx, dispatch, finalMiddleware) {
 }
 __name(__facade_invoke__, "__facade_invoke__");
 
-// ../.wrangler/tmp/bundle-YAhcw6/middleware-loader.entry.ts
+// ../.wrangler/tmp/bundle-tBsNNb/middleware-loader.entry.ts
 var __Facade_ScheduledController__ = class ___Facade_ScheduledController__ {
   constructor(scheduledTime, cron, noRetry) {
     this.scheduledTime = scheduledTime;

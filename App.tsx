@@ -641,6 +641,35 @@ const AppContent: React.FC = () => {
     }
   };
 
+  const handleStep1Next = async () => {
+    if (!game.title || !wizardPassword) return;
+
+    setWizardError(null);
+
+    try {
+      const res = await fetch(`${API_URL}/check-name`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ leagueName: game.title })
+      });
+
+      const result = await res.json();
+
+      if (!result.available) {
+        setWizardError(`A league named "${game.title}" already exists. Please choose a different name.`);
+        return;
+      }
+
+      // Name is available, proceed to step 2
+      setWizardStep(2);
+
+    } catch (err: any) {
+      console.error('Name check failed:', err);
+      // If check fails, still proceed (backend will catch duplicates)
+      setWizardStep(2);
+    }
+  };
+
   const openSetupWizard = () => {
     setGame(INITIAL_GAME);
     setBoard(EMPTY_BOARD);
@@ -768,7 +797,7 @@ const AppContent: React.FC = () => {
                           className="w-full bg-black/40 border border-white/10 rounded p-3 text-white focus:border-gold-glass outline-none transition-colors" placeholder="Make it strong..." />
                       </div>
                       <div className="pt-4">
-                        <button disabled={!wizardPassword || !game.title} onClick={() => setWizardStep(2)}
+                        <button disabled={!wizardPassword || !game.title} onClick={handleStep1Next}
                           className="w-full btn-cardinal py-3 rounded text-xs font-black uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed">Next: Matchup</button>
                       </div>
                     </div>

@@ -14,7 +14,7 @@ export async function parseBoardImage(base64Image: string): Promise<BoardData> {
   let response;
   try {
     response = await ai.models.generateContent({
-      model: "gemini-2.0-flash",
+      model: "gemini-3-flash-preview",
       contents: {
         parts: [
           {
