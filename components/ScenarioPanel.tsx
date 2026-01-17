@@ -9,15 +9,15 @@ interface ScenarioProps {
   onScenarioHover: (coords: { left: number, top: number } | null) => void;
 }
 
-const ScenarioCard: React.FC<{ 
-  label: string; 
-  top: number; 
-  left: number; 
-  names: string[]; 
+const ScenarioCard: React.FC<{
+  label: string;
+  top: number;
+  left: number;
+  names: string[];
   payout: string;
   onHover: (coords: { left: number, top: number } | null) => void;
 }> = ({ label, top, left, names, payout, onHover }) => (
-  <div 
+  <div
     className="bg-white/5 border border-white/5 rounded-xl p-3 hover:bg-[#9D2235]/30 transition-all cursor-pointer group hover:border-gold-glass hover:shadow-[0_0_15px_rgba(157,34,53,0.3)] backdrop-blur-sm"
     onMouseEnter={() => onHover({ left, top })}
     onMouseLeave={() => onHover(null)}
@@ -46,9 +46,10 @@ const getIndexedPlayers = (board: BoardData, topDigit: number, leftDigit: number
 };
 
 const LeftScenarios: React.FC<ScenarioProps> = ({ game, board, live, onScenarioHover }) => {
+  const [expanded, setExpanded] = React.useState(false);
   const currentLeft = live?.leftScore || 0;
   const currentTop = live?.topScore || 0;
-  const payout = (live?.period || 1) >= 4 ? '$250' : '$125';
+  const payout = (live?.period || 1) >= 4 ? (game.payouts?.Final ? `$${game.payouts.Final}` : '$250') : (game.payouts?.Q1 ? `$${game.payouts.Q1}` : '$125');
 
   const scenarios = [
     { label: 'Safety (+2)', addLeft: 2 },
@@ -58,24 +59,35 @@ const LeftScenarios: React.FC<ScenarioProps> = ({ game, board, live, onScenarioH
     { label: 'TD + 2pt (+8)', addLeft: 8 },
   ];
 
+  const visibleScenarios = expanded ? scenarios : scenarios.slice(0, 3);
+
   return (
-    <div className="liquid-glass p-4">
-      <h5 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3 pl-1 flex items-center justify-between">
-        <span>If {game.leftAbbr} Scores Next...</span>
-        <span className="text-[9px] text-gold opacity-50">HOVER TO VIEW</span>
-      </h5>
+    <div className="premium-glass p-5 rounded-3xl transition-all duration-500">
+      <div className="flex items-center justify-between mb-4 pl-1">
+        <h5 className="text-xs font-bold uppercase tracking-widest flex items-center gap-2">
+          <span className="w-1.5 h-1.5 rounded-full bg-team-left shadow-[0_0_8px_var(--team-left)]"></span>
+          <span style={{ color: 'var(--team-left)' }}>If {game.leftAbbr} Scores...</span>
+        </h5>
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="text-[9px] font-bold text-gray-500 uppercase tracking-widest hover:text-white transition-colors"
+        >
+          {expanded ? 'Show Less' : 'View All'}
+        </button>
+      </div>
+
       <div className="flex flex-col gap-2">
-        {scenarios.map((s, i) => {
+        {visibleScenarios.map((s, i) => {
           const lDigit = (currentLeft + s.addLeft) % 10;
           const tDigit = currentTop % 10;
           const names = getIndexedPlayers(board, tDigit, lDigit);
           return (
-            <ScenarioCard 
-              key={i} 
-              label={s.label} 
-              top={tDigit} 
-              left={lDigit} 
-              names={names} 
+            <ScenarioCard
+              key={i}
+              label={s.label}
+              top={tDigit}
+              left={lDigit}
+              names={names}
               payout={payout}
               onHover={onScenarioHover}
             />
@@ -87,9 +99,10 @@ const LeftScenarios: React.FC<ScenarioProps> = ({ game, board, live, onScenarioH
 };
 
 const TopScenarios: React.FC<ScenarioProps> = ({ game, board, live, onScenarioHover }) => {
+  const [expanded, setExpanded] = React.useState(false);
   const currentLeft = live?.leftScore || 0;
   const currentTop = live?.topScore || 0;
-  const payout = (live?.period || 1) >= 4 ? '$250' : '$125';
+  const payout = (live?.period || 1) >= 4 ? (game.payouts?.Final ? `$${game.payouts.Final}` : '$250') : (game.payouts?.Q1 ? `$${game.payouts.Q1}` : '$125');
 
   const scenarios = [
     { label: 'Safety (+2)', addTop: 2 },
@@ -99,24 +112,34 @@ const TopScenarios: React.FC<ScenarioProps> = ({ game, board, live, onScenarioHo
     { label: 'TD + 2pt (+8)', addTop: 8 },
   ];
 
+  const visibleScenarios = expanded ? scenarios : scenarios.slice(0, 3);
+
   return (
-    <div className="liquid-glass p-4">
-      <h5 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3 pl-1 flex items-center justify-between">
-        <span>If {game.topAbbr} Scores Next...</span>
-        <span className="text-[9px] text-gold opacity-50">HOVER TO VIEW</span>
-      </h5>
+    <div className="premium-glass p-5 rounded-3xl transition-all duration-500">
+      <div className="flex items-center justify-between mb-4 pl-1">
+        <h5 className="text-xs font-bold uppercase tracking-widest flex items-center gap-2">
+          <span className="w-1.5 h-1.5 rounded-full bg-team-top shadow-[0_0_8px_var(--team-top)]"></span>
+          <span style={{ color: 'var(--team-top)' }}>If {game.topAbbr} Scores...</span>
+        </h5>
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="text-[9px] font-bold text-gray-500 uppercase tracking-widest hover:text-white transition-colors"
+        >
+          {expanded ? 'Show Less' : 'View All'}
+        </button>
+      </div>
       <div className="flex flex-col gap-2">
-        {scenarios.map((s, i) => {
+        {visibleScenarios.map((s, i) => {
           const lDigit = currentLeft % 10;
           const tDigit = (currentTop + s.addTop) % 10;
           const names = getIndexedPlayers(board, tDigit, lDigit);
           return (
-            <ScenarioCard 
-              key={i} 
-              label={s.label} 
-              top={tDigit} 
-              left={lDigit} 
-              names={names} 
+            <ScenarioCard
+              key={i}
+              label={s.label}
+              top={tDigit}
+              left={lDigit}
+              names={names}
               payout={payout}
               onHover={onScenarioHover}
             />

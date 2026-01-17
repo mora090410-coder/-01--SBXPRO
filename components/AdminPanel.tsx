@@ -13,9 +13,10 @@ interface AdminPanelProps {
   onPublish: (token: string, currentData: { game: GameState, board: BoardData }) => Promise<string | void>;
   onClose: () => void;
   onLogout: () => void;
+  onPreview: () => void;
 }
 
-const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, activePoolId, onApply, onPublish, onClose, onLogout }) => {
+const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, activePoolId, onApply, onPublish, onClose, onLogout, onPreview }) => {
   const [localGame, setLocalGame] = useState<GameState>(game);
   const [localBoard, setLocalBoard] = useState<BoardData>(board);
   const [isScanning, setIsScanning] = useState(false);
@@ -183,35 +184,55 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
     <div className="space-y-6">
 
       {/* Top Header & Navigation */}
-      <div className="premium-glass p-6 md:p-8 rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-6 animate-in slide-in-from-top-4 duration-500 mb-8">
-        <div>
-          <h3 className="text-2xl font-semibold text-white tracking-tight">Commissioner Hub</h3>
-          <p className="text-xs font-medium text-gray-400 mt-1">
-            {activePoolId ? `Stadium ID: ${activePoolId}` : 'Drafting New Pool'}
-          </p>
+      <div className="premium-glass p-5 md:p-6 rounded-3xl flex flex-col md:flex-row justify-between items-start md:items-center gap-6 animate-in slide-in-from-top-4 duration-500 mb-8 backdrop-blur-2xl">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center shadow-lg">
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+          </div>
+          <div>
+            <h3 className="text-2xl font-bold text-white tracking-tight">Organizer</h3>
+            <p className="text-sm font-medium text-gray-400">
+              {activePoolId ? `Board ID: ${activePoolId}` : 'Setup Mode'}
+            </p>
+          </div>
         </div>
-        <div className="flex gap-4 w-full md:w-auto items-center justify-end">
+        <div className="flex gap-3 w-full md:w-auto items-center justify-end">
           {scanStatus && (
-            <div className={`text-[10px] font-bold uppercase tracking-widest animate-pulse ${scanStatus.includes('SUCCESSFUL') ? 'text-green-400' :
+            <div className={`px-3 py-1.5 rounded-full bg-black/40 border border-white/5 text-[10px] font-bold uppercase tracking-wide animate-pulse ${scanStatus.includes('SUCCESSFUL') ? 'text-green-400' :
               scanStatus.includes('ANALYZING') ? 'text-orange-500' : 'text-red-500'
               }`}>
               {scanStatus}
             </div>
           )}
 
-          <button onClick={onLogout} className="text-xs text-red-500/80 font-bold uppercase tracking-widest hover:text-red-400 transition-colors px-2 mr-2">
+          <div className="flex items-center bg-black/20 p-1 rounded-full border border-white/5 mx-2">
+            <button
+              disabled
+              className="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide bg-white text-black shadow-lg"
+            >
+              Edit
+            </button>
+            <button
+              onClick={onPreview}
+              className="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide text-gray-500 hover:text-white transition-colors"
+            >
+              Preview
+            </button>
+          </div>
+
+          <button onClick={onLogout} className="btn-secondary text-xs text-red-400 hover:text-red-300">
             Log Out
           </button>
 
           <button
             disabled={isSaving}
             onClick={handlePublishClick}
-            className={`px-6 py-3 bg-white text-black rounded-lg text-xs font-bold uppercase tracking-wide shadow-lg hover:bg-gray-200 transition-all ${isSaving ? 'opacity-50 cursor-not-allowed' : 'active:scale-95'}`}
+            className={`btn-primary px-6 py-2.5 ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            {isSaving ? 'Syncing...' : 'Publish to Live'}
+            {isSaving ? 'Syncing...' : 'Sync Changes'}
           </button>
 
-          <button onClick={onClose} className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-colors ml-1" title="Close Panel">
+          <button onClick={onClose} className="p-2.5 bg-white/5 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-colors ml-2" title="Close Panel">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -221,175 +242,179 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
 
       {/* Main Settings Area */}
       <div className="grid lg:grid-cols-2 gap-8">
-        {/* Left Column: League Settings */}
-        <div className="premium-glass p-6 rounded-2xl space-y-5 h-fit">
-          <h4 className="text-label mb-2">League Settings</h4>
+        {/* Left Column: Board Settings */}
+        <div className="premium-glass p-6 md:p-8 rounded-3xl space-y-6 h-fit">
+          <div className="flex items-center justify-between">
+            <h4 className="text-lg font-semibold text-white">Board Settings</h4>
 
-          {/* Dynamic Board Toggle */}
-          <div className="bg-white/5 p-4 rounded-xl border border-white/5 flex justify-between items-center mb-4">
-            <div>
-              <div className="text-sm font-medium text-white">Board Type</div>
-              <div className="text-xs text-gray-400 mt-0.5">
-                {localBoard.isDynamic ? 'Rotating Axes (Different per Quarter)' : 'Standard (Same Axis for All Quarters)'}
+            {/* Dynamic Board Toggle */}
+            <div className="flex items-center gap-1 bg-black/20 p-1 rounded-full border border-white/5">
+              <button
+                onClick={() => localBoard.isDynamic && toggleBoardType()}
+                className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wide transition-all ${!localBoard.isDynamic ? 'bg-white text-black shadow-md' : 'text-gray-500 hover:text-white'}`}
+              >
+                Standard
+              </button>
+              <button
+                onClick={() => !localBoard.isDynamic && toggleBoardType()}
+                className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wide transition-all ${localBoard.isDynamic ? 'bg-white text-black shadow-md' : 'text-gray-500 hover:text-white'}`}
+              >
+                Dynamic
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-label">Board Name</label>
+              <input type="text" value={localGame.title} onChange={(e) => updateField('title', e.target.value)} className="w-full glass-input" />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-label">Away Team (Left)</label>
+                <div className="relative">
+                  <select value={localGame.leftAbbr} onChange={(e) => handleTeamChange('left', e.target.value)} className="w-full glass-input appearance-none cursor-pointer">
+                    {NFL_TEAMS.map(t => <option key={t.abbr} value={t.abbr} className="bg-[#1c1c1e]">{t.abbr}</option>)}
+                  </select>
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-label">Home Team (Top)</label>
+                <div className="relative">
+                  <select value={localGame.topAbbr} onChange={(e) => handleTeamChange('top', e.target.value)} className="w-full glass-input appearance-none cursor-pointer">
+                    {NFL_TEAMS.map(t => <option key={t.abbr} value={t.abbr} className="bg-[#1c1c1e]">{t.abbr}</option>)}
+                  </select>
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                  </div>
+                </div>
               </div>
             </div>
-            <button
-              onClick={toggleBoardType}
-              className={`px-4 py-2 rounded-lg text-xs font-semibold tracking-wide transition-all ${localBoard.isDynamic
-                ? 'bg-white text-black shadow-md'
-                : 'bg-white/10 text-gray-300 hover:bg-white/20'
-                }`}
-            >
-              {localBoard.isDynamic ? 'Dynamic' : 'Standard'}
-            </button>
-          </div>
 
-          <div className="grid gap-5">
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-gray-400 ml-1">League Name</label>
-              <input type="text" value={localGame.title} onChange={(e) => updateField('title', e.target.value)} className="w-full glass-input p-3 text-sm" />
+              <label className="text-label whitespace-nowrap">Game Date</label>
+              <input type="date" value={localGame.dates} onChange={(e) => updateField('dates', e.target.value)} className="w-full glass-input" />
             </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-gray-400 ml-1">Subtext / Location</label>
-              <input type="text" value={localGame.meta} onChange={(e) => updateField('meta', e.target.value)} className="w-full glass-input p-3 text-sm" />
+
+            <div className="pt-2">
+              <div className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-2">Location / Subtext</div>
+              <input type="text" value={localGame.meta} onChange={(e) => updateField('meta', e.target.value)} className="w-full glass-input" placeholder="e.g. 'Family Pool' or 'Las Vegas'" />
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-5">
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-gray-400 ml-1">Left Team</label>
-              <select value={localGame.leftAbbr} onChange={(e) => handleTeamChange('left', e.target.value)} className="w-full glass-input p-3 text-sm appearance-none cursor-pointer">
-                {NFL_TEAMS.map(t => <option key={t.abbr} value={t.abbr} className="bg-black">{t.abbr}</option>)}
-              </select>
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-gray-400 ml-1">Top Team</label>
-              <select value={localGame.topAbbr} onChange={(e) => handleTeamChange('top', e.target.value)} className="w-full glass-input p-3 text-sm appearance-none cursor-pointer">
-                {NFL_TEAMS.map(t => <option key={t.abbr} value={t.abbr} className="bg-black">{t.abbr}</option>)}
-              </select>
-            </div>
-          </div>
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-gray-400 ml-1">ESPN Date Override</label>
-            <input type="date" value={localGame.dates} onChange={(e) => updateField('dates', e.target.value)} className="w-full glass-input p-3 text-sm" />
-          </div>
         </div>
 
-        {/* Right Column: Pool Configuration (Payouts + Actions) */}
+        {/* Right Column: Pool Configuration */}
         <div className="flex flex-col space-y-6">
-          <div className="premium-glass p-6 rounded-2xl flex-1">
-            <h4 className="text-label mb-6">Pool Configuration</h4>
+          <div className="premium-glass p-6 md:p-8 rounded-3xl flex-1">
+            <h4 className="text-lg font-semibold text-white mb-6">Payout Configuration</h4>
 
             {/* Payout Configuration */}
-            <div className="space-y-4 mb-8">
-              <h5 className="text-xs font-bold text-gray-500 uppercase tracking-widest pl-1">Prize Structure</h5>
+            <div className="space-y-5 mb-8">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wide ml-1">Q1</label>
+                  <label className="text-label">Q1 Payout</label>
                   <div className="relative">
-                    <span className="absolute left-3 top-2.5 text-gray-400 text-xs">$</span>
-                    <input type="number" value={localGame.payouts?.Q1 ?? 125} onChange={(e) => setLocalGame(p => ({ ...p, payouts: { ...p.payouts, Q1: parseInt(e.target.value) || 0, Q2: p.payouts?.Q2 ?? 125, Q3: p.payouts?.Q3 ?? 125, Final: p.payouts?.Final ?? 250 } }))} className="w-full glass-input pl-6 p-2 text-sm" />
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">$</span>
+                    <input type="number" value={localGame.payouts?.Q1 ?? 125} onChange={(e) => setLocalGame(p => ({ ...p, payouts: { ...p.payouts, Q1: parseInt(e.target.value) || 0, Q2: p.payouts?.Q2 ?? 125, Q3: p.payouts?.Q3 ?? 125, Final: p.payouts?.Final ?? 250 } }))} className="w-full glass-input pl-7" />
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wide ml-1">Q2</label>
+                  <label className="text-label">Q2 Payout</label>
                   <div className="relative">
-                    <span className="absolute left-3 top-2.5 text-gray-400 text-xs">$</span>
-                    <input type="number" value={localGame.payouts?.Q2 ?? 125} onChange={(e) => setLocalGame(p => ({ ...p, payouts: { ...p.payouts, Q2: parseInt(e.target.value) || 0, Q1: p.payouts?.Q1 ?? 125, Q3: p.payouts?.Q3 ?? 125, Final: p.payouts?.Final ?? 250 } }))} className="w-full glass-input pl-6 p-2 text-sm" />
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">$</span>
+                    <input type="number" value={localGame.payouts?.Q2 ?? 125} onChange={(e) => setLocalGame(p => ({ ...p, payouts: { ...p.payouts, Q2: parseInt(e.target.value) || 0, Q1: p.payouts?.Q1 ?? 125, Q3: p.payouts?.Q3 ?? 125, Final: p.payouts?.Final ?? 250 } }))} className="w-full glass-input pl-7" />
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wide ml-1">Q3</label>
+                  <label className="text-label">Q3 Payout</label>
                   <div className="relative">
-                    <span className="absolute left-3 top-2.5 text-gray-400 text-xs">$</span>
-                    <input type="number" value={localGame.payouts?.Q3 ?? 125} onChange={(e) => setLocalGame(p => ({ ...p, payouts: { ...p.payouts, Q3: parseInt(e.target.value) || 0, Q1: p.payouts?.Q1 ?? 125, Q2: p.payouts?.Q2 ?? 125, Final: p.payouts?.Final ?? 250 } }))} className="w-full glass-input pl-6 p-2 text-sm" />
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">$</span>
+                    <input type="number" value={localGame.payouts?.Q3 ?? 125} onChange={(e) => setLocalGame(p => ({ ...p, payouts: { ...p.payouts, Q3: parseInt(e.target.value) || 0, Q1: p.payouts?.Q1 ?? 125, Q2: p.payouts?.Q2 ?? 125, Final: p.payouts?.Final ?? 250 } }))} className="w-full glass-input pl-7" />
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wide ml-1">Final</label>
+                  <label className="text-label text-gold">Final Payout</label>
                   <div className="relative">
-                    <span className="absolute left-3 top-2.5 text-gray-400 text-xs">$</span>
-                    <input type="number" value={localGame.payouts?.Final ?? 250} onChange={(e) => setLocalGame(p => ({ ...p, payouts: { ...p.payouts, Final: parseInt(e.target.value) || 0, Q1: p.payouts?.Q1 ?? 125, Q2: p.payouts?.Q2 ?? 125, Q3: p.payouts?.Q3 ?? 125 } }))} className="w-full glass-input pl-6 p-2 text-sm font-bold text-gold" />
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gold text-sm">$</span>
+                    <input type="number" value={localGame.payouts?.Final ?? 250} onChange={(e) => setLocalGame(p => ({ ...p, payouts: { ...p.payouts, Final: parseInt(e.target.value) || 0, Q1: p.payouts?.Q1 ?? 125, Q2: p.payouts?.Q2 ?? 125, Q3: p.payouts?.Q3 ?? 125 } }))} className="w-full glass-input pl-7 text-gold font-bold border-gold/30 focus:border-gold" />
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Board Actions */}
-            <h5 className="text-xs font-bold text-gray-500 uppercase tracking-widest pl-1 mb-4">Actions</h5>
-            <div className="flex gap-4">
-              <label className={`flex-1 text-center text-xs font-bold bg-white/5 text-white border border-white/10 rounded-xl px-4 py-4 cursor-pointer hover:bg-white/10 transition-all shadow-sm active:scale-95 ${isScanning ? 'opacity-50 pointer-events-none' : ''}`}>
-                {isScanning ? 'Scanning...' : 'Scan Physical Board'}
-                <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
-              </label>
-              <button onClick={handleClear} className="flex-1 text-xs font-bold text-red-500/80 border border-red-900/30 bg-red-900/10 hover:bg-red-900/20 rounded-xl px-4 py-4 transition-all active:scale-95">
-                Clear Board
-              </button>
+            <div className="border-t border-white/5 pt-6">
+              <h5 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4">Board Actions</h5>
+              <div className="flex gap-4">
+                <label className={`flex-1 flex flex-col items-center justify-center gap-2 bg-white/5 border border-white/5 hover:border-white/10 hover:bg-white/10 rounded-2xl p-4 cursor-pointer transition-all active:scale-[0.98] ${isScanning ? 'opacity-50 pointer-events-none' : ''}`}>
+                  <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                  <span className="text-xs font-bold text-white">{isScanning ? 'Processing...' : 'Scan Board'}</span>
+                  <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
+                </label>
+
+                <button onClick={handleClear} className="flex-1 flex flex-col items-center justify-center gap-2 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 rounded-2xl p-4 transition-all active:scale-[0.98]">
+                  <svg className="w-6 h-6 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                  <span className="text-xs font-bold text-red-400">Clear Board</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
       {/* Manual Grid Editor Section */}
-      <div className="premium-glass p-6 md:p-8 rounded-2xl flex flex-col space-y-6 animate-in slide-in-from-bottom-4 duration-700">
-        <div className="flex justify-between items-end pb-4 border-b border-white/5">
+      <div className="premium-glass p-6 md:p-8 rounded-3xl flex flex-col space-y-6 animate-in slide-in-from-bottom-4 duration-700">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-white/5 pb-6">
           <div>
-            <h3 className="text-xl font-semibold text-white tracking-tight">Visual Grid Editor</h3>
-            <p className="text-xs font-medium text-gray-400 mt-1">Direct board manipulation & coordinate tuning</p>
+            <h3 className="text-xl font-semibold text-white tracking-tight">Grid Editor</h3>
+            <p className="text-sm font-medium text-gray-400 mt-1">Tap any cell or axis to edit names and numbers manually.</p>
           </div>
-          <div className="text-right">
-            <span className="text-xs font-medium text-gray-500 mb-2 block">Editing Controls</span>
-            <div className="flex gap-2 justify-end">
-              <div className="h-1.5 w-6 rounded-full bg-team-left/80"></div>
-              <div className="h-1.5 w-6 rounded-full bg-team-top/80"></div>
+
+          {/* Dynamic Axis Selector */}
+          {localBoard.isDynamic && (
+            <div className="flex items-center bg-black/30 rounded-lg p-1 border border-white/5">
+              {(['Q1', 'Q2', 'Q3', 'Q4'] as const).map(q => (
+                <button
+                  key={q}
+                  onClick={() => setActiveAxisQuarter(q)}
+                  className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${activeAxisQuarter === q
+                    ? 'bg-white/20 text-white shadow-sm'
+                    : 'text-gray-500 hover:text-gray-300'
+                    }`}
+                >
+                  {q === 'Q4' ? 'Final' : q}
+                </button>
+              ))}
             </div>
-          </div>
+          )}
         </div>
 
-        <div className="overflow-x-auto custom-scrollbar bg-[#1c1c1e]/50 p-6 rounded-xl border border-white/5 shadow-inner">
-          <div className="min-w-[900px] space-y-6">
-
-            {/* Dynamic Axis Selector */}
-            {localBoard.isDynamic && (
-              <div className="flex items-center justify-center gap-3 mb-6 bg-white/5 p-2 rounded-xl mx-auto w-fit border border-white/5 px-4">
-                <div className="text-xs font-medium text-gray-300 mr-2">Editable Quarter:</div>
-                {(['Q1', 'Q2', 'Q3', 'Q4'] as const).map(q => (
-                  <button
-                    key={q}
-                    onClick={() => setActiveAxisQuarter(q)}
-                    className={`px-4 py-1.5 rounded-lg text-xs font-semibold tracking-wide transition-all ${activeAxisQuarter === q
-                      ? 'bg-white text-black shadow-md scale-105'
-                      : 'text-gray-400 hover:text-white hover:bg-white/5'
-                      }`}
-                  >
-                    {q}
-                  </button>
-                ))}
-                <div className="text-xs font-medium text-gray-500 ml-4 pl-4 border-l border-white/10">
-                  Adjusting axes for {activeAxisQuarter === 'Q4' ? '4th Quarter & Final' : `${activeAxisQuarter} Score`}
-                </div>
-              </div>
-            )}
+        <div className="overflow-x-auto custom-scrollbar bg-black/20 p-6 rounded-2xl border border-white/5">
+          <div className="min-w-[800px] space-y-6">
 
             {/* Header: Top Team and Axis */}
             <div className="flex items-end">
-              <div className="w-[120px] pr-4 flex flex-col justify-end">
-                <div className="text-xs font-bold text-gray-400 text-right pb-2 tracking-wide uppercase">{localGame.leftAbbr}</div>
+              <div className="w-[100px] pr-4 flex flex-col justify-end">
+                <div className="text-[10px] font-black text-gray-500 text-right pb-3 tracking-widest uppercase">{localGame.leftAbbr}</div>
               </div>
               <div className="flex-1">
-                <div className="text-center text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">{localGame.topName}</div>
+                <div className="text-center text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3">{localGame.topName}</div>
                 <div className="grid grid-cols-10 gap-2">
                   {currentOppAxis?.map((val, idx) => (
-                    <div key={idx} className="space-y-1.5">
-                      <div className="text-[9px] font-bold text-gray-600 text-center uppercase">COL {idx}</div>
+                    <div key={idx} className="space-y-1">
                       <div className="relative group">
                         <select
                           value={val ?? ''}
                           onChange={(e) => handleAxisChange('oppAxis', idx, e.target.value)}
-                          className="w-full h-10 bg-white/5 border border-white/5 rounded-lg text-center text-sm text-white font-bold focus:bg-white/10 outline-none appearance-none cursor-pointer transition-all hover:bg-white/10"
+                          className="w-full h-10 bg-[#1c1c1e] border border-white/10 rounded-lg text-center text-sm text-white font-bold focus:border-white/30 outline-none appearance-none cursor-pointer transition-all hover:bg-white/5"
                         >
-                          <option value="" className="bg-[#1c1c1e] text-gray-500">?</option>
-                          {axisDigits.map(d => <option key={d} value={d} className="bg-[#1c1c1e] text-white font-medium">{d}</option>)}
+                          <option value="" className="text-gray-500">?</option>
+                          {axisDigits.map(d => <option key={d} value={d}>{d}</option>)}
                         </select>
                       </div>
                     </div>
@@ -400,18 +425,17 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
 
             {/* Body: Left Labels and Main Grid */}
             <div className="flex">
-              <div className="w-[120px] flex flex-col gap-2 pr-4 pt-1 border-r border-white/5">
+              <div className="w-[100px] flex flex-col gap-2 pr-4 pt-0 border-r border-white/5">
                 {currentBearsAxis?.map((val, idx) => (
                   <div key={idx} className="flex items-center justify-end gap-3 group h-12">
-                    <span className="text-[9px] font-bold text-gray-600 uppercase text-right group-hover:text-white transition-colors">ROW {idx}</span>
-                    <div className="relative w-12">
+                    <div className="relative w-10">
                       <select
                         value={val ?? ''}
                         onChange={(e) => handleAxisChange('bearsAxis', idx, e.target.value)}
-                        className="w-full h-12 bg-white/5 border border-white/5 rounded-lg text-center text-sm text-white font-bold focus:bg-white/10 outline-none appearance-none cursor-pointer transition-all hover:bg-white/10"
+                        className="w-full h-12 bg-[#1c1c1e] border border-white/10 rounded-lg text-center text-sm text-white font-bold focus:border-white/30 outline-none appearance-none cursor-pointer transition-all hover:bg-white/5"
                       >
-                        <option value="" className="bg-[#1c1c1e] text-gray-500">?</option>
-                        {axisDigits.map(d => <option key={d} value={d} className="bg-[#1c1c1e] text-white font-medium">{d}</option>)}
+                        <option value="" className="text-gray-500">?</option>
+                        {axisDigits.map(d => <option key={d} value={d}>{d}</option>)}
                       </select>
                     </div>
                   </div>
@@ -423,7 +447,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                   [...Array(10)].map((_, c) => {
                     const cellIdx = (r * 10) + c;
                     const players = localBoard.squares[cellIdx] || [];
-                    const cellContrast = getContrastYIQ('#0a0203');
 
                     return (
                       <div key={cellIdx} className="relative group h-12">
@@ -432,13 +455,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                           value={players.join(', ')}
                           onChange={(e) => handleGridCellChange(cellIdx, e.target.value)}
                           placeholder={`${currentOppAxis?.[c] ?? '?'}-${currentBearsAxis?.[r] ?? '?'}`}
-                          className="w-full h-full bg-white/5 border border-white/10 rounded-lg text-[9px] px-2 text-center font-bold focus:border-gold-glass focus:bg-white/10 outline-none transition-all placeholder:opacity-20 placeholder:font-black"
-                          style={{
-                            color: cellContrast === 'white' ? '#fff' : '#000'
-                          }}
+                          className="w-full h-full bg-white/5 border border-white/5 rounded-lg text-[10px] px-1 text-center font-medium text-white/90 focus:border-gold/50 focus:bg-white/10 outline-none transition-all placeholder:text-white/10"
                         />
                         {players.length > 0 && (
-                          <div className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-gold animate-pulse opacity-50"></div>
+                          <div className="absolute top-1 right-1 w-1 h-1 rounded-full bg-gold/50"></div>
                         )}
                       </div>
                     );

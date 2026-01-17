@@ -4,9 +4,10 @@ import { getContrastYIQ } from '../App';
 interface LandingPageProps {
   onCreate: () => void;
   onLogin: () => void;
+  onJoin: () => void;
 }
 
-const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin }) => {
+const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin, onJoin }) => {
   return (
     <div className="min-h-screen w-full relative overflow-hidden flex flex-col font-sans text-white bg-[#050101]">
       {/* Cinematic Background Layer */}
@@ -60,13 +61,22 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin }) => {
               </span>
             </button>
 
-            <button
-              onClick={onLogin}
-              aria-label="Login as commissioner to manage existing league"
-              className="text-[10px] font-bold text-gray-500 uppercase tracking-widest hover:text-[#FFC72C] transition-colors"
-            >
-              Already have a league? <span className="underline">Commissioner Login</span>
-            </button>
+            <div className="flex flex-col md:flex-row items-center gap-6 mt-4">
+              <button
+                onClick={onJoin}
+                className="text-[10px] font-bold text-gray-500 uppercase tracking-widest hover:text-white transition-colors"
+              >
+                Have a code? <span className="underline">Join League</span>
+              </button>
+              <div className="hidden md:block w-1 h-1 bg-gray-800 rounded-full"></div>
+              <button
+                onClick={onLogin}
+                aria-label="Login as commissioner to manage existing league"
+                className="text-[10px] font-bold text-gray-500 uppercase tracking-widest hover:text-[#FFC72C] transition-colors"
+              >
+                Already have a league? <span className="underline">Manager Login</span>
+              </button>
+            </div>
           </div>
         </div>
       </main>
