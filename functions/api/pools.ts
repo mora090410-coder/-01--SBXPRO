@@ -39,6 +39,7 @@ interface CreatePoolPayload {
     [key: string]: any;
   };
   adminPassword?: string;
+  adminEmail?: string; // New field
   isPublic?: boolean;
 }
 
@@ -75,6 +76,11 @@ function validateCreatePool(data: any): { valid: true; data: CreatePoolPayload }
 
   if (payload.game.title.length > 100) {
     return { valid: false, error: 'League name too long (max 100 characters)' };
+  }
+
+  // Email Validation
+  if (!payload.adminEmail || typeof payload.adminEmail !== 'string' || !payload.adminEmail.includes('@')) {
+    return { valid: false, error: 'Valid email address is required for recovery' };
   }
 
   if (!payload.board || !Array.isArray(payload.board.squares) || payload.board.squares.length !== 100) {

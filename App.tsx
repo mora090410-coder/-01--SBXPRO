@@ -181,11 +181,14 @@ const AppContent: React.FC = () => {
   const [showShareModal, setShowShareModal] = useState(false);
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [showWizardModal, setShowWizardModal] = useState(false);
-  const [showAdminView, setShowAdminView] = useState(false);
+  const [showAdminView, setShowAdminView] = useState(false); // Restored
+  const [showRecoveryModal, setShowRecoveryModal] = useState(false); // New
 
   const [copyFeedback, setCopyFeedback] = useState(false);
   const [authInput, setAuthInput] = useState('');
+  const [authIdInput, setAuthIdInput] = useState(''); // New: For Board ID in login
   const [joinInput, setJoinInput] = useState('');
+  const [recoveryEmail, setRecoveryEmail] = useState(''); // New: For recovery
   const [activeTab, setActiveTab] = useState<'live' | 'board'>('live');
   const [hasEnteredApp, setHasEnteredApp] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -195,11 +198,15 @@ const AppContent: React.FC = () => {
   const [loginPassword, setLoginPassword] = useState('');
   const [loginError, setLoginError] = useState<string | null>(null);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [isRecovering, setIsRecovering] = useState(false); // New state for recovery
 
   const [wizardStep, setWizardStep] = useState(1);
   const [wizardPassword, setWizardPassword] = useState('');
-  const [isCreating, setIsCreating] = useState(false);
-  const [wizardSuccess, setWizardSuccess] = useState(false);
+  const [wizardEmail, setWizardEmail] = useState(''); // New State
+  const [isCreating, setIsCreating] = useState(false); // Restored
+  const [wizardSuccess, setWizardSuccess] = useState(false); // Restored
+  const [wizardMode, setWizardMode] = useState<'blank' | 'mock'>('blank');
+  const [setupStep, setSetupStep] = useState(1); // 1: Name/Pass, 2: Teams, 3: Mode
   const [wizardError, setWizardError] = useState<string | null>(null);
   const wizardFileRef = useRef<HTMLInputElement>(null);
 
@@ -307,67 +314,7 @@ const AppContent: React.FC = () => {
     return { key: `${topDigit}-${leftDigit}`, owners, state: liveData.state, quarter: currentQuarter };
   }, [liveData, board]);
 
-  /**
-   * SECURITY UPGRADED: Validates token against server before saving or granting access.
-   */
-  const handleAuthSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const tokenToVerify = authInput.trim();
-    if (!tokenToVerify) return;
 
-    const currentId = activePoolId || joinInput.trim().toUpperCase();
-    if (!currentId) {
-      alert("No active pool identified. Please join a game first.");
-      return;
-    }
-
-    setIsAuthenticating(true);
-    try {
-      // PERFORM HANDSHAKE: Change to POST method for verification.
-      const response = await fetch(`${API_URL}/${currentId}`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${tokenToVerify}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (response.status === 200) {
-        // AUTHENTICATION SUCCESS: Grant access and persist credentials
-        const storedTokens = JSON.parse(localStorage.getItem('sbxpro_tokens') || '{}');
-        storedTokens[currentId] = tokenToVerify;
-        localStorage.setItem('sbxpro_tokens', JSON.stringify(storedTokens));
-
-        setAdminToken(tokenToVerify);
-        setAuthInput('');
-        setShowAuthModal(false);
-        setShowAdminView(true);
-
-        // SYNC URL & STATE
-        const newUrl = new URL(window.location.href);
-        if (newUrl.searchParams.get('poolId') !== currentId) {
-          newUrl.searchParams.set('poolId', currentId);
-          window.history.replaceState({ poolId: currentId }, '', newUrl.toString());
-        }
-        setActivePoolId(currentId);
-      } else {
-        // AUTHENTICATION FAILURE
-        const errorMsg = response.status === 401 ? "Invalid Password" : "Verification Handshake Failed";
-        throw new Error(errorMsg);
-      }
-    } catch (err: any) {
-      // SECURITY CLEANUP: Wipe potentially invalid tokens from storage
-      const storedTokens = JSON.parse(localStorage.getItem('sbxpro_tokens') || '{}');
-      if (currentId) delete storedTokens[currentId];
-      localStorage.setItem('sbxpro_tokens', JSON.stringify(storedTokens));
-
-      alert(err.message || "Authentication Error");
-      setAuthInput('');
-      setAdminToken('');
-    } finally {
-      setIsAuthenticating(false);
-    }
-  };
 
   const handleJoinSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -415,13 +362,17 @@ const AppContent: React.FC = () => {
     setShowShareModal(false);
   };
 
-  const handlePublish = async (token: string, currentData?: { game: GameState, board: BoardData }) => {
+  const handlePublish = async (token: string, currentData?: { game: GameState, board: BoardData, adminEmail?: string }) => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 12000);
     try {
       const g = currentData?.game || game;
       const b = currentData?.board || board;
-      const payload = { game: { ...g, title: g.title || "SBXPRO Pool", coverImage: g.coverImage || "" }, board: b };
+      const payload = {
+        game: { ...g, title: g.title || "SBXPRO Pool", coverImage: g.coverImage || "" },
+        board: b,
+        adminEmail: currentData?.adminEmail
+      };
       const method = activePoolId ? 'PUT' : 'POST';
       const url = activePoolId ? `${API_URL}/${activePoolId}` : API_URL;
       const res = await fetch(url, {
@@ -475,7 +426,12 @@ const AppContent: React.FC = () => {
       const targetBoard = manualBoard || board;
       const targetCover = manualCover !== undefined ? manualCover : (game.coverImage || '');
 
-      const newId = await handlePublish(pass, { game: { ...game, title: leagueTitle, coverImage: targetCover }, board: targetBoard });
+      // Pass wizardEmail to handlePublish
+      const newId = await handlePublish(pass, {
+        game: { ...game, title: leagueTitle, coverImage: targetCover },
+        board: targetBoard,
+        adminEmail: wizardEmail  // Added
+      });
       if (!newId) throw new Error("Game initialization failed to assign a unique ID.");
 
       setBoard(targetBoard);
@@ -604,9 +560,98 @@ const AppContent: React.FC = () => {
 
   const isEmptyBoard = !board.squares.some(s => s.length > 0);
 
+  // ... (keep surrounding code)
+
+  const handleRecoverySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!recoveryEmail || !recoveryEmail.includes('@')) return;
+    setIsRecovering(true);
+    try {
+      const res = await fetch(`${API_URL}/recover-id`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: recoveryEmail })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert(data.message || "Recovery email sent.");
+        setShowRecoveryModal(false);
+        setRecoveryEmail('');
+      } else {
+        alert("Recovery failed: " + (data.error || "Unknown error"));
+      }
+    } catch (err) {
+      alert("Network error during recovery.");
+    } finally {
+      setIsRecovering(false);
+    }
+  };
+
+  const handleAuthSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsAuthenticating(true);
+    try {
+      // Determine target Pool ID
+      let targetPoolId = activePoolId;
+      const enteredId = authIdInput.trim().toUpperCase();
+
+      if (enteredId && enteredId !== activePoolId) {
+        // User wants to login to a different board
+        // Identify valid format
+        if (enteredId.length === 8) {
+          targetPoolId = enteredId;
+        } else {
+          // Assume it's a name? For now, only ID is supported for direct switch
+          // Or we could implement name lookup here.
+          // Stick to ID for simplicity as per plan.
+          targetPoolId = enteredId;
+        }
+      }
+
+      // If we are switching boards, we just use the entered ID as the "Active" scope for this login attempt
+      // But the handshake needs the URL update if successful.
+      // Actually, simplest is: authenticate against the ID.
+      if (!targetPoolId) throw new Error("Board ID is required");
+
+      const res = await fetch(`${API_URL}/${targetPoolId}/handshake`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authInput}` }
+      });
+
+      if (res.ok) {
+        const { token } = await res.json();
+        const storedTokens = JSON.parse(localStorage.getItem('sbxpro_tokens') || '{}');
+        storedTokens[targetPoolId] = token;
+        localStorage.setItem('sbxpro_tokens', JSON.stringify(storedTokens));
+
+        // If we switched boards, reload/redirect
+        if (targetPoolId !== activePoolId) {
+          const newUrl = new URL(window.location.href);
+          newUrl.searchParams.set('poolId', targetPoolId);
+          window.location.href = newUrl.toString();
+          return;
+        }
+
+        setAdminToken(token);
+        setShowAdminView(true);
+        setShowAuthModal(false);
+        setAuthInput('');
+      } else {
+        alert("Invalid Passcode (or Board ID not found)");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Authentication failed");
+    } finally {
+      setIsAuthenticating(false);
+    }
+  };
+
+  // ... (keep surrounding code)
+
   return (
     <div className="h-screen w-full bg-[#050505] overflow-hidden flex flex-col font-sans text-white">
-      {/* ... (Keep Modal Wrappers but update internals logic if needed) ... */}
+      {/* ... (Keep Modal Wrappers) ... */}
       {showAuthModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
           <div className="liquid-glass p-6 w-full max-w-xs animate-in zoom-in duration-300 border-gold-glass">
@@ -615,10 +660,52 @@ const AppContent: React.FC = () => {
                 <h3 className="text-sm font-black text-white uppercase tracking-widest">Commissioner Access</h3>
                 <button type="button" onClick={() => !isAuthenticating && setShowAuthModal(false)} className="text-gray-400 hover:text-white">&times;</button>
               </div>
-              <input autoFocus type="password" value={authInput} onChange={(e) => setAuthInput(e.target.value)} placeholder="Enter Password" disabled={isAuthenticating}
-                className="w-full bg-black/40 border border-white/10 rounded px-3 py-2 text-sm text-white focus:border-gold-glass outline-none transition-colors disabled:opacity-50" />
+
+              <div className="space-y-1">
+                <label className="text-[10px] text-gray-400 font-bold uppercase">Board ID</label>
+                <input type="text" value={authIdInput} onChange={(e) => setAuthIdInput(e.target.value.toUpperCase())} placeholder="e.g. 9TG82HJ2"
+                  className="w-full bg-black/40 border border-white/10 rounded px-3 py-2 text-sm text-white focus:border-gold-glass outline-none transition-colors font-mono uppercase" />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] text-gray-400 font-bold uppercase">Password</label>
+                <input autoFocus={!!authIdInput} type="password" value={authInput} onChange={(e) => setAuthInput(e.target.value)} placeholder="Enter Password" disabled={isAuthenticating}
+                  className="w-full bg-black/40 border border-white/10 rounded px-3 py-2 text-sm text-white focus:border-gold-glass outline-none transition-colors disabled:opacity-50" />
+              </div>
+
               <button type="submit" disabled={isAuthenticating} className="w-full btn-cardinal py-2 rounded text-xs font-black uppercase tracking-widest shadow-lg disabled:opacity-50 flex items-center justify-center gap-2">
                 {isAuthenticating ? 'VERIFYING...' : 'Unlock Dashboard'}
+              </button>
+
+              <div className="text-center pt-2">
+                <button type="button" onClick={() => { setShowAuthModal(false); setShowRecoveryModal(true); }} className="text-[10px] text-gray-500 hover:text-white underline">
+                  Forgot Board ID?
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {showRecoveryModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="liquid-glass p-6 w-full max-w-xs animate-in zoom-in duration-300 border-white/20">
+            <form onSubmit={handleRecoverySubmit} className="space-y-4">
+              <div className="flex justify-between items-center mb-1">
+                <h3 className="text-sm font-black text-white uppercase tracking-widest">Recover Board ID</h3>
+                <button type="button" onClick={() => setShowRecoveryModal(false)} className="text-gray-400 hover:text-white">&times;</button>
+              </div>
+
+              <p className="text-[11px] text-gray-400 leading-tight">Enter the email you used during setup. We will send you a list of your Board IDs.</p>
+
+              <div className="space-y-1">
+                <label className="text-[10px] text-gray-400 font-bold uppercase">Email Address</label>
+                <input autoFocus type="email" value={recoveryEmail} onChange={(e) => setRecoveryEmail(e.target.value)} placeholder="commissioner@example.com"
+                  className="w-full bg-black/40 border border-white/10 rounded px-3 py-2 text-sm text-white focus:border-white/40 outline-none transition-colors" />
+              </div>
+
+              <button type="submit" disabled={isRecovering} className="w-full btn-secondary py-2 rounded text-xs font-black uppercase tracking-widest shadow-lg disabled:opacity-50">
+                {isRecovering ? 'Sending...' : 'Send Recovery Email'}
               </button>
             </form>
           </div>
@@ -709,19 +796,26 @@ const AppContent: React.FC = () => {
                   {wizardStep === 1 && (
                     <div className="space-y-5 animate-in fade-in slide-in-from-right-4">
                       <h3 className="text-lg font-medium text-white mb-2">Name your board</h3>
-                      <div className="space-y-1">
-                        <label className="text-label">Board Name</label>
-                        <input autoFocus type="text" value={game.title} onChange={(e) => setGame(prev => ({ ...prev, title: e.target.value }))}
-                          className="w-full glass-input" placeholder="e.g. SB LIX Party" />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-label">Organizer Passcode</label>
-                        <input type="password" value={wizardPassword} onChange={(e) => setWizardPassword(e.target.value)}
-                          className="w-full glass-input" placeholder="Create a secure passcode" />
-                      </div>
-                      <div className="pt-6">
-                        <button disabled={!wizardPassword || !game.title} onClick={handleStep1Next}
-                          className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed">Continue</button>
+                      <div className="space-y-4">
+                        <div className="space-y-1">
+                          <label className="text-label">Board Name</label>
+                          <input type="text" value={game.title} onChange={(e) => setGame(prev => ({ ...prev, title: e.target.value }))}
+                            className="w-full glass-input" placeholder="e.g. Super Bowl LIX" />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-label">Email Address (for recovery)</label>
+                          <input autoFocus type="email" value={wizardEmail} onChange={(e) => setWizardEmail(e.target.value)}
+                            className="w-full glass-input" placeholder="commissioner@example.com" />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-label">Organizer Passcode</label>
+                          <input type="password" value={wizardPassword} onChange={(e) => setWizardPassword(e.target.value)}
+                            className="w-full glass-input" placeholder="Create a secure passcode" />
+                        </div>
+                        <div className="pt-6">
+                          <button disabled={!wizardPassword || !game.title || !wizardEmail.includes('@')} onClick={handleStep1Next}
+                            className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed">Continue</button>
+                        </div>
                       </div>
                     </div>
                   )}
