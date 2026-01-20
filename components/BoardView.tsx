@@ -793,111 +793,145 @@ const BoardViewContent: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* Main Content Area */}
-                        <div className="flex-1 relative overflow-hidden flex flex-col md:flex-row gap-8 pb-6 px-4 md:px-0">
-                            {activeTab === 'live' && (
-                                <div className="flex-1 h-full overflow-y-auto overflow-x-hidden pb-24 md:pb-0 scrollbar-hide animate-in fade-in duration-500">
-                                    <div className="space-y-6">
-                                        {liveStatus === 'NO MATCH FOUND' && (
-                                            <div className="p-4 rounded-2xl bg-yellow-500/10 border border-yellow-500/20 flex items-start gap-4">
-                                                <div className="p-2 rounded-full bg-yellow-500/20 text-yellow-500"><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg></div>
-                                                <div>
-                                                    <h4 className="text-sm font-bold text-yellow-500 mb-1">Live Scoring Unavailable</h4>
-                                                    <p className="text-xs text-yellow-500/80">Check your date and teams in the Organizer settings.</p>
+                        {/* Main Content Area - Single Column Focused Layout */}
+                        <div className="flex-1 relative overflow-hidden flex flex-col pb-6">
+
+                            {/* Live Strip - Always visible, with integrated toggle */}
+                            <InfoCards.LiveStrip
+                                game={game}
+                                live={liveData}
+                                isSynced={isSynced}
+                                activeTab={activeTab}
+                                onTabChange={setActiveTab}
+                            />
+
+                            {/* Content Container - Centered max width */}
+                            <div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-hide">
+                                <div className="max-w-[960px] mx-auto px-4 md:px-6 py-6 space-y-6">
+
+                                    {/* Live Tab Content */}
+                                    {activeTab === 'live' && (
+                                        <div className="space-y-6 animate-in fade-in duration-300">
+
+                                            {/* Warning if no match */}
+                                            {liveStatus === 'NO MATCH FOUND' && (
+                                                <div className="p-4 rounded-[20px] bg-yellow-500/10 border border-yellow-500/20 flex items-start gap-4">
+                                                    <div className="p-2 rounded-full bg-yellow-500/20 text-yellow-500">
+                                                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                                        </svg>
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="text-sm font-semibold text-yellow-500 mb-1">Live scoring unavailable</h4>
+                                                        <p className="text-xs text-yellow-500/80">Check your date and teams in settings.</p>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        )}
+                                            )}
 
-                                        <InfoCards.Scoreboard game={game} live={liveData} onRefresh={fetchLive} isRefreshing={isRefreshing} liveStatus={liveStatus} />
+                                            {/* Hero: Winning Now */}
+                                            <InfoCards.WinningNowHero game={game} board={board} live={liveData} highlights={highlights} />
 
-                                        <div className="grid md:grid-cols-2 gap-6">
-                                            <InfoCards.Payouts liveStatus={liveStatus} lastUpdated={lastUpdated} highlights={highlights} board={board} live={liveData} game={game} />
-
-                                            <div className="space-y-4">
+                                            {/* Next Score Scenarios - Side by side on large screens */}
+                                            <div className="grid md:grid-cols-2 gap-4">
                                                 <ScenarioPanel.LeftScenarios game={game} board={board} live={liveData} onScenarioHover={setHighlightedCoords} />
                                                 <ScenarioPanel.TopScenarios game={game} board={board} live={liveData} onScenarioHover={setHighlightedCoords} />
                                             </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
 
-                            <div className={`${activeTab === 'board' ? 'block' : 'hidden md:block'} md:flex-1 h-full overflow-hidden flex flex-col pb-24 md:pb-0`}>
-                                <div className="flex-1 relative bg-[#1c1c1e]/40 border border-white/10 rounded-2xl overflow-hidden shadow-2xl backdrop-blur-md">
-                                    <div className="absolute inset-0 overflow-auto touch-pan-x touch-pan-y p-4 flex items-center justify-center">
-                                        {isEmptyBoard ? (
-                                            <div className="text-center max-w-sm mx-auto p-8 animate-in fade-in zoom-in duration-500">
-                                                <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6 border border-white/5">
-                                                    <svg className="w-10 h-10 text-white/20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
-                                                </div>
-                                                <h3 className="text-xl font-semibold text-white mb-2">Board is empty</h3>
-                                                <p className="text-sm text-gray-500 mb-8 leading-relaxed">Add names to squares to share with your group.</p>
-                                                {adminToken ? (
-                                                    <button onClick={() => setShowAdminView(true)} className="btn-primary w-full shadow-lg">Edit Board</button>
-                                                ) : (
-                                                    <div className="inline-flex px-4 py-2 rounded-full bg-white/5 border border-white/5 text-xs font-medium text-gray-500">Waiting for organizer...</div>
-                                                )}
+                                            {/* Compact Player Search */}
+                                            <div className="rounded-[20px] bg-white/[0.03] border border-white/10 p-4">
+                                                <PlayerFilter board={board} setSelected={setSelectedPlayer} selected={selectedPlayer} />
                                             </div>
-                                        ) : (
-                                            <BoardGrid
-                                                board={board}
-                                                highlights={highlights}
-                                                live={liveData}
-                                                selectedPlayer={selectedPlayer}
-                                                highlightedCoords={highlightedCoords}
-                                                leftTeamName={game.leftName || game.leftAbbr}
-                                                topTeamName={game.topName || game.topAbbr}
-                                            />
-                                        )}
-                                    </div>
-                                </div>
 
-                                <div className="mt-6">
-                                    <PlayerFilter board={board} setSelected={setSelectedPlayer} selected={selectedPlayer} />
+                                            {/* Payouts Accordion - collapsed by default */}
+                                            <InfoCards.PayoutsAccordion
+                                                liveStatus={liveStatus}
+                                                lastUpdated={lastUpdated}
+                                                highlights={highlights}
+                                                board={board}
+                                                live={liveData}
+                                                game={game}
+                                            />
+                                        </div>
+                                    )}
+
+                                    {/* Board Tab Content */}
+                                    {activeTab === 'board' && (
+                                        <div className="space-y-6 animate-in fade-in duration-300">
+                                            {/* Board Grid */}
+                                            <div className="relative bg-[#1c1c1e]/40 border border-white/10 rounded-[20px] overflow-hidden shadow-2xl backdrop-blur-md min-h-[500px]">
+                                                <div className="absolute inset-0 overflow-auto touch-pan-x touch-pan-y p-4 flex items-center justify-center">
+                                                    {isEmptyBoard ? (
+                                                        <div className="text-center max-w-sm mx-auto p-8 animate-in fade-in zoom-in duration-500">
+                                                            <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6 border border-white/5">
+                                                                <svg className="w-10 h-10 text-white/20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                                                                </svg>
+                                                            </div>
+                                                            <h3 className="text-xl font-semibold text-white mb-2">Board is empty</h3>
+                                                            <p className="text-sm text-gray-500 mb-8 leading-relaxed">The organizer hasn't added names yet.</p>
+                                                        </div>
+                                                    ) : (
+                                                        <BoardGrid
+                                                            board={board}
+                                                            highlights={highlights}
+                                                            live={liveData}
+                                                            selectedPlayer={selectedPlayer}
+                                                            highlightedCoords={highlightedCoords}
+                                                            leftTeamName={game.leftName || game.leftAbbr}
+                                                            topTeamName={game.topName || game.topAbbr}
+                                                        />
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* Player Search on Board view too */}
+                                            <div className="rounded-[20px] bg-white/[0.03] border border-white/10 p-4">
+                                                <PlayerFilter board={board} setSelected={setSelectedPlayer} selected={selectedPlayer} />
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
-                        </div>
 
-                        {/* Mobile Tab Bar */}
-                        <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] flex p-1.5 bg-[#1c1c1e]/90 backdrop-blur-xl border border-white/10 rounded-full shadow-2xl">
-                            <button onClick={() => setActiveTab('live')} className={`px-8 py-3 rounded-full text-xs font-bold uppercase tracking-wide transition-all ${activeTab === 'live' ? 'bg-white text-black shadow-lg' : 'text-gray-400 hover:text-white'}`}>
-                                Live
-                            </button>
-                            <button onClick={() => setActiveTab('board')} className={`px-8 py-3 rounded-full text-xs font-bold uppercase tracking-wide transition-all ${activeTab === 'board' ? 'bg-white text-black shadow-lg' : 'text-gray-400 hover:text-white'}`}>
-                                Board
-                            </button>
-                            {adminToken && (
-                                <button onClick={() => setShowAdminView(true)} className="ml-2 w-10 h-10 rounded-full bg-[#9D2235] text-white flex items-center justify-center shadow-lg border border-red-500/20">
-                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                            {/* Mobile Tab Bar - Cleaner */}
+                            <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] flex p-1 bg-[#1c1c1e]/95 backdrop-blur-xl border border-white/10 rounded-full shadow-2xl">
+                                <button
+                                    onClick={() => setActiveTab('live')}
+                                    className={`px-6 py-2.5 rounded-full text-xs font-semibold transition-all ${activeTab === 'live' ? 'bg-white text-black shadow-lg' : 'text-white/50 hover:text-white'}`}
+                                >
+                                    Live
                                 </button>
-                            )}
+                                <button
+                                    onClick={() => setActiveTab('board')}
+                                    className={`px-6 py-2.5 rounded-full text-xs font-semibold transition-all ${activeTab === 'board' ? 'bg-white text-black shadow-lg' : 'text-white/50 hover:text-white'}`}
+                                >
+                                    Board
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </>
-            )
-            }
+            )}
 
             {/* Commissioner Overlay */}
-            {
-                isCommissionerMode && (
-                    <div className="fixed inset-0 z-[80] bg-[#050101] p-4 md:p-8 overflow-y-auto animate-in slide-in-from-bottom-10 duration-300">
-                        <Suspense fallback={<div className="flex items-center justify-center h-full text-white/50">Loading Organizer...</div>}>
-                            <AdminPanel
-                                game={game}
-                                board={board}
-                                adminToken={adminToken}
-                                activePoolId={activePoolId || ''}
-                                onApply={(g, b) => { setGame(g); setBoard(b); }}
-                                onPublish={handlePublish}
-                                onClose={() => handleTogglePreview(true)}
-                                onLogout={handleLogout}
-                                onPreview={() => handleTogglePreview(true)}
-                            />
-                        </Suspense>
-                    </div>
-                )
-            }
-        </div >
+            {isCommissionerMode && (
+                <div className="fixed inset-0 z-[80] bg-[#050101] p-4 md:p-8 overflow-y-auto animate-in slide-in-from-bottom-10 duration-300">
+                    <Suspense fallback={<div className="flex items-center justify-center h-full text-white/50">Loading Organizer...</div>}>
+                        <AdminPanel
+                            game={game}
+                            board={board}
+                            adminToken={adminToken || ''}
+                            activePoolId={activePoolId || ''}
+                            onApply={(g, b) => { setGame(g); setBoard(b); }}
+                            onPublish={handlePublish}
+                            onClose={() => handleTogglePreview(true)}
+                            onLogout={handleLogout}
+                            onPreview={() => handleTogglePreview(true)}
+                        />
+                    </Suspense>
+                </div>
+            )}
+        </div>
     );
 };
 

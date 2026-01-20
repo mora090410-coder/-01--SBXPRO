@@ -1,11 +1,248 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { GameState, LiveGameData, BoardData, WinnerHighlights } from '../types';
 
 const getLogoUrl = (abbr: string) => {
   const code = abbr.toLowerCase() === 'was' ? 'wsh' : abbr.toLowerCase();
   return `https://a.espncdn.com/i/teamlogos/nfl/500/${code}.png`;
 };
+
+// ========== NEW PLAYER VIEW COMPONENTS ==========
+
+// Compact live strip for top of player view with integrated Live|Board toggle
+const LiveStrip: React.FC<{
+  game: GameState;
+  live: LiveGameData | null;
+  isSynced?: boolean;
+  activeTab?: 'live' | 'board';
+  onTabChange?: (tab: 'live' | 'board') => void;
+}> = ({ game, live, isSynced, activeTab = 'live', onTabChange }) => {
+  const leftDigit = live ? live.leftScore % 10 : '–';
+  const topDigit = live ? live.topScore % 10 : '–';
+  const isLive = live?.state === 'in';
+  const isFinal = live?.state === 'post';
+
+  return (
+    <div className="flex items-center justify-between px-4 py-3 bg-white/[0.03] border-b border-white/[0.06]">
+      {/* Matchup */}
+      <div className="flex items-center gap-3">
+        <span className="text-sm font-semibold text-white">{game.leftAbbr}</span>
+        <span className="text-xs text-white/40">vs</span>
+        <span className="text-sm font-semibold text-white">{game.topAbbr}</span>
+      </div>
+
+      {/* Status */}
+      <div className="flex items-center gap-2">
+        {isLive && (
+          <span className="flex items-center gap-1.5 text-xs font-semibold text-green-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
+            {live?.detail || live?.clock || 'Live'}
+          </span>
+        )}
+        {isFinal && <span className="text-xs font-semibold text-white/60">Final</span>}
+        {!isLive && !isFinal && live?.state === 'pre' && (
+          <span className="text-xs text-white/40">{game.dates || 'TBD'}</span>
+        )}
+      </div>
+
+      {/* Right side: digits + toggle */}
+      <div className="flex items-center gap-4">
+        {/* Current digits */}
+        <div className="hidden sm:flex items-center gap-2">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/[0.06] border border-white/10">
+            <span className="text-[10px] text-white/50 font-medium">{game.leftAbbr}</span>
+            <span className="text-base font-bold text-white tabular-nums">{leftDigit}</span>
+          </div>
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/[0.06] border border-white/10">
+            <span className="text-[10px] text-white/50 font-medium">{game.topAbbr}</span>
+            <span className="text-base font-bold text-white tabular-nums">{topDigit}</span>
+          </div>
+          {isSynced && <span className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]" title="Live sync"></span>}
+        </div>
+
+        {/* Live|Board Toggle - Desktop only, integrated into strip */}
+        {onTabChange && (
+          <div className="hidden md:flex p-0.5 bg-white/[0.06] border border-white/10 rounded-full">
+            <button
+              onClick={() => onTabChange('live')}
+              className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${activeTab === 'live' ? 'bg-white text-black' : 'text-white/50 hover:text-white'}`}
+            >
+              Live
+            </button>
+            <button
+              onClick={() => onTabChange('board')}
+              className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${activeTab === 'board' ? 'bg-white text-black' : 'text-white/50 hover:text-white'}`}
+            >
+              Board
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Large hero card showing current winner
+const WinningNowHero: React.FC<{
+  game: GameState;
+  board: BoardData;
+  live: LiveGameData | null;
+  highlights: WinnerHighlights;
+}> = ({ game, board, live, highlights }) => {
+  if (!live) {
+    return (
+      <div className="p-8 rounded-[20px] bg-white/[0.03] border border-white/10 text-center">
+        <p className="text-lg font-medium text-white/40">Waiting for game to start</p>
+        <p className="text-sm text-white/25 mt-1">{game.dates || 'Date not set'}</p>
+      </div>
+    );
+  }
+
+  const leftDigit = live.leftScore % 10;
+  const topDigit = live.topScore % 10;
+  const currentKey = `${topDigit}-${leftDigit}`;
+
+  // Get current winner(s)
+  const colIdx = board.oppAxis.indexOf(topDigit);
+  const rowIdx = board.bearsAxis.indexOf(leftDigit);
+  const winners = (colIdx !== -1 && rowIdx !== -1) ? (board.squares[rowIdx * 10 + colIdx] || []) : [];
+
+  const isFinal = live.state === 'post';
+  const isLive = live.state === 'in';
+  const periodLabel = isFinal ? 'Final' : (live.period ? `Q${live.period}` : '');
+
+  return (
+    <div className="p-6 md:p-8 rounded-[20px] bg-gradient-to-br from-white/[0.06] to-white/[0.02] border border-white/10 relative overflow-hidden">
+      {/* Subtle glow */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[200px] h-[100px] bg-[#9D2235] blur-[80px] opacity-20 pointer-events-none"></div>
+
+      <div className="relative z-10">
+        {/* Label */}
+        <div className="flex items-center justify-center gap-2 mb-4">
+          {isLive && <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>}
+          <span className="text-xs font-semibold text-white/50 uppercase tracking-wider">
+            {isLive ? 'Winning now' : (isFinal ? 'Final winner' : 'Current leader')}
+          </span>
+          {periodLabel && <span className="text-xs font-medium text-white/30">• {periodLabel}</span>}
+        </div>
+
+        {/* Winner name - hero size */}
+        <h2 className="text-3xl md:text-4xl font-bold text-white text-center mb-4 tracking-tight">
+          {winners.length > 0 ? winners[0] : 'No owner'}
+          {winners.length > 1 && <span className="text-white/40 text-xl ml-2">+{winners.length - 1}</span>}
+        </h2>
+
+        {/* Digits display */}
+        <div className="flex items-center justify-center gap-4">
+          <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-black/20 border border-white/10">
+            <img src={getLogoUrl(game.leftAbbr)} alt="" className="w-6 h-6 object-contain" onError={(e) => e.currentTarget.style.display = 'none'} />
+            <span className="text-2xl font-bold text-white tabular-nums">{leftDigit}</span>
+          </div>
+          <span className="text-white/30 text-lg">/</span>
+          <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-black/20 border border-white/10">
+            <img src={getLogoUrl(game.topAbbr)} alt="" className="w-6 h-6 object-contain" onError={(e) => e.currentTarget.style.display = 'none'} />
+            <span className="text-2xl font-bold text-white tabular-nums">{topDigit}</span>
+          </div>
+        </div>
+
+        {/* Coordinate key */}
+        <div className="text-center mt-3">
+          <span className="text-xs font-mono text-white/30 px-2 py-1 rounded bg-black/20">{currentKey}</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Collapsible payouts accordion
+const PayoutsAccordion: React.FC<{
+  liveStatus: string;
+  lastUpdated: string;
+  highlights: WinnerHighlights;
+  board: BoardData;
+  live: LiveGameData | null;
+  game: GameState;
+}> = ({ liveStatus, lastUpdated, highlights, board, live, game }) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  type RowStatus = 'awaiting' | 'blank' | 'current' | 'winner';
+
+  const getRowStatus = (isFinal: boolean, qNum: number, state: 'pre' | 'in' | 'post', period: number): RowStatus => {
+    if (state === 'pre') return 'awaiting';
+    if (state === 'post') return 'winner';
+    if (isFinal) return period >= 4 ? 'current' : 'blank';
+    if (period < qNum) return 'blank';
+    if (period === qNum) return 'current';
+    return 'winner';
+  };
+
+  const getPlayersAtScore = (board: BoardData, key: string) => {
+    if (!key) return [];
+    const [topDigit, leftDigit] = key.split('-').map(Number);
+    const colIdx = board.oppAxis.indexOf(topDigit);
+    const rowIdx = board.bearsAxis.indexOf(leftDigit);
+    if (colIdx === -1 || rowIdx === -1) return [];
+    return board.squares[rowIdx * 10 + colIdx] || [];
+  };
+
+  const currentStatus = live ? live.state : 'pre';
+  const currentPeriod = live ? live.period : 0;
+  const p = game.payouts || { Q1: 125, Q2: 125, Q3: 125, Final: 250 };
+  const total = Number(p.Q1) + Number(p.Q2) + Number(p.Q3) + Number(p.Final);
+
+  const renderRow = (label: string, amount: number, qKey: string, isFinal = false) => {
+    const status = getRowStatus(isFinal, parseInt(qKey.slice(1)) || 4, currentStatus, currentPeriod);
+    const lockedKey = status === 'winner' && !live?.isManual ? highlights.quarterWinners[qKey] : null;
+    const currentKey = live ? `${live.topScore % 10}-${live.leftScore % 10}` : null;
+    const winnerKey = lockedKey || (status === 'current' ? currentKey : null);
+    const winners = winnerKey ? getPlayersAtScore(board, winnerKey) : [];
+
+    return (
+      <div key={qKey} className={`flex items-center justify-between py-3 ${!isFinal ? 'border-b border-white/5' : ''}`}>
+        <div className="flex-1">
+          <div className="text-sm font-medium text-white/80">{label}</div>
+          {status !== 'blank' && status !== 'awaiting' && winners.length > 0 && (
+            <div className="text-xs text-white/40 mt-0.5">{winners.join(', ')}</div>
+          )}
+        </div>
+        <div className={`text-sm font-semibold ${isFinal ? 'text-[#FFC72C]' : 'text-white/60'}`}>${amount}</div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="rounded-[20px] bg-white/[0.03] border border-white/10 overflow-hidden">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between px-5 py-4 hover:bg-white/[0.02] transition-colors"
+      >
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-semibold text-white/80">Payouts</span>
+          <span className="text-xs font-medium text-white/40">${total} total</span>
+        </div>
+        <svg className={`w-4 h-4 text-white/40 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {isOpen && (
+        <div className="px-5 pb-4 border-t border-white/5">
+          {renderRow('1st quarter', p.Q1, 'Q1')}
+          {renderRow('2nd quarter', p.Q2, 'Q2')}
+          {renderRow('3rd quarter', p.Q3, 'Q3')}
+          {renderRow('Final score', p.Final, 'Final', true)}
+
+          <div className="flex items-center justify-between pt-3 mt-2 border-t border-white/5 text-xs text-white/30">
+            <span>{liveStatus}</span>
+            <span>{lastUpdated || 'Never synced'}</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ========== END NEW COMPONENTS ==========
 
 const Scoreboard: React.FC<{
   game: GameState;
@@ -257,4 +494,4 @@ const Payouts: React.FC<{
   );
 };
 
-export default { Scoreboard, Payouts };
+export default { Scoreboard, Payouts, LiveStrip, WinningNowHero, PayoutsAccordion };
