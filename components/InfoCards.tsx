@@ -82,8 +82,42 @@ const LiveStrip: React.FC<{
   );
 };
 
-// Large hero card showing current winner
-const WinningNowHero: React.FC<{
+// Milestone type for winner tracking
+type Milestone = 'Q1' | 'Half' | 'Q3' | 'Final';
+type MilestoneState = 'live' | 'locked' | 'pending';
+
+interface MilestoneData {
+  label: string;
+  winner: string;
+  digits: string;
+  state: MilestoneState;
+  prize?: string;
+}
+
+// Derive current milestone from game state
+const getCurrentMilestone = (live: LiveGameData | null): Milestone => {
+  if (!live) return 'Q1';
+  const { state, period } = live;
+  if (state === 'post') return 'Final';
+  if (period <= 1) return 'Q1';
+  if (period === 2) return 'Half';
+  if (period === 3) return 'Q3';
+  return 'Final';
+};
+
+// Get milestone display label
+const getMilestoneLabel = (milestone: Milestone, isLive: boolean): string => {
+  const labels: Record<Milestone, string> = {
+    'Q1': 'Q1 Winner',
+    'Half': 'Halftime Winner',
+    'Q3': 'Q3 Winner',
+    'Final': 'Final Winner'
+  };
+  return labels[milestone] + (isLive ? ' (Live)' : '');
+};
+
+// Hero card showing the currently relevant milestone winner
+const WinnerHeroCard: React.FC<{
   game: GameState;
   board: BoardData;
   live: LiveGameData | null;
@@ -98,32 +132,35 @@ const WinningNowHero: React.FC<{
     );
   }
 
-  const leftDigit = live.leftScore % 10;
-  const topDigit = live.topScore % 10;
-  const currentKey = `${topDigit}-${leftDigit}`;
+  const currentMilestone = getCurrentMilestone(live);
+  const isFinal = live.state === 'post';
+  const isLive = live.state === 'in';
 
-  // Get current winner(s)
+  // Get the current score key - map Half to Q2 for data lookup
+  const qKey = currentMilestone === 'Half' ? 'Q2' : currentMilestone;
+  const currentKey = isFinal
+    ? `${live.topScore % 10}-${live.leftScore % 10}`
+    : highlights.quarterWinners[qKey] || `${live.topScore % 10}-${live.leftScore % 10}`;
+
+  // Parse digits from key
+  const [topDigitStr, leftDigitStr] = currentKey.split('-');
+  const topDigit = parseInt(topDigitStr) || 0;
+  const leftDigit = parseInt(leftDigitStr) || 0;
+
+  // Get current winner(s) from board
   const colIdx = board.oppAxis.indexOf(topDigit);
   const rowIdx = board.bearsAxis.indexOf(leftDigit);
   const winners = (colIdx !== -1 && rowIdx !== -1) ? (board.squares[rowIdx * 10 + colIdx] || []) : [];
 
-  const isFinal = live.state === 'post';
-  const isLive = live.state === 'in';
-  const periodLabel = isFinal ? 'Final' : (live.period ? `Q${live.period}` : '');
-
   return (
     <div className="p-6 md:p-8 rounded-[20px] bg-gradient-to-br from-white/[0.06] to-white/[0.02] border border-white/10 relative overflow-hidden">
-      {/* Subtle glow */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[200px] h-[100px] bg-[#9D2235] blur-[80px] opacity-20 pointer-events-none"></div>
-
       <div className="relative z-10">
         {/* Label */}
         <div className="flex items-center justify-center gap-2 mb-4">
           {isLive && <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>}
           <span className="text-xs font-semibold text-white/50 uppercase tracking-wider">
-            {isLive ? 'Winning now' : (isFinal ? 'Final winner' : 'Current leader')}
+            {getMilestoneLabel(currentMilestone, isLive)}
           </span>
-          {periodLabel && <span className="text-xs font-medium text-white/30">• {periodLabel}</span>}
         </div>
 
         {/* Winner name - hero size */}
@@ -153,6 +190,118 @@ const WinningNowHero: React.FC<{
     </div>
   );
 };
+
+// Compact milestone row showing Q1, Half, Q3, Final winner status
+const WinnersMilestoneRow: React.FC<{
+  game: GameState;
+  board: BoardData;
+  live: LiveGameData | null;
+  highlights: WinnerHighlights;
+}> = ({ game, board, live, highlights }) => {
+  const currentMilestone = getCurrentMilestone(live);
+  const isFinal = live?.state === 'post';
+  const period = live?.period || 0;
+
+  // Build milestone data array
+  const milestones: { key: Milestone; label: string; qKey: string }[] = [
+    { key: 'Q1', label: 'Q1', qKey: 'Q1' },
+    { key: 'Half', label: 'Half', qKey: 'Q2' },
+    { key: 'Q3', label: 'Q3', qKey: 'Q3' },
+    { key: 'Final', label: 'Final', qKey: 'Final' },
+  ];
+
+  const getMilestoneState = (key: Milestone): MilestoneState => {
+    if (isFinal) return 'locked';
+
+    // Map milestone to period number for comparison
+    const milestonePeriods: Record<Milestone, number> = {
+      'Q1': 1, 'Half': 2, 'Q3': 3, 'Final': 4
+    };
+    const msNumber = milestonePeriods[key];
+
+    if (period > msNumber || (key === 'Half' && period > 2)) return 'locked';
+    if (key === currentMilestone) return 'live';
+    return 'pending';
+  };
+
+  const getMilestoneData = (key: Milestone, qKey: string): MilestoneData => {
+    const state = getMilestoneState(key);
+    const scoreKey = qKey === 'Final'
+      ? (live ? `${live.topScore % 10}-${live.leftScore % 10}` : null)
+      : highlights.quarterWinners[qKey];
+
+    if (!scoreKey || state === 'pending') {
+      return { label: key === 'Half' ? 'Half' : key, winner: '—', digits: '—', state };
+    }
+
+    // Parse digits and get winner
+    const [topDigitStr, leftDigitStr] = scoreKey.split('-');
+    const topDigit = parseInt(topDigitStr) || 0;
+    const leftDigit = parseInt(leftDigitStr) || 0;
+    const colIdx = board.oppAxis.indexOf(topDigit);
+    const rowIdx = board.bearsAxis.indexOf(leftDigit);
+    const winners = (colIdx !== -1 && rowIdx !== -1) ? (board.squares[rowIdx * 10 + colIdx] || []) : [];
+
+    return {
+      label: key === 'Half' ? 'Half' : key,
+      winner: winners.length > 0 ? winners[0] : 'No owner',
+      digits: `${leftDigit}/${topDigit}`,
+      state,
+    };
+  };
+
+  if (!live) {
+    return null;
+  }
+
+  return (
+    <div className="rounded-[20px] bg-white/[0.03] border border-white/10 overflow-hidden">
+      <div className="grid grid-cols-4 divide-x divide-white/[0.06]">
+        {milestones.map(({ key, qKey }) => {
+          const data = getMilestoneData(key, qKey);
+          return (
+            <div key={key} className={`p-3 md:p-4 text-center ${data.state === 'pending' ? 'opacity-40' : ''}`}>
+              {/* Label with state indicator */}
+              <div className="flex items-center justify-center gap-1.5 mb-1.5">
+                {data.state === 'live' && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
+                )}
+                {data.state === 'locked' && (
+                  <svg className="w-3 h-3 text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
+                <span className="text-[10px] font-semibold text-white/50 uppercase tracking-wide">{data.label}</span>
+              </div>
+
+              {/* Winner name */}
+              <p className="text-xs md:text-sm font-semibold text-white truncate mb-0.5">{data.winner}</p>
+
+              {/* Digits */}
+              <p className="text-[10px] font-mono text-white/30">{data.digits}</p>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+// Keep legacy WinningNowHero for backwards compatibility (wraps new components)
+const WinningNowHero: React.FC<{
+  game: GameState;
+  board: BoardData;
+  live: LiveGameData | null;
+  highlights: WinnerHighlights;
+}> = (props) => {
+  return (
+    <div className="space-y-4">
+      <WinnerHeroCard {...props} />
+      <WinnersMilestoneRow {...props} />
+    </div>
+  );
+};
+
 
 // Collapsible payouts accordion
 const PayoutsAccordion: React.FC<{
