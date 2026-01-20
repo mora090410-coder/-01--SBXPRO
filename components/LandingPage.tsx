@@ -8,222 +8,432 @@ interface LandingPageProps {
 
 const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin, onJoin }) => {
   return (
-    <div className="min-h-screen w-full bg-[#060607] text-white font-sans selection:bg-[#FFC72C]/30 flex flex-col overflow-x-hidden">
-      {/* Background - Refined: Subtle Burgundy & Gold Glows, Faint Grid */}
+    <div className="min-h-screen bg-[#060607] text-white font-sans selection:bg-[#FFC72C]/30 flex flex-col overflow-x-hidden">
+      {/* Background */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden z-0">
-        {/* Faint Grid Texture */}
+        {/* Colorful Orbs */}
+        <div className="absolute -top-40 left-1/2 h-[520px] w-[720px] -translate-x-1/2 rounded-full bg-[#8F1D2C]/25 blur-[120px]" />
+        <div className="absolute -bottom-48 left-1/3 h-[560px] w-[760px] -translate-x-1/2 rounded-full bg-[#FFC72C]/14 blur-[140px]" />
+
+        {/* Radial sheen */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.08),transparent_55%)]" />
+
+        {/* Fade to black at bottom */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(6,6,7,0.3),rgba(6,6,7,1))]" />
+
+        {/* Speckle Texture */}
         <div
-          className="absolute inset-0 opacity-[0.03]"
+          className="absolute inset-0 opacity-[0.12]"
           style={{
             backgroundImage:
-              "linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)",
-            backgroundSize: "40px 40px",
+              "radial-gradient(rgba(255,255,255,0.12) 1px, transparent 1px)",
+            backgroundSize: "24px 24px",
           }}
         />
-
-        {/* Subtle Glows */}
-        <div className="absolute top-[-10%] left-1/2 w-[800px] h-[600px] -translate-x-1/2 rounded-full bg-[#8F1D2C]/10 blur-[100px]" />
-        <div className="absolute bottom-[-10%] right-[-5%] w-[600px] h-[600px] rounded-full bg-[#FFC72C]/5 blur-[120px]" />
-
-        {/* Vignette */}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,transparent_0%,#060607_100%)]" />
       </div>
 
       {/* Nav */}
-      <header className="relative z-50 w-full max-w-6xl mx-auto px-6 py-8 flex items-center justify-between">
-        <div className="flex items-center gap-3 select-none">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#8F1D2C] to-[#5a121c] flex items-center justify-center shadow-lg shadow-[#8F1D2C]/10 border border-white/5 ring-1 ring-white/5">
-            <span className="text-[12px] font-bold text-white tracking-tight">S</span>
+      <header className="relative z-50 mx-auto w-full max-w-6xl px-5 pt-6">
+        <nav className="flex items-center justify-between">
+          {/* Logo Area */}
+          <div className="flex items-center gap-3">
+            <div className="grid h-9 w-9 place-items-center rounded-xl bg-white/10 ring-1 ring-white/10 shadow-lg shadow-[#8F1D2C]/10">
+              <span className="text-sm font-semibold tracking-tight">G1</span>
+            </div>
+            <div className="leading-tight">
+              <div className="text-sm font-semibold tracking-tight">GridOne</div>
+              <div className="text-[11px] text-white/60">Squares</div>
+            </div>
           </div>
-          <div className="flex flex-col leading-none">
-            <span className="text-lg font-bold tracking-tight text-white">Slate</span>
-            <span className="text-[10px] font-medium text-white/40 tracking-wide uppercase">Squares</span>
-          </div>
-        </div>
 
-        <div className="flex items-center gap-4">
-          <button
-            onClick={onLogin}
-            className="text-sm font-medium text-white/60 hover:text-white transition-colors"
-          >
-            Log In
-          </button>
-          <button
-            onClick={onCreate}
-            className="hidden md:block rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-black hover:bg-gray-100 transition-all shadow-lg hover:shadow-xl hover:shadow-white/10"
-          >
-            Create League
-          </button>
-        </div>
+          {/* Desktop Links */}
+          <div className="hidden items-center gap-2 md:flex">
+            <a
+              href="#how"
+              className="rounded-full px-3 py-2 text-sm text-white/70 hover:text-white transition-colors"
+            >
+              How it works
+            </a>
+            <a
+              href="#pricing"
+              className="rounded-full px-3 py-2 text-sm text-white/70 hover:text-white transition-colors"
+            >
+              Pricing
+            </a>
+            <a
+              href="#faq"
+              className="rounded-full px-3 py-2 text-sm text-white/70 hover:text-white transition-colors"
+            >
+              FAQ
+            </a>
+          </div>
+
+          {/* Right Actions */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onJoin}
+              className="hidden rounded-full px-4 py-2 text-sm text-white/70 ring-1 ring-white/10 hover:bg-white/5 hover:text-white transition-all md:inline-flex"
+            >
+              Join with code
+            </button>
+            <button
+              onClick={onLogin}
+              className="rounded-full px-4 py-2 text-sm text-white/80 ring-1 ring-white/10 hover:bg-white/5 hover:text-white transition-all"
+            >
+              Organizer login
+            </button>
+            <button
+              onClick={onCreate}
+              className="rounded-full bg-[#FFC72C] px-4 py-2 text-sm font-semibold text-black hover:brightness-95 transition-all shadow-lg shadow-[#FFC72C]/20"
+            >
+              Create board
+            </button>
+          </div>
+        </nav>
       </header>
 
       {/* Hero Section */}
-      <main className="relative z-10 mx-auto w-full max-w-6xl px-6 pb-24 pt-16 md:pt-24">
-        <div className="grid gap-16 md:grid-cols-2 md:items-center">
+      <main className="relative z-10 mx-auto w-full max-w-6xl px-5 pb-24 pt-14 md:pt-20">
+        <div className="grid gap-10 md:grid-cols-2 md:items-center">
 
-          {/* Hero Content */}
+          {/* Hero Copy (Left) */}
           <div className="animate-in fade-in slide-in-from-bottom-8 duration-700">
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.05] text-white">
-              Squares, <br />
-              <span className="text-white/50">made effortless.</span>
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/5 px-3 py-1 text-xs text-white/70 ring-1 ring-white/10 backdrop-blur-sm mb-5">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#22C55E] animate-pulse" />
+              Live winners + scenarios, in one link
+            </div>
+
+            <h1 className="text-4xl font-semibold tracking-tight md:text-5xl lg:text-6xl text-white">
+              Squares, made{" "}
+              <span className="bg-gradient-to-b from-white to-white/60 bg-clip-text text-transparent">
+                effortless
+              </span>
+              .
             </h1>
 
-            <p className="mt-8 max-w-lg text-lg leading-relaxed text-white/70">
-              Upload a board (or start clean). Share one link. Everyone sees live winners and what-if outcomes—no group texts.
+            <p className="mt-4 max-w-xl text-base leading-relaxed text-white/70 md:text-lg">
+              Upload a board (or start clean). Share one link. Everyone sees the{" "}
+              <span className="text-white font-medium">current winners</span> and{" "}
+              <span className="text-white font-medium">“what-if” outcomes</span> live—no group texts, no
+              confusion.
             </p>
 
-            <p className="mt-3 text-sm font-medium text-white/40">
-              Works for any NFL game.
-            </p>
-
-            <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center">
+            <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
               <button
                 onClick={onCreate}
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-[#8F1D2C] px-8 py-4 text-sm font-semibold text-white shadow-lg shadow-[#8F1D2C]/20 hover:brightness-110 transition-all active:scale-[0.98]"
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-[#8F1D2C] px-6 py-3 text-sm font-semibold text-white shadow-[0_0_0_1px_rgba(255,255,255,0.08)] hover:brightness-110 hover:shadow-lg hover:shadow-[#8F1D2C]/20 transition-all active:scale-95"
               >
-                Create a League
+                Create your board
+                <span className="text-white/80">→</span>
               </button>
 
               <button
                 onClick={onJoin}
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-white/5 px-8 py-4 text-sm font-semibold text-white ring-1 ring-white/10 hover:bg-white/10 transition-all active:scale-[0.98]"
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-white/5 px-6 py-3 text-sm font-semibold text-white ring-1 ring-white/10 hover:bg-white/10 transition-all active:scale-95"
               >
-                Join League
+                I have a code
               </button>
             </div>
 
-            <div className="mt-4 md:hidden">
-              <button
-                onClick={onLogin}
-                className="text-sm text-white/40 hover:text-white transition-colors"
-              >
-                Manager Login
-              </button>
+            <div className="mt-6 flex flex-wrap items-center gap-4 text-xs text-white/55">
+              <div className="inline-flex items-center gap-2">
+                <span className="h-5 w-5 rounded-full bg-white/10 ring-1 ring-white/10 flex items-center justify-center">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" className="text-white/60"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" /></svg>
+                </span>
+                Organizer-first
+              </div>
+              <div className="h-3 w-px bg-white/10 hidden sm:block" />
+              <div className="inline-flex items-center gap-2">
+                <span className="h-5 w-5 rounded-full bg-white/10 ring-1 ring-white/10 flex items-center justify-center">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" className="text-white/60"><path d="M17 1.01L7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14z" /></svg>
+                </span>
+                Mobile-first viewer link
+              </div>
+              <div className="h-3 w-px bg-white/10 hidden sm:block" />
+              <div className="inline-flex items-center gap-2">
+                <span className="h-5 w-5 rounded-full bg-white/10 ring-1 ring-white/10 flex items-center justify-center">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" className="text-white/60"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9v-2h2v2zm0-4H9V7h2v5z" /></svg>
+                </span>
+                Not a betting site
+              </div>
             </div>
-
           </div>
 
-          {/* Hero Mock Visual - Premium Slate Viewer Card */}
-          <div className="relative mt-8 md:mt-0 animate-in fade-in slide-in-from-right-8 duration-1000 delay-200">
-            <div className="relative rounded-[32px] bg-[#0A0A0B] border border-white/10 p-2 shadow-2xl shadow-black">
-              {/* Inner Content Container */}
-              <div className="rounded-[24px] overflow-hidden bg-[#060607] border border-white/5 relative">
+          {/* Hero Preview (Right Column) */}
+          <div className="relative animate-in fade-in slide-in-from-right-8 duration-1000 delay-200">
+            <div className="rounded-3xl bg-white/5 p-4 ring-1 ring-white/10 backdrop-blur-xl shadow-2xl shadow-black/50">
 
-                {/* Mock Status Bar */}
-                <div className="h-10 border-b border-white/5 flex items-center justify-between px-5 bg-white/[0.02]">
-                  <div className="flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-red-500"></div>
-                    <div className="w-1.5 h-1.5 rounded-full bg-yellow-500"></div>
-                    <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
+              {/* Top Bar for Mock */}
+              <div className="flex items-center justify-between rounded-2xl bg-black/40 px-4 py-3 ring-1 ring-white/10">
+                <div className="flex items-center gap-3">
+                  <div className="h-9 w-9 rounded-xl bg-[#8F1D2C]/90 ring-1 ring-white/10 flex items-center justify-center">
+                    <span className="text-[10px] font-bold text-white">FF</span>
                   </div>
-                  <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-red-500/10 border border-red-500/20">
-                    <div className="w-1 h-1 rounded-full bg-red-500 animate-pulse"></div>
-                    <span className="text-[9px] font-bold text-red-400 uppercase tracking-wider">Live</span>
+                  <div>
+                    <div className="text-sm font-semibold text-white">Friday Fundraiser</div>
+                    <div className="text-xs text-white/55">Away vs Home • Live</div>
                   </div>
                 </div>
+                <div className="inline-flex items-center gap-2 rounded-full bg-white/5 px-3 py-1 text-xs text-white/70 ring-1 ring-white/10">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#22C55E]" />
+                  Updating
+                </div>
+              </div>
 
-                {/* Mock Viewer UI */}
-                <div className="p-6">
-                  <div className="flex justify-between items-start mb-6">
-                    <div>
-                      <div className="text-white font-semibold text-lg tracking-tight">Super Bowl LIX</div>
-                      <div className="text-white/40 text-xs mt-1">Chiefs vs. 49ers</div>
+              {/* Current Winners */}
+              <div className="mt-4 rounded-2xl bg-black/40 p-4 ring-1 ring-white/10">
+                <div className="text-xs text-white/55 font-medium uppercase tracking-wider">Current winners</div>
+                <div className="mt-3 grid grid-cols-4 gap-2">
+                  {["Q1", "Half", "Q3", "Final"].map((label) => (
+                    <div
+                      key={label}
+                      className="rounded-xl bg-white/5 p-3 ring-1 ring-white/10 flex flex-col items-center"
+                    >
+                      <div className="text-[10px] text-white/55">{label}</div>
+                      <div className="mt-1 text-sm font-semibold text-white">—</div>
+                      <div className="mt-1 text-[10px] text-white/45">$—</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Scenarios */}
+              <div className="mt-4 grid gap-3 md:grid-cols-2">
+                {["If Away scores next…", "If Home scores next…"].map((t) => (
+                  <div
+                    key={t}
+                    className="rounded-2xl bg-black/40 p-4 ring-1 ring-white/10"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="text-xs font-semibold text-white/80">{t}</div>
+                      <div className="text-[10px] text-white/45 cursor-pointer hover:text-white transition-colors">View all</div>
+                    </div>
+                    <div className="mt-3 space-y-2">
+                      {[
+                        { k: "FG (+3)", v: "Winner: Alex" },
+                        { k: "TD (+7)", v: "Winner: Sam" },
+                        { k: "Safety (+2)", v: "Winner: Jordan" },
+                      ].map((r) => (
+                        <div
+                          key={r.k}
+                          className="flex items-center justify-between rounded-xl bg-white/5 px-3 py-2 ring-1 ring-white/10"
+                        >
+                          <div className="text-[11px] text-white/60">{r.k}</div>
+                          <div className="text-[11px] text-white/80 font-medium">{r.v}</div>
+                        </div>
+                      ))}
                     </div>
                   </div>
+                ))}
+              </div>
 
-                  {/* Abstract Grid */}
-                  <div className="grid grid-cols-5 gap-1.5 mb-6 opacity-80">
-                    {[...Array(15)].map((_, i) => (
-                      <div key={i} className={`aspect-square rounded-[4px] ${(i === 7) ? 'bg-[#FFC72C] shadow-[0_0_15px_rgba(255,199,44,0.3)]' : 'bg-white/5'} border border-white/5`}></div>
-                    ))}
+              {/* Share Bottom Bar */}
+              <div className="mt-4 rounded-2xl bg-gradient-to-r from-[#8F1D2C]/25 via-white/5 to-[#FFC72C]/20 p-4 ring-1 ring-white/10 transition-all hover:ring-white/20">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-xs font-semibold text-white">One link for everyone</div>
+                    <div className="mt-1 text-[11px] text-white/60">
+                      Share to GroupMe / TeamSnap — updates instantly.
+                    </div>
                   </div>
-
-                  {/* Mock Winner Toast */}
-                  <div className="bg-[#1A1A1C] border border-white/10 rounded-xl p-3 flex items-center gap-3 shadow-lg">
-                    <div className="w-8 h-8 rounded-full bg-[#FFC72C] flex items-center justify-center text-black font-bold text-xs">
-                      JD
-                    </div>
-                    <div>
-                      <div className="text-white text-xs font-medium">Quarter 1 Winner</div>
-                      <div className="text-[#FFC72C] text-[10px] font-bold">$250 Payout</div>
-                    </div>
+                  <div className="rounded-full bg-white/10 px-3 py-1 text-[11px] ring-1 ring-white/10 font-medium text-white hover:bg-white/20 cursor-pointer transition-colors">
+                    Copy link
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Soft Ambient Shadow behind card */}
-            <div className="absolute -inset-1 z-[-1] bg-gradient-to-br from-[#8F1D2C]/20 to-[#FFC72C]/10 blur-2xl rounded-[40px] opacity-60"></div>
+            {/* Ambient Glow Behind Mock */}
+            <div className="pointer-events-none absolute -inset-6 -z-10 rounded-[40px] bg-gradient-to-br from-[#8F1D2C]/20 to-[#FFC72C]/10 blur-3xl opacity-60" />
           </div>
         </div>
 
-        {/* Feature Grid */}
-        <section className="mt-32">
-          <div className="grid gap-8 md:grid-cols-3">
+        {/* How it works */}
+        <section id="how" className="mt-32">
+          <div className="grid gap-6 md:grid-cols-3">
             {[
               {
-                title: "Smart Logic",
-                desc: "Real-time play-by-play data powers automated scoring and win probability.",
-                icon: (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                )
+                title: "1) Create",
+                desc: "Name your board and pick the matchup. Start clean or upload an image to parse into an editable grid.",
               },
               {
-                title: "Live Hub",
-                desc: "Instant updates on any device. Everyone sees the same source of truth.",
-                icon: (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                )
+                title: "2) Share",
+                desc: "Activate and get one viewer link. Send it anywhere—everyone sees the same source of truth.",
               },
               {
-                title: "Commissioner Tools",
-                desc: "Effortless setup, custom branding, and automated payout tracking.",
-                icon: (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                )
-              }
-            ].map((f, i) => (
+                title: "3) Enjoy",
+                desc: "Live winners, quarter milestones, and “what-if” scenarios update automatically as the score changes.",
+              },
+            ].map((x) => (
               <div
-                key={i}
-                className="group rounded-2xl bg-white/[0.02] p-8 border border-white/5 hover:border-white/10 transition-colors"
+                key={x.title}
+                className="rounded-3xl bg-white/5 p-8 ring-1 ring-white/10 backdrop-blur hover:bg-white/[0.07] transition-colors"
               >
-                <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center mb-6 text-white/80 group-hover:text-white group-hover:bg-white/10 transition-all">
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    {f.icon}
-                  </svg>
-                </div>
-                <div className="text-base font-semibold text-white tracking-tight">{f.title}</div>
-                <div className="mt-2 text-sm leading-relaxed text-white/50">{f.desc}</div>
+                <div className="text-sm font-semibold text-white">{x.title}</div>
+                <div className="mt-2 text-sm leading-relaxed text-white/70">{x.desc}</div>
               </div>
             ))}
           </div>
         </section>
 
-        {/* Footer */}
-        <footer className="mt-32 border-t border-white/5 pt-12 pb-8">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-            <div className="flex items-center gap-3">
-              <div className="w-6 h-6 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center">
-                <span className="text-[10px] font-bold text-white">S</span>
-              </div>
-              <span className="text-sm font-semibold text-white/90">Slate</span>
-            </div>
-
-            <div className="flex gap-8 text-xs font-medium text-white/40">
-              <a href="#" className="hover:text-white transition-colors">Privacy</a>
-              <a href="#" className="hover:text-white transition-colors">Terms</a>
-              <a href="#" className="hover:text-white transition-colors">Support</a>
+        {/* Pricing */}
+        <section id="pricing" className="mt-32">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <h2 className="text-2xl font-semibold tracking-tight text-white">Simple pricing</h2>
+              <p className="mt-2 text-sm text-white/70">
+                Build for free. Pay only when you’re ready to share the live link.
+              </p>
             </div>
           </div>
-          <div className="mt-8 text-center md:text-left">
-            <p className="text-[10px] text-white/20">
-              Slate is a tracking tool for organizers. It does not take payments or facilitate betting.
-            </p>
+
+          <div className="mt-8 grid gap-4 md:grid-cols-2">
+            {/* Board Activation */}
+            <div className="rounded-3xl bg-white/5 p-8 ring-1 ring-white/10 hover:ring-white/20 transition-all">
+              <div className="flex items-center justify-between">
+                <div className="text-sm font-semibold text-white">Activate this board</div>
+                <div className="text-lg font-semibold text-white">$9.99</div>
+              </div>
+              <div className="mt-1 text-sm text-white/65">Perfect for a one-off event.</div>
+
+              <div className="mt-6 space-y-3 text-sm text-white/70">
+                <Feature>Shareable viewer link</Feature>
+                <Feature>Live winners + scenarios</Feature>
+                <Feature>Organizer edit controls</Feature>
+              </div>
+
+              <button
+                onClick={onCreate}
+                className="mt-8 w-full rounded-full bg-white/10 px-5 py-3 text-sm font-semibold text-white ring-1 ring-white/10 hover:bg-white/15 transition-all"
+              >
+                Create and activate
+              </button>
+            </div>
+
+            {/* Founding Pass */}
+            <div className="relative rounded-3xl bg-white/5 p-8 ring-1 ring-[#FFC72C]/30 hover:ring-[#FFC72C]/50 transition-all shadow-lg shadow-[#FFC72C]/5">
+              <div className="absolute right-5 top-5 rounded-full bg-[#FFC72C] px-3 py-1 text-[11px] font-bold text-black uppercase tracking-wide">
+                Best value
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="text-sm font-semibold text-white">Founding Pass</div>
+                <div className="text-lg font-semibold text-white">$29.99</div>
+              </div>
+              <div className="mt-1 text-sm text-white/65">
+                For early adopters—locks in the best price.
+              </div>
+
+              <div className="mt-6 space-y-3 text-sm text-white/70">
+                <Feature>Includes this Super Bowl board</Feature>
+                <Feature>
+                  <span className="text-white font-medium">Unlimited boards next season</span>
+                </Feature>
+                <Feature>Early access to new formats</Feature>
+              </div>
+
+              {/* Comparison row */}
+              <div className="mt-6 rounded-2xl bg-black/30 p-4 ring-1 ring-white/10">
+                <div className="grid grid-cols-[1fr_auto_auto] gap-x-4 gap-y-3 text-[12px] text-white/75">
+                  <div />
+                  <div className="text-white/50 font-medium">Board</div>
+                  <div className="text-white/50 font-medium">Pass</div>
+
+                  <Row label="Includes Super Bowl board" a="✓" b="✓" />
+                  <Row label="Shareable viewer link" a="✓" b="✓" />
+                  <Row label="Unlimited boards next season" a="—" b="✓" />
+                  <Row label="Early access to new formats" a="—" b="✓" />
+                </div>
+              </div>
+
+              <button
+                onClick={onCreate}
+                className="mt-8 w-full rounded-full bg-[#FFC72C] px-5 py-3 text-sm font-semibold text-black hover:brightness-110 shadow-lg shadow-[#FFC72C]/20 transition-all"
+              >
+                Get Founding Pass
+              </button>
+            </div>
+          </div>
+
+          <p className="mt-6 text-xs text-white/50">
+            GridOne is a tracking tool for organizers. It does not take payments or run betting.
+          </p>
+        </section>
+
+        {/* FAQ */}
+        <section id="faq" className="mt-32">
+          <h2 className="text-2xl font-semibold tracking-tight text-white">FAQ</h2>
+          <div className="mt-8 grid gap-4 md:grid-cols-2">
+            <Faq
+              q="Do players need an account?"
+              a="No. Players open the viewer link. Only organizers need an account to create and manage boards."
+            />
+            <Faq
+              q="Can I upload a handwritten board?"
+              a="Yes. You can upload an image and parse it into an editable grid, then correct anything quickly."
+            />
+            <Faq
+              q="Does it work on mobile?"
+              a="Yes. The viewer link is designed for phones first; organizers can manage from mobile or desktop."
+            />
+            <Faq
+              q="Can I run multiple boards?"
+              a="Yes. Organizers can create and manage multiple boards; viewers use a link per board."
+            />
+          </div>
+        </section>
+
+        {/* Footer */}
+        <footer className="mt-32 border-t border-white/10 pt-8 text-xs text-white/55">
+          <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
+            <div>© {new Date().getFullYear()} GridOne.</div>
+            <div className="flex gap-6">
+              <a href="#" className="hover:text-white transition-colors">
+                Privacy
+              </a>
+              <a href="#" className="hover:text-white transition-colors">
+                Terms
+              </a>
+              <a href="#" className="hover:text-white transition-colors">
+                Support
+              </a>
+            </div>
           </div>
         </footer>
       </main>
     </div>
   );
 };
+
+// Internal Helper Components for Clean Layout
+function Feature({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-3">
+      <span className="grid h-5 w-5 place-items-center rounded-full bg-white/10 text-[10px] text-white ring-1 ring-white/10">
+        ✓
+      </span>
+      <span>{children}</span>
+    </div>
+  );
+}
+
+function Row({ label, a, b }: { label: string; a: string; b: string }) {
+  return (
+    <>
+      <div className="text-white/70">{label}</div>
+      <div className="text-center text-white/70">{a}</div>
+      <div className="text-center text-white/90 font-medium">{b}</div>
+    </>
+  );
+}
+
+function Faq({ q, a }: { q: string; a: string }) {
+  return (
+    <div className="rounded-3xl bg-white/5 p-6 ring-1 ring-white/10 hover:bg-white/[0.07] transition-colors">
+      <div className="text-sm font-semibold text-white">{q}</div>
+      <div className="mt-2 text-sm leading-relaxed text-white/70">{a}</div>
+    </div>
+  );
+}
 
 export default LandingPage;
