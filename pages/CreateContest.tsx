@@ -154,7 +154,7 @@ const CreateContest: React.FC = () => {
 
                 {/* Header */}
                 <div className="flex items-center justify-between mb-8">
-                    <button onClick={() => navigate('/dashboard')} className="text-gray-400 hover:text-white flex items-center gap-2 text-xs font-bold uppercase tracking-widest transition-colors">
+                    <button onClick={() => navigate(-1)} className="text-gray-400 hover:text-white flex items-center gap-2 text-xs font-bold uppercase tracking-widest transition-colors">
                         &larr; Back
                     </button>
                     <div className="flex gap-2">
