@@ -117,6 +117,7 @@ const BoardViewContent: React.FC = () => {
     const [joinInput, setJoinInput] = useState('');
     const [recoveryEmail, setRecoveryEmail] = useState(''); // New: For recovery
     const [activeTab, setActiveTab] = useState<'live' | 'board'>('live');
+    const [boardZoom, setBoardZoom] = useState<'fit' | '100'>('fit');
     const [hasEnteredApp, setHasEnteredApp] = useState(false);
     const [isInitialized, setIsInitialized] = useState(false);
     const [isAuthenticating, setIsAuthenticating] = useState(false);
@@ -876,18 +877,30 @@ const BoardViewContent: React.FC = () => {
 
                                                 {/* Right: Zoom controls */}
                                                 <div className="hidden md:flex items-center gap-1 p-1 bg-white/[0.04] rounded-lg border border-white/10">
-                                                    <button className="px-2.5 py-1 text-[11px] font-medium text-white/60 hover:text-white hover:bg-white/10 rounded transition-all">
+                                                    <button
+                                                        onClick={() => setBoardZoom('fit')}
+                                                        className={`px-2.5 py-1 text-[11px] font-medium rounded transition-all ${boardZoom === 'fit'
+                                                            ? 'bg-white text-black'
+                                                            : 'text-white/60 hover:text-white hover:bg-white/10'
+                                                            }`}
+                                                    >
                                                         Fit
                                                     </button>
-                                                    <button className="px-2.5 py-1 text-[11px] font-medium text-white/60 hover:text-white hover:bg-white/10 rounded transition-all">
+                                                    <button
+                                                        onClick={() => setBoardZoom('100')}
+                                                        className={`px-2.5 py-1 text-[11px] font-medium rounded transition-all ${boardZoom === '100'
+                                                            ? 'bg-white text-black'
+                                                            : 'text-white/60 hover:text-white hover:bg-white/10'
+                                                            }`}
+                                                    >
                                                         100%
                                                     </button>
                                                 </div>
                                             </div>
 
                                             {/* Board Grid Container */}
-                                            <div className="relative bg-[#1c1c1e]/40 border border-white/[0.08] rounded-[16px] overflow-hidden shadow-xl min-h-[500px]">
-                                                <div className="absolute inset-0 overflow-auto touch-pan-x touch-pan-y p-3 flex items-center justify-center">
+                                            <div className={`relative bg-[#1c1c1e]/40 border border-white/[0.08] rounded-[16px] shadow-xl min-h-[500px] ${boardZoom === '100' ? 'overflow-auto' : 'overflow-hidden'}`}>
+                                                <div className={`${boardZoom === '100' ? 'p-3' : 'absolute inset-0 overflow-hidden p-3 flex items-center justify-center'}`}>
                                                     {isEmptyBoard ? (
                                                         <div className="text-center max-w-sm mx-auto p-8 animate-in fade-in zoom-in duration-500">
                                                             <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6 border border-white/5">
@@ -899,15 +912,17 @@ const BoardViewContent: React.FC = () => {
                                                             <p className="text-sm text-gray-500 mb-8 leading-relaxed">The organizer hasn't added names yet.</p>
                                                         </div>
                                                     ) : (
-                                                        <BoardGrid
-                                                            board={board}
-                                                            highlights={highlights}
-                                                            live={liveData}
-                                                            selectedPlayer={selectedPlayer}
-                                                            highlightedCoords={highlightedCoords}
-                                                            leftTeamName={game.leftName || game.leftAbbr}
-                                                            topTeamName={game.topName || game.topAbbr}
-                                                        />
+                                                        <div className={`transition-transform duration-300 ${boardZoom === '100' ? 'min-w-[700px]' : 'w-full h-full'}`}>
+                                                            <BoardGrid
+                                                                board={board}
+                                                                highlights={highlights}
+                                                                live={liveData}
+                                                                selectedPlayer={selectedPlayer}
+                                                                highlightedCoords={highlightedCoords}
+                                                                leftTeamName={game.leftName || game.leftAbbr}
+                                                                topTeamName={game.topName || game.topAbbr}
+                                                            />
+                                                        </div>
                                                     )}
                                                 </div>
                                             </div>
