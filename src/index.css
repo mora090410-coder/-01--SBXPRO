@@ -43,6 +43,35 @@
         @apply bg-cardinal text-white font-bold rounded-full px-6 py-2 transition-transform hover:scale-105 active:scale-95 shadow-lg shadow-cardinal/20;
     }
 
+    /* Typography System */
+    .text-display {
+        @apply font-black text-4xl md:text-5xl tracking-tight text-white;
+    }
+
+    .text-heading {
+        @apply font-bold text-xl md:text-2xl tracking-tight text-white;
+    }
+
+    .text-subheading {
+        @apply font-bold text-lg text-white/90;
+    }
+
+    .text-body {
+        @apply font-normal text-base text-gray-300 leading-relaxed;
+    }
+
+    .text-body-secondary {
+        @apply font-medium text-sm text-gray-500;
+    }
+
+    .text-caption {
+        @apply font-medium text-xs text-gray-500;
+    }
+
+    .text-button {
+        @apply font-bold text-xs uppercase tracking-widest;
+    }
+
     .glass-panel {
         @apply bg-surface-glass backdrop-blur-xl border border-white/10 rounded-2xl shadow-lg;
     }

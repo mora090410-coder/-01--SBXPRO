@@ -1,6 +1,6 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { AlertCircle, FileSearch, Trophy } from 'lucide-react';
 
 interface EmptyStateProps {
     variant?: 'default' | 'first-time' | 'no-results' | 'error';
@@ -59,28 +59,32 @@ const EmptyState: React.FC<EmptyStateProps> = ({
 
     const styles = getVariantStyles();
 
+    // Default icon based on variant if none provided
+    const getDefaultIcon = () => {
+        if (icon) return icon;
+
+        switch (variant) {
+            case 'error': return <AlertCircle className="w-8 h-8" strokeWidth={1.5} />;
+            case 'no-results': return <FileSearch className="w-8 h-8 opacity-60" strokeWidth={1.5} />;
+            case 'first-time': return <Trophy className="w-8 h-8" strokeWidth={1.5} />;
+            default: return <FileSearch className="w-8 h-8 opacity-60" strokeWidth={1.5} />;
+        }
+    };
+
     return (
         <div className={`rounded-3xl p-12 flex flex-col items-center justify-center text-center animate-in fade-in zoom-in duration-500 ${styles.bg} ${variant !== 'no-results' ? `border ${styles.border}` : ''}`}>
 
             {/* Icon */}
-            {icon ? (
-                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-6 shadow-lg ${styles.iconBg} ${styles.iconColor}`}>
-                    {icon}
-                </div>
-            ) : (
-                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-6 shadow-lg ${styles.iconBg} ${styles.iconColor}`}>
-                    <svg className="w-8 h-8 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-                    </svg>
-                </div>
-            )}
+            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-6 shadow-lg ${styles.iconBg} ${styles.iconColor}`}>
+                {getDefaultIcon()}
+            </div>
 
             {/* Content */}
             <div className="max-w-md space-y-2 mb-8">
-                <h3 className={`text-xl font-bold tracking-tight ${styles.titleColor}`}>
+                <h3 className={`text-heading ${styles.titleColor}`}>
                     {title}
                 </h3>
-                <p className="text-gray-400 text-sm leading-relaxed">
+                <p className="text-body-secondary leading-relaxed">
                     {description}
                 </p>
             </div>
@@ -91,14 +95,14 @@ const EmptyState: React.FC<EmptyStateProps> = ({
                     action.to ? (
                         <Link
                             to={action.to}
-                            className={`px-8 py-3 rounded-full text-xs font-bold uppercase tracking-widest shadow-lg transition-transform hover:scale-105 active:scale-95 ${variant === 'error' ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20' : 'btn-cardinal'}`}
+                            className={`px-8 py-3 rounded-full text-button shadow-lg transition-transform hover:scale-105 active:scale-95 ${variant === 'error' ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20' : 'btn-cardinal'}`}
                         >
                             {action.label}
                         </Link>
                     ) : (
                         <button
                             onClick={action.onClick}
-                            className={`px-8 py-3 rounded-full text-xs font-bold uppercase tracking-widest shadow-lg transition-transform hover:scale-105 active:scale-95 ${variant === 'error' ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20' : 'btn-cardinal'}`}
+                            className={`px-8 py-3 rounded-full text-button shadow-lg transition-transform hover:scale-105 active:scale-95 ${variant === 'error' ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20' : 'btn-cardinal'}`}
                         >
                             {action.label}
                         </button>
@@ -108,7 +112,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({
                 {secondaryAction && (
                     <button
                         onClick={secondaryAction.onClick}
-                        className="px-6 py-3 rounded-full text-xs font-bold uppercase tracking-widest text-gray-500 hover:text-white transition-colors"
+                        className="px-6 py-3 rounded-full text-button text-gray-500 hover:text-white transition-colors"
                     >
                         {secondaryAction.label}
                     </button>
