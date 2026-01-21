@@ -37,9 +37,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin, onJoin }) 
         <nav className="flex items-center justify-between">
           {/* Logo Area */}
           <div className="flex items-center gap-3">
-            <div className="grid h-9 w-9 place-items-center rounded-xl bg-white/10 ring-1 ring-white/10 shadow-lg shadow-[#8F1D2C]/10">
-              <span className="text-sm font-semibold tracking-tight">G1</span>
-            </div>
+            <img src="/icons/gridone-icon-256.png" alt="GridOne Logo" className="h-9 w-9 rounded-xl shadow-lg shadow-[#8F1D2C]/10" />
             <div className="leading-tight">
               <div className="text-sm font-semibold tracking-tight">GridOne</div>
               <div className="text-[11px] text-white/60">Squares</div>
