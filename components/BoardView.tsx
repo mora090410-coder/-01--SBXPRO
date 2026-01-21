@@ -25,6 +25,7 @@ import { compressImage } from '../utils/image';
 
 // Basic error boundary component
 import ErrorBoundary from './ErrorBoundary';
+import FullScreenLoading from './loading/FullScreenLoading';
 
 const API_URL = `${window.location.origin}/api/pools`;
 const LIVE_PROXY_URL = import.meta.env.VITE_LIVE_PROXY_URL || 'https://wandering-flower-f1de.anthony-mora13.workers.dev';
@@ -737,14 +738,7 @@ const BoardViewContent: React.FC = () => {
             }
 
             {/* Loading screen when pool data is being fetched */}
-            {loadingPool && urlPoolId && (
-                <div className="flex items-center justify-center h-screen bg-[#050505] text-white">
-                    <div className="flex flex-col items-center gap-4">
-                        <div className="w-12 h-12 rounded-full border-4 border-white/10 border-t-[#9D2235] animate-spin"></div>
-                        <p className="text-sm text-gray-400 font-medium tracking-wide">LOADING BOARD...</p>
-                    </div>
-                </div>
-            )}
+            {loadingPool && urlPoolId && <FullScreenLoading />}
 
             {!loadingPool && showLanding ? (
                 <LandingPage onCreate={openSetupWizard} onJoin={() => setShowJoinModal(true)} onLogin={handleCommissionerLogin} />
