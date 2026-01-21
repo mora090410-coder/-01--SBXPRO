@@ -1,6 +1,7 @@
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import './src/index.css'; // Tailwind
 import App from './App';
 
 const rootElement = document.getElementById('root');

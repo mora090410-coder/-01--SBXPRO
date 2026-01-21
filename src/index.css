@@ -1,0 +1,49 @@
+@import "tailwindcss";
+
+@theme {
+    /* Colors */
+    --color-background: #0B0C0F;
+    --color-cardinal: #8F1D2C;
+    --color-cardinal-subtle: rgba(143, 29, 44, 0.15);
+    --color-cardinal-hover: #7A1622;
+
+    --color-gold: #FFC72C;
+    --color-gold-dim: rgba(255, 199, 44, 0.3);
+    --color-gold-glow: rgba(255, 199, 44, 0.4);
+
+    --color-surface: #1c1c1e;
+    --color-surface-hover: #2c2c2e;
+    --color-surface-glass: rgba(28, 28, 30, 0.6);
+
+    --color-text-primary: #FFFFFF;
+    --color-text-secondary: rgba(235, 235, 245, 0.6);
+    --color-text-tertiary: rgba(235, 235, 245, 0.3);
+
+    /* Fonts */
+    --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+    /* Spacing */
+    --spacing-18: 4.5rem;
+    --spacing-22: 5.5rem;
+
+    /* Radii */
+    --radius-xl: 12px;
+    --radius-2xl: 16px;
+    --radius-3xl: 24px;
+}
+
+@layer base {
+    body {
+        @apply bg-background text-text-primary antialiased;
+    }
+}
+
+@layer components {
+    .btn-cardinal {
+        @apply bg-cardinal text-white font-bold rounded-full px-6 py-2 transition-transform hover:scale-105 active:scale-95 shadow-lg shadow-cardinal/20;
+    }
+
+    .glass-panel {
+        @apply bg-surface-glass backdrop-blur-xl border border-white/10 rounded-2xl shadow-lg;
+    }
+}

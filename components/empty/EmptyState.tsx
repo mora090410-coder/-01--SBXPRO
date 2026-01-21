@@ -39,10 +39,10 @@ const EmptyState: React.FC<EmptyStateProps> = ({
                 };
             case 'first-time':
                 return {
-                    bg: 'bg-[#1c1c1e]/40',
+                    bg: 'bg-surface-glass',
                     border: 'border-white/10',
                     iconBg: 'bg-white/5',
-                    iconColor: 'text-[#FFC72C]',
+                    iconColor: 'text-gold',
                     titleColor: 'text-white'
                 };
             case 'no-results':
@@ -51,8 +51,8 @@ const EmptyState: React.FC<EmptyStateProps> = ({
                     bg: 'bg-transparent',
                     border: 'border-transparent',
                     iconBg: 'bg-white/5',
-                    iconColor: 'text-gray-400',
-                    titleColor: 'text-gray-200'
+                    iconColor: 'text-text-secondary',
+                    titleColor: 'text-text-secondary'
                 };
         }
     };
