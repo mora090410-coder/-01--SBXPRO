@@ -75,3 +75,11 @@ export interface WinnerHighlights {
   quarterWinners: Record<string, string>;
   currentLabel: string;
 }
+
+export interface EntryMeta {
+  cell_index: number;
+  paid_status: 'unknown' | 'unpaid' | 'paid';
+  notify_opt_in: boolean;
+  contact_type: 'sms' | 'email' | null;
+  contact_value: string | null;
+}
