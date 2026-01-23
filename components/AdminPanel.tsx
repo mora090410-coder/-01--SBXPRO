@@ -799,8 +799,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
 
             {/* Header: Top Team and Axis */}
             <div className="flex items-end">
-              <div className="w-[100px] pr-4 flex flex-col justify-end">
-                <div className="text-[10px] font-black text-gray-500 text-right pb-3 tracking-widest uppercase">{localGame.leftAbbr}</div>
+              <div className="w-6"></div> {/* Spacer for vertical label */}
+              <div className="w-16 pr-3 flex flex-col justify-end">
+                {/* Removed top-left abbreviation, now vertical on side */}
               </div>
               <div className="flex-1">
                 <div className="text-center text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3">{localGame.topName}</div>
@@ -825,7 +826,14 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
 
             {/* Body: Left Labels and Main Grid */}
             <div className="flex">
-              <div className="w-[100px] flex flex-col gap-2 pr-4 pt-0 border-r border-white/5">
+              {/* Vertical Left Label */}
+              <div className="w-6 flex items-center justify-center">
+                <div className="text-[10px] font-black text-gray-500 uppercase tracking-widest whitespace-nowrap py-4" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>
+                  {localGame.leftName}
+                </div>
+              </div>
+
+              <div className="w-16 flex flex-col gap-2 pr-3 pt-0 border-r border-white/5">
                 {currentBearsAxis?.map((val, idx) => (
                   <div key={idx} className="flex items-center justify-end gap-3 group h-12">
                     <div className="relative w-10">
