@@ -91,16 +91,16 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
       .upsert({
         contest_id: activePoolId,
         cell_index: meta.cell_index,
-        paid_status: meta.paid_status,
+        paid_status: meta.paid_status === null ? undefined : meta.paid_status,
         notify_opt_in: meta.notify_opt_in,
-        contact_type: meta.contact_type,
-        contact_value: meta.contact_value,
+        contact_type: meta.contact_type || null,
+        contact_value: meta.contact_value || null,
         updated_at: new Date().toISOString()
       }, { onConflict: 'contest_id, cell_index' });
 
     if (error) {
       console.error("Error saving metadata:", error);
-      alert("Failed to save metadata. Please try again.");
+      alert(`Failed to save metadata: ${error.message || 'Unknown error'}`);
     }
   };
 
@@ -361,15 +361,33 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
     if (metaUpdates.length > 0) {
       setEntryMetaByIndex(newEntryMetaByIndex);
 
-      // 3. Batch Upsert to Supabase
+      // 3. Batch Upsert to Supabase (Non-blocking)
       if (activePoolId) {
+        // Prepare payload with explicit nulls for optional fields
+        const payload = metaUpdates.map(m => ({
+          contest_id: m.contest_id,
+          cell_index: m.cell_index,
+          paid_status: m.paid_status,
+          notify_opt_in: m.notify_opt_in,
+          contact_type: m.contact_type || null,
+          contact_value: m.contact_value || null,
+          updated_at: m.updated_at
+        }));
+
         supabase
           .from('contest_entries')
-          .upsert(metaUpdates, { onConflict: 'contest_id, cell_index' })
+          .upsert(payload, { onConflict: 'contest_id, cell_index' })
           .then(({ error }) => {
             if (error) {
-              console.error("Batch save failed:", error);
-              alert("Failed to save payment status. Please try again.");
+              console.error("Batch save failed (non-blocking):", {
+                message: error.message,
+                details: error.details,
+                hint: error.hint,
+                code: error.code
+              });
+              // No alert shown to user to keep flow smooth
+            } else {
+              console.log("Batch metadata saved successfully");
             }
           });
       }
