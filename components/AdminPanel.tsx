@@ -541,12 +541,46 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                       setShowMenu(false);
                       onLogout();
                     }}
-                    className="w-full px-4 py-2.5 text-left text-sm font-medium text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors flex items-center gap-3"
+                    className="w-full px-4 py-2.5 text-left text-sm font-medium text-white/60 hover:bg-white/[0.08] hover:text-white transition-colors flex items-center gap-3"
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                     </svg>
                     Log out
+                  </button>
+
+                  <div className="my-1.5 border-t border-white/[0.08]" />
+
+                  {/* Delete Contest Logic */}
+                  <button
+                    onClick={async () => {
+                      if (!activePoolId) return;
+                      if (!confirm(`Are you sure you want to delete this contest?\nThis action cannot be undone.`)) {
+                        setShowMenu(false);
+                        return;
+                      }
+
+                      try {
+                        const { error } = await supabase
+                          .from('contests')
+                          .delete()
+                          .eq('id', activePoolId);
+
+                        if (error) throw error;
+
+                        // Force redirect to dashboard
+                        window.location.href = '/dashboard';
+                      } catch (err) {
+                        console.error("Failed to delete contest:", err);
+                        alert("Failed to delete contest");
+                      }
+                    }}
+                    className="w-full px-4 py-2.5 text-left text-sm font-medium text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors flex items-center gap-3"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    Delete Contest
                   </button>
                 </div>
               </>,

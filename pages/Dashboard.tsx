@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Plus } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../services/supabase';
 import { GameState } from '../types';
@@ -50,6 +50,31 @@ const Dashboard: React.FC = () => {
             fetchContests();
         }
     }, [user]);
+
+    const handleDelete = async (e: React.MouseEvent, contestId: string, contestTitle: string) => {
+        e.preventDefault(); // Prevent navigation
+        e.stopPropagation();
+
+        if (!confirm(`Are you sure you want to delete "${contestTitle}"?\nThis action cannot be undone.`)) {
+            return;
+        }
+
+        try {
+            // 1. Delete from Supabase
+            const { error } = await supabase
+                .from('contests')
+                .delete()
+                .eq('id', contestId);
+
+            if (error) throw error;
+
+            // 2. Update local state
+            setContests(current => current.filter(c => c.id !== contestId));
+        } catch (err) {
+            console.error('Error deleting contest:', err);
+            alert('Failed to delete contest. Please try again.');
+        }
+    };
 
     if (authLoading || loading) {
         return (
@@ -120,6 +145,15 @@ const Dashboard: React.FC = () => {
                                         {contest.settings.leftAbbr || 'UNK'} vs {contest.settings.topAbbr || 'UNK'}
                                     </span>
                                 </div>
+
+                                {/* Delete Button (Top Right) */}
+                                <button
+                                    onClick={(e) => handleDelete(e, contest.id, contest.title)}
+                                    className="absolute top-4 right-4 p-2 rounded-full bg-black/40 hover:bg-red-500/20 text-white/40 hover:text-red-400 border border-white/5 hover:border-red-500/30 backdrop-blur-sm transition-all opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 z-20"
+                                    title="Delete Contest"
+                                >
+                                    <Trash2 className="w-4 h-4" strokeWidth={1.5} />
+                                </button>
                             </div>
 
                             {/* Footer Info */}
