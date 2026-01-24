@@ -31,16 +31,16 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({ onClose }) => {
                     <div className="space-y-2">
                         <h2 className="text-2xl font-black text-white tracking-tight">Unlock Your Board</h2>
                         <p className="text-gray-400 text-sm leading-relaxed">
-                            Create a free account to <b>Save</b> your board, <b>Share</b> with friends, and get <b>Live Updates</b> during the game.
+                            Pay <b>$14.99</b> to <b>Save</b> your board, <b>Share</b> with friends, and get <b>Live Updates</b> during the game.
                         </p>
                     </div>
 
                     <div className="space-y-3 pt-2">
                         <button
                             onClick={handleLogin}
-                            className="w-full py-3.5 rounded-xl bg-white text-black font-bold text-sm uppercase tracking-wider hover:bg-gray-200 hover:scale-[1.02] active:scale-95 transition-all shadow-lg"
+                            className="w-full py-3.5 rounded-xl bg-[#FFC72C] text-black font-bold text-sm uppercase tracking-wider hover:brightness-110 hover:scale-[1.02] active:scale-95 transition-all shadow-lg"
                         >
-                            Create Free Account
+                            Pay $14.99 to Unlock Board
                         </button>
                         <button
                             onClick={onClose}

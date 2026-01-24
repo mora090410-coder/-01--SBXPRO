@@ -59,7 +59,8 @@ const ScanPage: React.FC = () => {
                 dates: new Date().toISOString().split('T')[0],
                 meta: "Imported from scan",
                 payouts: { Q1: 0, Q2: 0, Q3: 0, Final: 0 },
-                owner_id: "guest", // Temporary
+                lockTitle: false,
+                lockMeta: false
             };
 
             setGuestBoard({ game: newGame, board: boardData });
@@ -71,7 +72,7 @@ const ScanPage: React.FC = () => {
             // Need to ensure /create handles loading from GuestContext on mount.
 
             setTimeout(() => {
-                navigate('/create');
+                navigate('/create?step=3&mode=verify');
             }, 800);
 
         } catch (error) {

@@ -33,7 +33,11 @@ const CreateContest: React.FC = () => {
             // If we have board data (scanned), maybe skip to step 3 or let them review?
             // Let's start at Step 1 so they can name it, but pre-filled.
             if (guestBoard.game.title === "Scanned Board") {
-                // Maybe auto-advance if we want 'Magic' feel, but naming is important.
+                // Check URL params
+                const params = new URLSearchParams(window.location.search);
+                if (params.get('mode') === 'verify' && params.get('step') === '3') {
+                    setStep(3);
+                }
             }
         }
     }, [guestBoard]);

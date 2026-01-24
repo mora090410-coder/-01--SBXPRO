@@ -272,7 +272,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onScan, onLogin, on
             <div className="rounded-3xl bg-white/5 p-8 ring-1 ring-white/10 hover:ring-white/20 transition-all">
               <div className="flex items-center justify-between">
                 <div className="text-sm font-semibold text-white">Activate this board</div>
-                <div className="text-lg font-semibold text-white">$9.99</div>
+                <div className="text-lg font-semibold text-white">$14.99</div>
               </div>
               <div className="mt-1 text-sm text-white/65">Perfect for a one-off event.</div>
 

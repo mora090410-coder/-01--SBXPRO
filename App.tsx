@@ -19,11 +19,8 @@ const Home = () => {
   const poolId = searchParams.get('poolId');
 
   React.useEffect(() => {
-    // Persistent Auth Check: If I have a user, go straight to dashboard
-    if (!loading && user && !poolId) {
-      navigate('/dashboard');
-    }
-  }, [user, loading, navigate, poolId]);
+    // Auth Check removed to allow Landing Page access
+  }, []);
 
   // If poolId is present, show the board
   if (poolId) {

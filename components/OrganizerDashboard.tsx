@@ -181,15 +181,27 @@ export const OrganizerDashboard: React.FC<OrganizerDashboardProps> = ({
     }, [board, liveData]);
 
     const handleNudge = (item: any) => {
+        // Mobile-First Nudge Logic
+        // 1. If we have a phone number (10+ digits), prioritizing SMS
+        const isPhone = item.contactValue?.replace(/\D/g, '').length === 10;
+
+        if (item.contactValue && isPhone) {
+            const body = `Hi ${item.name}, quick reminder to settle up for square %23${item.idx + 1} on ${gameTitle}. You can pay via Venmo/Zelle here!`;
+            // Use sms: protocol
+            window.location.href = `sms:${item.contactValue}?body=${body}`;
+            return;
+        }
+
+        // 2. Email Fallback
         if (item.contactType === 'email' && item.contactValue) {
             const subject = encodeURIComponent(`Action Required: Square ${item.idx + 1} - ${gameTitle || 'Super Bowl Pool'}`);
             const body = encodeURIComponent(`Hi ${item.name},\n\nJust a friendly reminder to complete your payment for square #${item.idx + 1}.\n\nThanks!`);
             window.location.href = `mailto:${item.contactValue}?subject=${subject}&body=${body}`;
         } else {
-            // Fallback to copy if no email
-            const text = `Square ${item.idx + 1} - ${item.name} - Status: ${item.paid}`;
+            // 3. Fallback to copy
+            const text = `Hi ${item.name}, please update your square info: ${item.reason}`;
             navigator.clipboard.writeText(text);
-            alert("Info copied to clipboard! (No email found for nudge)");
+            alert("Nudge text copied to clipboard! (No valid phone/email found)");
         }
     };
 

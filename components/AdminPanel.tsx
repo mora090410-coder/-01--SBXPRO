@@ -20,9 +20,10 @@ interface AdminPanelProps {
   onClose: () => void;
   onLogout: () => void;
   onPreview: () => void;
+  initialTab?: 'dashboard' | 'edit';
 }
 
-const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, activePoolId, liveData, onApply, onPublish, onClose, onLogout, onPreview }) => {
+const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, activePoolId, liveData, onApply, onPublish, onClose, onLogout, onPreview, initialTab = 'edit' }) => {
   const [localGame, setLocalGame] = useState<GameState>(game);
   const [localBoard, setLocalBoard] = useState<BoardData>(board);
   const [isScanning, setIsScanning] = useState(false);
@@ -30,7 +31,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
   const fileInputRef = useRef<HTMLInputElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const [activeAxisQuarter, setActiveAxisQuarter] = useState<'Q1' | 'Q2' | 'Q3' | 'Q4'>('Q1');
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'edit'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'edit'>(initialTab);
 
   // Metadata State (via Hook)
   const { entryMetaByIndex, setEntryMetaByIndex } = useContestEntries(activePoolId);
@@ -94,6 +95,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
       cell_index: idx,
       paid_status: newStatus,
       notify_opt_in: current?.notify_opt_in ?? false,
+      contact_type: current?.contact_type ?? null,
+      contact_value: current?.contact_value ?? null,
       updated_at: new Date().toISOString()
     });
   };
