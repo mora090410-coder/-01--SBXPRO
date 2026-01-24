@@ -1051,6 +1051,7 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                             board={board}
                             adminToken={adminToken || ''}
                             activePoolId={activePoolId || ''}
+                            liveData={liveData}
                             onApply={(g, b) => { setGame(g); setBoard(b); }}
                             onPublish={handlePublish}
                             onClose={() => handleTogglePreview(true)}
