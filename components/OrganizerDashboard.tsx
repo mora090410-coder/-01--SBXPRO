@@ -31,6 +31,7 @@ export const OrganizerDashboard: React.FC<OrganizerDashboardProps> = ({
     entryMetaByIndex,
     liveData,
     onOpenSquareDetails,
+    gameTitle
 }) => {
     // 1. Coverage Stats
     const coverage = useMemo(() => {
@@ -70,7 +71,17 @@ export const OrganizerDashboard: React.FC<OrganizerDashboardProps> = ({
 
     // 3. Follow-up Queue
     const workQueue = useMemo(() => {
-        const queue: { idx: number; name: string; reason: string; priority: number; paid: string; notify: boolean; contact: boolean }[] = [];
+        const queue: {
+            idx: number;
+            name: string;
+            reason: string;
+            priority: number;
+            paid: string;
+            notify: boolean;
+            contact: boolean;
+            contactValue?: string | null;
+            contactType?: 'sms' | 'email' | null;
+        }[] = [];
 
         board.squares.forEach((names, idx) => {
             if (!names || names.length === 0) return;
@@ -99,9 +110,29 @@ export const OrganizerDashboard: React.FC<OrganizerDashboardProps> = ({
             // c) Missing contact where notify_opt_in is true
 
             if (notifyOptIn && !hasContact) {
-                queue.push({ idx, name, reason: 'Missing Contact (Notify On)', priority: 3, paid: meta?.paid_status || '?', notify: true, contact: false });
+                queue.push({
+                    idx,
+                    name,
+                    reason: 'Missing Contact',
+                    priority: 3,
+                    paid: meta?.paid_status || '?',
+                    notify: true,
+                    contact: false,
+                    contactValue: meta?.contact_value,
+                    contactType: meta?.contact_type
+                });
             } else if (isUnpaid || isUnknown) {
-                queue.push({ idx, name, reason: 'Unpaid', priority: 2, paid: meta?.paid_status || 'unpaid', notify: notifyOptIn, contact: hasContact });
+                queue.push({
+                    idx,
+                    name,
+                    reason: 'Unpaid',
+                    priority: 2,
+                    paid: meta?.paid_status || 'unpaid',
+                    notify: notifyOptIn,
+                    contact: hasContact,
+                    contactValue: meta?.contact_value,
+                    contactType: meta?.contact_type
+                });
             }
         });
 
@@ -111,11 +142,6 @@ export const OrganizerDashboard: React.FC<OrganizerDashboardProps> = ({
 
     // 4. Winners Snapshot
     const winnerInfo = useMemo(() => {
-        // If we have liveData, we can show actual winners.
-        // If not, we have nothing.
-        // We can also show "Projected" winners if using manual scores?
-        // User requested: "Reuse existing winner computation... Q1, Q2, Q3, Final"
-
         if (!liveData) return null;
 
         const { quarterWinners } = calculateWinnerHighlights(liveData);
@@ -154,9 +180,17 @@ export const OrganizerDashboard: React.FC<OrganizerDashboardProps> = ({
         return results;
     }, [board, liveData]);
 
-    const copyFollowUp = (item: any) => {
-        const text = `Square ${item.idx + 1} - ${item.name} - Status: ${item.paid}`;
-        navigator.clipboard.writeText(text);
+    const handleNudge = (item: any) => {
+        if (item.contactType === 'email' && item.contactValue) {
+            const subject = encodeURIComponent(`Action Required: Square ${item.idx + 1} - ${gameTitle || 'Super Bowl Pool'}`);
+            const body = encodeURIComponent(`Hi ${item.name},\n\nJust a friendly reminder to complete your payment for square #${item.idx + 1}.\n\nThanks!`);
+            window.location.href = `mailto:${item.contactValue}?subject=${subject}&body=${body}`;
+        } else {
+            // Fallback to copy if no email
+            const text = `Square ${item.idx + 1} - ${item.name} - Status: ${item.paid}`;
+            navigator.clipboard.writeText(text);
+            alert("Info copied to clipboard! (No email found for nudge)");
+        }
     };
 
     return (
@@ -205,7 +239,7 @@ export const OrganizerDashboard: React.FC<OrganizerDashboardProps> = ({
             </DashboardCard>
 
             {/* 3. Follow-Up Queue (Spans 2 cols on large if needed, or stick to grid) */}
-            <DashboardCard title="Follow-Up Queue" className="md:col-span-2 lg:col-span-1 row-span-2">
+            <DashboardCard title="Follow-Up Queue (Nudge Engine)" className="md:col-span-2 lg:col-span-1 row-span-2">
                 {workQueue.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-center py-8">
                         <div className="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center mb-3">
@@ -224,10 +258,16 @@ export const OrganizerDashboard: React.FC<OrganizerDashboardProps> = ({
                                         <div className="text-[10px] text-red-300 truncate">{item.reason}</div>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
-                                    <button onClick={() => copyFollowUp(item)} className="p-1.5 rounded hover:bg-white/10 text-white/50 hover:text-white" title="Copy Info">
-                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-                                    </button>
+                                <div className="flex items-center gap-2">
+                                    {item.contactType === 'email' ? (
+                                        <button onClick={() => handleNudge(item)} className="px-2 py-1 rounded bg-indigo-500/20 text-indigo-300 text-[10px] font-bold uppercase hover:bg-indigo-500/40 transition-colors" title="Send Email Nudge">
+                                            Nudge
+                                        </button>
+                                    ) : (
+                                        <button onClick={() => handleNudge(item)} className="p-1.5 rounded hover:bg-white/10 text-white/50 hover:text-white" title="Copy Info">
+                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                                        </button>
+                                    )}
                                     <button onClick={() => onOpenSquareDetails(item.idx)} className="p-1.5 rounded hover:bg-white/10 text-white/50 hover:text-white" title="Open Details">
                                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
                                     </button>

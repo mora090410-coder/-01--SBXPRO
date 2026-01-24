@@ -22,6 +22,8 @@ import { useLiveScoring } from '../hooks/useLiveScoring';
 import { useAuth } from '../hooks/useAuth';
 import { getContrastYIQ, ensureMinLuminance, hexToRgb } from '../utils/theme';
 import { compressImage } from '../utils/image';
+import { useGuest } from '../context/GuestContext';
+import { PaywallModal } from './PaywallModal';
 
 // Basic error boundary component
 import ErrorBoundary from './ErrorBoundary';
@@ -110,7 +112,9 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
     const [showAdminView, setShowAdminView] = useState(false); // Restored
     const [showRecoveryModal, setShowRecoveryModal] = useState(false); // New
     const [showFindSquaresModal, setShowFindSquaresModal] = useState(false);
+
     const [showPayoutsModal, setShowPayoutsModal] = useState(false);
+    const [showPaywallModal, setShowPaywallModal] = useState(false);
 
     const [copyFeedback, setCopyFeedback] = useState(false);
     const [authInput, setAuthInput] = useState('');
@@ -160,7 +164,8 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
     // In demo mode, we always bypass landing
     const showLanding = !demoMode && !activePoolId && !urlPoolId && !loadingPool && !hasEnteredApp && !isInitialized && !wizardSuccess;
     // Commissioner Mode gated by Preview Mode
-    const isOwner = auth.user && ownerId && auth.user.id === ownerId;
+    const { guestBoard } = useGuest();
+    const isOwner = (auth.user && ownerId && auth.user.id === ownerId) || (!activePoolId && !!guestBoard);
     const isCommissionerMode = (showAdminView && !!adminToken && !isPreviewMode) || (isOwner && !isPreviewMode);
 
     // Auto-show admin view for owner
@@ -168,7 +173,7 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
         if (isOwner) setShowAdminView(true);
     }, [isOwner]);
 
-    // Initialize Demo Mode
+    // Initialize Demo Mode OR Guest Mode
     useEffect(() => {
         if (demoMode) {
             setBoard(SAMPLE_BOARD);
@@ -181,8 +186,17 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
             setIsInitialized(true);
             setHasEnteredApp(true);
             setActiveTab('board');
+        } else if (!activePoolId && !urlPoolId && guestBoard && !isInitialized) {
+            // Hydrate from Guest Context
+            setGame(guestBoard.game);
+            setBoard(guestBoard.board);
+            setIsInitialized(true);
+            setHasEnteredApp(true);
+            setShowAdminView(true); // Default to edit mode for guest
+            setActiveTab('board');
         }
-    }, [demoMode, setBoard, setGame]);
+    }, [demoMode, setBoard, setGame, activePoolId, urlPoolId, guestBoard, isInitialized]);
+
 
     const knownAdminToken = useMemo(() => {
         const targetId = joinInput.trim().toUpperCase() || activePoolId;
@@ -312,11 +326,17 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
     };
 
     const handlePublish = async (token: string, currentData?: { game: GameState, board: BoardData, adminEmail?: string }) => {
+        // Paywall Gate for Guest Users
+        if (!auth.user) {
+            setShowPaywallModal(true);
+            throw new Error("Login Required");
+        }
+
         try {
             const g = currentData?.game || game;
             const b = currentData?.board || board;
 
-            // For existing pools owned by the current user, use Supabase directly
+            // Scenario 1: Existing Pool -> Update via Hook
             if (activePoolId && isOwner) {
                 const success = await updatePool(activePoolId, token, { game: g, board: b });
                 if (!success) throw new Error("Failed to save changes to Supabase");
@@ -324,51 +344,44 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                 return activePoolId;
             }
 
-            // Fallback to legacy KV API for new pools or non-owners
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 12000);
+            // Scenario 2: New Pool (Guest -> Authenticated) -> Insert to Supabase
+            // Discard legacy KV API logic entirely
             const payload = {
-                game: { ...g, title: g.title || "SBXPRO Pool", coverImage: g.coverImage || "" },
-                board: b,
-                adminEmail: currentData?.adminEmail
+                owner_id: auth.user.id,
+                title: g.title || "SBXPRO Pool",
+                settings: { ...g, title: g.title }, // Store game state in settings
+                board_data: b,
+                created_at: new Date().toISOString()
             };
-            const method = activePoolId ? 'PUT' : 'POST';
-            const url = activePoolId ? `${API_URL}/${activePoolId}` : API_URL;
-            const res = await fetch(url, {
-                method,
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify(payload),
-                signal: controller.signal
-            });
-            clearTimeout(timeoutId);
-            if (!res.ok) {
-                if (res.status === 401 || res.status === 403) {
-                    const storedTokens = JSON.parse(localStorage.getItem('sbxpro_tokens') || '{}');
-                    if (activePoolId) delete storedTokens[activePoolId];
-                    localStorage.setItem('sbxpro_tokens', JSON.stringify(storedTokens));
-                    setAdminToken('');
-                    setShowAdminView(false);
-                    throw new Error('Unauthorized: Admin Session Expired. Please log in again.');
-                }
-                const errJson = await res.json().catch(() => ({}));
-                throw new Error(errJson.message || `Server Error: ${res.status}`);
-            }
-            const result = await res.json();
-            const newPoolId = activePoolId || result.poolId;
-            if (!newPoolId) throw new Error("Pool ID was not returned by server.");
+
+            const { data, error } = await supabase
+                .from('contests')
+                .insert([payload])
+                .select('id')
+                .single();
+
+            if (error) throw error;
+            if (!data) throw new Error("No data returned from insert.");
+
+            const newPoolId = data.id;
+
+            // Update Local State
             const storedTokens = JSON.parse(localStorage.getItem('sbxpro_tokens') || '{}');
-            storedTokens[newPoolId] = token;
+            storedTokens[newPoolId] = "auth-owner"; // Placeholder token for legacy compat
             localStorage.setItem('sbxpro_tokens', JSON.stringify(storedTokens));
+
             setActivePoolId(newPoolId);
-            setAdminToken(token);
+            setAdminToken("auth-owner");
+
             const newUrl = new URL(window.location.href);
             newUrl.searchParams.set('poolId', newPoolId);
             window.history.pushState({ poolId: newPoolId }, '', newUrl.toString());
+
             return newPoolId;
+
         } catch (err: any) {
-            const msg = err.name === 'AbortError' ? "Server timeout. Cloudflare response was delayed." : (err.message || "Unknown Network Error");
             console.error("Publish Failed:", err);
-            alert(`Publish Failed: ${msg}`);
+            alert(`Publish Failed: ${err.message || "Unknown error"}`);
             throw err;
         }
     };
@@ -539,6 +552,8 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                     </div>
                 </div>
             )}
+
+            {showPaywallModal && <PaywallModal onClose={() => setShowPaywallModal(false)} />}
 
             {showJoinModal && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
@@ -758,7 +773,7 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
             {loadingPool && urlPoolId && <FullScreenLoading />}
 
             {!loadingPool && showLanding ? (
-                <LandingPage onCreate={openSetupWizard} onDemo={() => navigate('/demo')} onLogin={handleCommissionerLogin} />
+                <LandingPage onCreate={openSetupWizard} onScan={() => navigate('/create?mode=scan')} onDemo={() => navigate('/demo')} onLogin={handleCommissionerLogin} />
             ) : !loadingPool && (
                 <>
                     <div className="flex-1 flex flex-col relative z-50 w-full max-w-6xl mx-auto md:px-6 h-full">

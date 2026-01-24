@@ -9,8 +9,11 @@ import { NFL_TEAMS, SAMPLE_BOARD } from '../constants';
 import { GameState, BoardData } from '../types';
 import { INITIAL_GAME, EMPTY_BOARD } from '../hooks/usePoolData';
 
+import { useGuest } from '../context/GuestContext';
+
 const CreateContest: React.FC = () => {
     const { user, loading: authLoading } = useAuth();
+    const { guestBoard, setGuestBoard } = useGuest();
     const navigate = useNavigate();
 
     // Wizard State
@@ -22,12 +25,21 @@ const CreateContest: React.FC = () => {
     const [successPoolId, setSuccessPoolId] = useState<string | null>(null);
     const fileRef = useRef<HTMLInputElement>(null);
 
+    // Hydrate from Guest Context if available
     useEffect(() => {
-        console.log("CreateContest: user=", user, "authLoading=", authLoading); // Debug
-        if (!authLoading && !user) {
-            navigate('/login');
+        if (guestBoard) {
+            setGame(guestBoard.game);
+            setBoard(guestBoard.board);
+            // If we have board data (scanned), maybe skip to step 3 or let them review?
+            // Let's start at Step 1 so they can name it, but pre-filled.
+            if (guestBoard.game.title === "Scanned Board") {
+                // Maybe auto-advance if we want 'Magic' feel, but naming is important.
+            }
         }
-    }, [user, authLoading, navigate]);
+    }, [guestBoard]);
+
+    // Auth check removed to allow Guest Mode
+    // We will enforce auth only at "Publish" time.
 
     const handleTeamChange = (side: 'left' | 'top', abbr: string) => {
         const team = NFL_TEAMS.find(t => t.abbr === abbr);
@@ -71,7 +83,17 @@ const CreateContest: React.FC = () => {
     };
 
     const handlePublish = async (manualBoard?: BoardData) => {
-        if (!user) return;
+        // If guest, launch into Local Mode (Paywall comes later on Publish/Share)
+        if (!user) {
+            setGuestBoard({
+                game: { ...game },
+                board: manualBoard || board
+            });
+            // Navigate to catch-all route which renders BoardView
+            navigate('/board');
+            return;
+        }
+
         setIsLoading(true);
         setError(null);
 

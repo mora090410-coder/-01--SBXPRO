@@ -38,9 +38,21 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
 
   // Bulk Assign State
   const [isAssignMode, setIsAssignMode] = useState(false);
+  const [isRapidPayMode, setIsRapidPayMode] = useState(false);
   const [assignLabel, setAssignLabel] = useState('');
   const [assignPaidDefault, setAssignPaidDefault] = useState<EntryMeta['paid_status']>('unpaid');
   const [selectedCellIndices, setSelectedCellIndices] = useState<Set<number>>(new Set());
+
+  // Recent Players (Mocked for now, or derived from board)
+  const recentPlayers = useMemo(() => {
+    const names = new Set<string>();
+    localBoard.squares.forEach(sq => {
+      if (sq[0]) names.add(sq[0]);
+    });
+    // Add some defaults for demo if empty
+    if (names.size === 0) return ["Mora", "Carrie", "Dad", "Coach"];
+    return Array.from(names).slice(0, 5);
+  }, [localBoard]);
 
   // Auto-save status: 'saved' | 'saving' | 'error'
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error'>('saved');
@@ -71,6 +83,19 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
       console.error("Error saving metadata:", error);
       alert(`Failed to save metadata: ${error.message || 'Unknown error'}`);
     }
+  };
+
+  const togglePaymentStatus = (idx: number) => {
+    const current = entryMetaByIndex[idx];
+    const newStatus = current?.paid_status === 'paid' ? 'unpaid' : 'paid';
+
+    saveEntryMeta({
+      contest_id: activePoolId || 'guest',
+      cell_index: idx,
+      paid_status: newStatus,
+      notify_opt_in: current?.notify_opt_in ?? false,
+      updated_at: new Date().toISOString()
+    });
   };
 
   // Apply changes locally (for real-time preview)
@@ -757,31 +782,64 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                   </div>
                 )}
 
-                {/* Bulk Assign Toggle */}
+                {/* Bulk Assign Toggle & Rapid Pay */}
+                <button
+                  onClick={() => {
+                    setIsRapidPayMode(!isRapidPayMode);
+                    setIsAssignMode(false); // Mutually exclusive
+                  }}
+                  className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${isRapidPayMode ? 'bg-[#FFC72C] text-black shadow-lg shadow-[#FFC72C]/20' : 'bg-white/10 text-white/70 hover:bg-white/20'}`}
+                >
+                  {isRapidPayMode ? 'Done Paying' : 'Rapid Pay'}
+                </button>
+
                 <button
                   onClick={() => {
                     setIsAssignMode(!isAssignMode);
+                    setIsRapidPayMode(false);
                     setSelectedCellIndices(new Set());
                   }}
                   className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${isAssignMode ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' : 'bg-white/10 text-white/70 hover:bg-white/20'}`}
                 >
-                  {isAssignMode ? 'Done' : 'Assign Squares'}
+                  {isAssignMode ? 'Done Assigning' : 'Assign Squares'}
                 </button>
               </div>
             </div>
 
+            {/* Rapid Pay Hint */}
+            {isRapidPayMode && (
+              <div className="bg-[#FFC72C]/10 border border-[#FFC72C]/20 rounded-xl p-3 flex items-center justify-center animate-in slide-in-from-top-2">
+                <p className="text-[#FFC72C] text-xs font-bold uppercase tracking-widest">Tap any square to toggle Paid/Unpaid</p>
+              </div>
+            )}
+
             {/* Bulk Assign Panel */}
             {isAssignMode && (
               <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-4 flex flex-col md:flex-row gap-4 items-center animate-in slide-in-from-top-2">
-                <div className="flex-1 w-full space-y-1">
-                  <label className="text-[10px] font-bold text-indigo-300 uppercase tracking-widest">Label to Apply</label>
-                  <input
-                    type="text"
-                    value={assignLabel}
-                    onChange={(e) => setAssignLabel(e.target.value)}
-                    placeholder="e.g. Mora"
-                    className="w-full bg-[#1c1c1e] border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-indigo-500 outline-none"
-                  />
+                <div className="flex-1 w-full space-y-2">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-indigo-300 uppercase tracking-widest">Label to Apply</label>
+                    <input
+                      type="text"
+                      value={assignLabel}
+                      onChange={(e) => setAssignLabel(e.target.value)}
+                      placeholder="e.g. Mora"
+                      className="w-full bg-[#1c1c1e] border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-indigo-500 outline-none"
+                    />
+                  </div>
+
+                  {/* Recent Players Chips */}
+                  <div className="flex flex-wrap gap-2">
+                    {recentPlayers.map(name => (
+                      <button
+                        key={name}
+                        onClick={() => setAssignLabel(name)}
+                        className="text-[10px] px-2 py-1 rounded bg-white/5 hover:bg-white/10 text-white/70 border border-white/5 transition-colors"
+                      >
+                        {name}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 <div className="w-full md:w-auto space-y-1">
@@ -884,15 +942,20 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                             {/* Unified Click Handler */}
                             <div
                               onClick={() => {
-                                if (isAssignMode) {
+                                if (isRapidPayMode) {
+                                  togglePaymentStatus(cellIdx);
+                                } else if (isAssignMode) {
                                   toggleCellSelection(cellIdx);
                                 } else {
                                   setEditingMetaIndex(cellIdx);
                                 }
                               }}
-                              className={`w-full h-full border rounded-lg flex flex-col items-center justify-center p-1 cursor-pointer transition-all group active:scale-95 ${isAssignMode && selectedCellIndices.has(cellIdx)
-                                ? 'bg-indigo-500/30 border-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.3)]'
-                                : 'bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/20'
+                              className={`w-full h-full border rounded-lg flex flex-col items-center justify-center p-1 cursor-pointer transition-all group active:scale-95 
+                                ${isAssignMode && selectedCellIndices.has(cellIdx)
+                                  ? 'bg-indigo-500/30 border-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.3)]'
+                                  : entryMetaByIndex[cellIdx]?.paid_status === 'unpaid'
+                                    ? 'bg-orange-500/10 border-orange-500/40 shadow-[0_0_8px_rgba(249,115,22,0.15)] animate-pulse-slow' // Smart Toggle Visual
+                                    : 'bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/20'
                                 }`}
                             >
                               <span className="text-[10px] font-medium text-white/90 truncate w-full text-center">
@@ -913,7 +976,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                             )}
                             {entryMetaByIndex[cellIdx]?.paid_status === 'unpaid' && (
                               <div className="absolute bottom-1 right-1 pointer-events-none">
-                                <svg className="w-3 h-3 text-red-500 drop-shadow-md" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" /></svg>
+                                <svg className="w-3 h-3 text-orange-400 drop-shadow-md" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" /></svg>
                               </div>
                             )}
                           </div>
