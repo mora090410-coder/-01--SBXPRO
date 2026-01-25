@@ -2,38 +2,16 @@
  * usePoolData Hook Tests
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
+import { renderHook, act, waitFor } from '@testing-library/react';
 import { usePoolData, INITIAL_GAME, EMPTY_BOARD } from '../hooks/usePoolData';
 
-// Mock Supabase
-const { mockFrom, mockSelect, mockEq, mockSingle } = vi.hoisted(() => {
-    const mockSingle = vi.fn();
-    const mockEq = vi.fn(() => ({ single: mockSingle }));
-    const mockSelect = vi.fn(() => ({ eq: mockEq }));
-    const mockFrom = vi.fn(() => ({ select: mockSelect, insert: vi.fn(), update: vi.fn() }));
-    return { mockFrom, mockSelect, mockEq, mockSingle };
-});
-
-vi.mock('../services/supabase', () => ({
-    supabase: {
-        from: mockFrom,
-        auth: {
-            getUser: vi.fn()
-        }
-    }
-}));
+// Mock fetch
+const mockFetch = vi.fn();
+globalThis.fetch = mockFetch;
 
 describe('usePoolData', () => {
     beforeEach(() => {
-        vi.clearAllMocks();
-        // Default valid chain setup
-        mockFrom.mockReturnValue({
-            select: mockSelect,
-            insert: () => ({ select: () => ({ single: () => Promise.resolve({ data: { id: 'NEW123' }, error: null }) }) }),
-            update: () => ({ eq: () => Promise.resolve({ error: null }) })
-        });
-        mockSelect.mockReturnValue({ eq: mockEq });
-        mockEq.mockReturnValue({ single: mockSingle });
+        mockFetch.mockReset();
     });
 
     it('should initialize with default values', () => {
@@ -48,14 +26,17 @@ describe('usePoolData', () => {
     });
 
     it('should load pool data successfully', async () => {
-        const mockData = {
-            id: 'TEST123',
-            owner_id: 'owner_1',
-            settings: { ...INITIAL_GAME, title: 'Test League' },
-            board_data: EMPTY_BOARD
+        const mockPoolData = {
+            data: {
+                game: { ...INITIAL_GAME, title: 'Test League' },
+                board: EMPTY_BOARD
+            }
         };
 
-        mockSingle.mockResolvedValueOnce({ data: mockData, error: null });
+        mockFetch.mockResolvedValueOnce({
+            ok: true,
+            json: () => Promise.resolve(mockPoolData)
+        });
 
         const { result } = renderHook(() => usePoolData());
 
@@ -70,7 +51,10 @@ describe('usePoolData', () => {
     });
 
     it('should handle pool not found error', async () => {
-        mockSingle.mockResolvedValueOnce({ data: null, error: { message: 'Pool not found' } });
+        mockFetch.mockResolvedValueOnce({
+            ok: false,
+            status: 404
+        });
 
         const { result } = renderHook(() => usePoolData());
 

@@ -4,8 +4,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useAuth } from '../hooks/useAuth';
-import { AuthProvider } from '../context/AuthContext';
-import React from 'react';
 
 // Mock fetch
 const mockFetch = vi.fn();
@@ -29,12 +27,8 @@ describe('useAuth', () => {
         localStorageMock.clear();
     });
 
-    const wrapper = ({ children }: { children: React.ReactNode }) => (
-        <AuthProvider>{children} </AuthProvider>
-    );
-
     it('should initialize with null adminToken', () => {
-        const { result } = renderHook(() => useAuth(), { wrapper });
+        const { result } = renderHook(() => useAuth());
 
         expect(result.current.adminToken).toBeNull();
         expect(result.current.isAdmin).toBe(false);
@@ -45,14 +39,14 @@ describe('useAuth', () => {
     it('should load adminToken from localStorage', () => {
         localStorageMock.setItem('sbx_adminToken', 'stored-token');
 
-        const { result } = renderHook(() => useAuth(), { wrapper });
+        const { result } = renderHook(() => useAuth());
 
         expect(result.current.adminToken).toBe('stored-token');
         expect(result.current.isAdmin).toBe(true);
     });
 
     it('should set adminToken and save to localStorage', () => {
-        const { result } = renderHook(() => useAuth(), { wrapper });
+        const { result } = renderHook(() => useAuth());
 
         act(() => {
             result.current.setAdminToken('new-token');
@@ -64,7 +58,7 @@ describe('useAuth', () => {
 
     it('should clear adminToken on logout', () => {
         localStorageMock.setItem('sbx_adminToken', 'stored-token');
-        const { result } = renderHook(() => useAuth(), { wrapper });
+        const { result } = renderHook(() => useAuth());
 
         act(() => {
             result.current.logout();
@@ -80,7 +74,7 @@ describe('useAuth', () => {
             json: () => Promise.resolve({ success: true, poolId: 'ABC123' })
         });
 
-        const { result } = renderHook(() => useAuth(), { wrapper });
+        const { result } = renderHook(() => useAuth());
 
         let loginResult: any;
         await act(async () => {
@@ -97,7 +91,7 @@ describe('useAuth', () => {
             json: () => Promise.resolve({ message: 'Invalid credentials' })
         });
 
-        const { result } = renderHook(() => useAuth(), { wrapper });
+        const { result } = renderHook(() => useAuth());
 
         let loginResult: any;
         await act(async () => {
@@ -110,7 +104,7 @@ describe('useAuth', () => {
     });
 
     it('should clear auth error', () => {
-        const { result } = renderHook(() => useAuth(), { wrapper });
+        const { result } = renderHook(() => useAuth());
 
         act(() => {
             result.current.clearAuthError();

@@ -82,6 +82,4 @@ export interface EntryMeta {
   notify_opt_in: boolean;
   contact_type: 'sms' | 'email' | null;
   contact_value: string | null;
-  contest_id?: string;
-  updated_at?: string;
 }

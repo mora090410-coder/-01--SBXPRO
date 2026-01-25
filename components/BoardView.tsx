@@ -22,8 +22,6 @@ import { useLiveScoring } from '../hooks/useLiveScoring';
 import { useAuth } from '../hooks/useAuth';
 import { getContrastYIQ, ensureMinLuminance, hexToRgb } from '../utils/theme';
 import { compressImage } from '../utils/image';
-import { useGuest } from '../context/GuestContext';
-import { PaywallModal } from './PaywallModal';
 
 // Basic error boundary component
 import ErrorBoundary from './ErrorBoundary';
@@ -112,9 +110,7 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
     const [showAdminView, setShowAdminView] = useState(false); // Restored
     const [showRecoveryModal, setShowRecoveryModal] = useState(false); // New
     const [showFindSquaresModal, setShowFindSquaresModal] = useState(false);
-
     const [showPayoutsModal, setShowPayoutsModal] = useState(false);
-    const [showPaywallModal, setShowPaywallModal] = useState(false);
 
     const [copyFeedback, setCopyFeedback] = useState(false);
     const [authInput, setAuthInput] = useState('');
@@ -138,7 +134,6 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
     const [setupStep, setSetupStep] = useState(1); // 1: Name/Pass, 2: Teams, 3: Mode
     const [wizardError, setWizardError] = useState<string | null>(null);
     const wizardFileRef = useRef<HTMLInputElement>(null);
-    const [adminTab, setAdminTab] = useState<'dashboard' | 'edit'>('edit');
 
     // Preview Mode State (Persisted)
     const [isPreviewMode, setIsPreviewMode] = useState(() => {
@@ -165,8 +160,7 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
     // In demo mode, we always bypass landing
     const showLanding = !demoMode && !activePoolId && !urlPoolId && !loadingPool && !hasEnteredApp && !isInitialized && !wizardSuccess;
     // Commissioner Mode gated by Preview Mode
-    const { guestBoard } = useGuest();
-    const isOwner = (auth.user && ownerId && auth.user.id === ownerId) || (!activePoolId && !!guestBoard);
+    const isOwner = auth.user && ownerId && auth.user.id === ownerId;
     const isCommissionerMode = (showAdminView && !!adminToken && !isPreviewMode) || (isOwner && !isPreviewMode);
 
     // Auto-show admin view for owner
@@ -174,7 +168,7 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
         if (isOwner) setShowAdminView(true);
     }, [isOwner]);
 
-    // Initialize Demo Mode OR Guest Mode
+    // Initialize Demo Mode
     useEffect(() => {
         if (demoMode) {
             setBoard(SAMPLE_BOARD);
@@ -187,17 +181,8 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
             setIsInitialized(true);
             setHasEnteredApp(true);
             setActiveTab('board');
-        } else if (!activePoolId && !urlPoolId && guestBoard && !isInitialized) {
-            // Hydrate from Guest Context
-            setGame(guestBoard.game);
-            setBoard(guestBoard.board);
-            setIsInitialized(true);
-            setHasEnteredApp(true);
-            setShowAdminView(true); // Default to edit mode for guest
-            setActiveTab('board');
         }
-    }, [demoMode, setBoard, setGame, activePoolId, urlPoolId, guestBoard, isInitialized]);
-
+    }, [demoMode, setBoard, setGame]);
 
     const knownAdminToken = useMemo(() => {
         const targetId = joinInput.trim().toUpperCase() || activePoolId;
@@ -327,17 +312,11 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
     };
 
     const handlePublish = async (token: string, currentData?: { game: GameState, board: BoardData, adminEmail?: string }) => {
-        // Paywall Gate for Guest Users
-        if (!auth.user) {
-            setShowPaywallModal(true);
-            throw new Error("Login Required");
-        }
-
         try {
             const g = currentData?.game || game;
             const b = currentData?.board || board;
 
-            // Scenario 1: Existing Pool -> Update via Hook
+            // For existing pools owned by the current user, use Supabase directly
             if (activePoolId && isOwner) {
                 const success = await updatePool(activePoolId, token, { game: g, board: b });
                 if (!success) throw new Error("Failed to save changes to Supabase");
@@ -345,44 +324,51 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                 return activePoolId;
             }
 
-            // Scenario 2: New Pool (Guest -> Authenticated) -> Insert to Supabase
-            // Discard legacy KV API logic entirely
+            // Fallback to legacy KV API for new pools or non-owners
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 12000);
             const payload = {
-                owner_id: auth.user.id,
-                title: g.title || "SBXPRO Pool",
-                settings: { ...g, title: g.title }, // Store game state in settings
-                board_data: b,
-                created_at: new Date().toISOString()
+                game: { ...g, title: g.title || "SBXPRO Pool", coverImage: g.coverImage || "" },
+                board: b,
+                adminEmail: currentData?.adminEmail
             };
-
-            const { data, error } = await supabase
-                .from('contests')
-                .insert([payload])
-                .select('id')
-                .single();
-
-            if (error) throw error;
-            if (!data) throw new Error("No data returned from insert.");
-
-            const newPoolId = data.id;
-
-            // Update Local State
+            const method = activePoolId ? 'PUT' : 'POST';
+            const url = activePoolId ? `${API_URL}/${activePoolId}` : API_URL;
+            const res = await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify(payload),
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+            if (!res.ok) {
+                if (res.status === 401 || res.status === 403) {
+                    const storedTokens = JSON.parse(localStorage.getItem('sbxpro_tokens') || '{}');
+                    if (activePoolId) delete storedTokens[activePoolId];
+                    localStorage.setItem('sbxpro_tokens', JSON.stringify(storedTokens));
+                    setAdminToken('');
+                    setShowAdminView(false);
+                    throw new Error('Unauthorized: Admin Session Expired. Please log in again.');
+                }
+                const errJson = await res.json().catch(() => ({}));
+                throw new Error(errJson.message || `Server Error: ${res.status}`);
+            }
+            const result = await res.json();
+            const newPoolId = activePoolId || result.poolId;
+            if (!newPoolId) throw new Error("Pool ID was not returned by server.");
             const storedTokens = JSON.parse(localStorage.getItem('sbxpro_tokens') || '{}');
-            storedTokens[newPoolId] = "auth-owner"; // Placeholder token for legacy compat
+            storedTokens[newPoolId] = token;
             localStorage.setItem('sbxpro_tokens', JSON.stringify(storedTokens));
-
             setActivePoolId(newPoolId);
-            setAdminToken("auth-owner");
-
+            setAdminToken(token);
             const newUrl = new URL(window.location.href);
             newUrl.searchParams.set('poolId', newPoolId);
             window.history.pushState({ poolId: newPoolId }, '', newUrl.toString());
-
             return newPoolId;
-
         } catch (err: any) {
+            const msg = err.name === 'AbortError' ? "Server timeout. Cloudflare response was delayed." : (err.message || "Unknown Network Error");
             console.error("Publish Failed:", err);
-            alert(`Publish Failed: ${err.message || "Unknown error"}`);
+            alert(`Publish Failed: ${msg}`);
             throw err;
         }
     };
@@ -553,8 +539,6 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                     </div>
                 </div>
             )}
-
-            {showPaywallModal && <PaywallModal onClose={() => setShowPaywallModal(false)} />}
 
             {showJoinModal && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
@@ -774,7 +758,7 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
             {loadingPool && urlPoolId && <FullScreenLoading />}
 
             {!loadingPool && showLanding ? (
-                <LandingPage onCreate={openSetupWizard} onScan={() => navigate('/create?mode=scan')} onDemo={() => navigate('/demo')} onLogin={handleCommissionerLogin} />
+                <LandingPage onCreate={openSetupWizard} onDemo={() => navigate('/demo')} onLogin={handleCommissionerLogin} />
             ) : !loadingPool && (
                 <>
                     <div className="flex-1 flex flex-col relative z-50 w-full max-w-6xl mx-auto md:px-6 h-full">
@@ -794,14 +778,6 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                             </div>
 
                             <div className="flex items-center gap-3">
-                                <button
-                                    onClick={() => navigate('/dashboard')}
-                                    className="hidden md:flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wide bg-white/5 hover:bg-white/10 text-white/70 hover:text-white border border-white/5 transition-colors"
-                                >
-                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
-                                    My Contests
-                                </button>
-
                                 {activePoolId && (
                                     <button onClick={() => setShowShareModal(true)} className="p-2.5 rounded-full bg-white/5 hover:bg-white/10 transition-colors text-white/70 hover:text-white border border-white/5">
                                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
@@ -815,24 +791,11 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                                         )}
                                         <div className="flex items-center bg-white/10 p-1 rounded-full border border-white/5 backdrop-blur-md">
                                             <button
-                                                onClick={() => {
-                                                    setAdminTab('edit');
-                                                    handleTogglePreview(false);
-                                                }}
-                                                className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide transition-all ${!isPreviewMode && adminTab === 'edit' ? 'bg-white text-black shadow-lg scale-105' : 'text-gray-400 hover:text-white'
+                                                onClick={() => handleTogglePreview(false)}
+                                                className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide transition-all ${!isPreviewMode ? 'bg-white text-black shadow-lg scale-105' : 'text-gray-400 hover:text-white'
                                                     }`}
                                             >
                                                 Edit
-                                            </button>
-                                            <button
-                                                onClick={() => {
-                                                    setAdminTab('dashboard');
-                                                    handleTogglePreview(false);
-                                                }}
-                                                className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide transition-all ${!isPreviewMode && adminTab === 'dashboard' ? 'bg-white text-black shadow-lg scale-105' : 'text-gray-400 hover:text-white'
-                                                    }`}
-                                            >
-                                                Stats
                                             </button>
                                             <button
                                                 onClick={() => handleTogglePreview(true)}
@@ -1094,7 +1057,6 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                             onClose={() => handleTogglePreview(true)}
                             onLogout={handleLogout}
                             onPreview={() => handleTogglePreview(true)}
-                            initialTab={adminTab}
                         />
                     </Suspense>
                 </div>

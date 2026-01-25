@@ -2,13 +2,12 @@ import React from 'react';
 
 interface LandingPageProps {
   onCreate: () => void;
-  onScan: () => void;
   onLogin: () => void;
   onDemo: () => void;
 }
 
 
-const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onScan, onLogin, onDemo }) => {
+const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin, onDemo }) => {
   return (
     <div className="min-h-screen bg-[#060607] text-white font-sans selection:bg-[#FFC72C]/30 flex flex-col overflow-x-hidden">
       {/* Background */}
@@ -70,11 +69,18 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onScan, onLogin, on
 
           {/* Right Actions */}
           <div className="flex items-center gap-2">
+            {/* Removed Join button */}
             <button
               onClick={onLogin}
-              className="rounded-full px-4 py-2 text-sm text-white/60 hover:text-white hover:bg-white/5 transition-all font-medium"
+              className="rounded-full px-4 py-2 text-sm text-white/80 ring-1 ring-white/10 hover:bg-white/5 hover:text-white transition-all"
             >
               Sign in
+            </button>
+            <button
+              onClick={onCreate}
+              className="rounded-full bg-[#FFC72C] px-4 py-2 text-sm font-semibold text-black hover:brightness-95 transition-all shadow-lg shadow-[#FFC72C]/20"
+            >
+              Create board
             </button>
           </div>
         </nav>
@@ -87,54 +93,62 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onScan, onLogin, on
           {/* Hero Copy (Left) */}
           <div className="animate-in fade-in slide-in-from-bottom-8 duration-700">
             <div className="inline-flex items-center gap-2 rounded-full bg-white/5 px-3 py-1 text-xs text-white/70 ring-1 ring-white/10 backdrop-blur-sm mb-5">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#FFC72C] animate-pulse" />
-              AI-Powered Board Scanner
+              <span className="h-1.5 w-1.5 rounded-full bg-[#22C55E] animate-pulse" />
+              Live winners + scenarios, in one link
             </div>
 
             <h1 className="text-4xl font-semibold tracking-tight md:text-5xl lg:text-6xl text-white">
-              Scan your board. <br />
-              <span className="bg-gradient-to-r from-[#FFC72C] to-[#FFC72C]/70 bg-clip-text text-transparent">
-                Go live instantly.
+              Squares, made{" "}
+              <span className="bg-gradient-to-b from-white to-white/60 bg-clip-text text-transparent">
+                effortless
               </span>
+              .
             </h1>
 
             <p className="mt-4 max-w-xl text-base leading-relaxed text-white/70 md:text-lg">
-              Turn a photo of your paper squares into a trackable, shareable link in seconds. No account needed to start.
+              Upload a board (or start clean). Share one link. Everyone sees the{" "}
+              <span className="text-white font-medium">current winners</span> and{" "}
+              <span className="text-white font-medium">“what-if” outcomes</span> live—no group texts, no
+              confusion.
             </p>
 
-            <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center">
-              {/* Primary: Magic Scan */}
-              <button
-                onClick={onScan}
-                className="group relative inline-flex items-center justify-center gap-3 rounded-full bg-[#FFC72C] px-8 py-4 text-base font-bold text-black shadow-[0_0_20px_rgba(255,199,44,0.3)] hover:brightness-110 hover:shadow-[0_0_30px_rgba(255,199,44,0.5)] hover:scale-[1.02] transition-all active:scale-95 overflow-hidden"
-              >
-                <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-500 rounded-full"></div>
-                <svg className="w-5 h-5 relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                <span className="relative z-10">Scan Paper Board</span>
-              </button>
-
-              {/* Secondary: Build New */}
+            <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
               <button
                 onClick={onCreate}
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-white/5 px-6 py-4 text-base font-semibold text-white ring-1 ring-white/10 hover:bg-white/10 transition-all active:scale-95"
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-[#8F1D2C] px-6 py-3 text-sm font-semibold text-white shadow-[0_0_0_1px_rgba(255,255,255,0.08)] hover:brightness-110 hover:shadow-lg hover:shadow-[#8F1D2C]/20 transition-all active:scale-95"
               >
-                Start Fresh
-                <span className="text-white/50">Build Grid</span>
+                Create your board
+                <span className="text-white/80">→</span>
+              </button>
+
+              <button
+                onClick={onDemo}
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-white/5 px-6 py-3 text-sm font-semibold text-white ring-1 ring-white/10 hover:bg-white/10 transition-all active:scale-95"
+              >
+                View demo
               </button>
             </div>
 
-            <div className="mt-6 flex flex-wrap items-center gap-4 text-xs text-white/50">
+            <div className="mt-6 flex flex-wrap items-center gap-4 text-xs text-white/55">
               <div className="inline-flex items-center gap-2">
-                <svg className="w-4 h-4 text-[#22C55E]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                No sign-up required
+                <span className="h-5 w-5 rounded-full bg-white/10 ring-1 ring-white/10 flex items-center justify-center">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" className="text-white/60"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" /></svg>
+                </span>
+                Organizer-first
               </div>
               <div className="h-3 w-px bg-white/10 hidden sm:block" />
               <div className="inline-flex items-center gap-2">
-                <svg className="w-4 h-4 text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
-                Private by default
+                <span className="h-5 w-5 rounded-full bg-white/10 ring-1 ring-white/10 flex items-center justify-center">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" className="text-white/60"><path d="M17 1.01L7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14z" /></svg>
+                </span>
+                Mobile-first viewer link
+              </div>
+              <div className="h-3 w-px bg-white/10 hidden sm:block" />
+              <div className="inline-flex items-center gap-2">
+                <span className="h-5 w-5 rounded-full bg-white/10 ring-1 ring-white/10 flex items-center justify-center">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" className="text-white/60"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9v-2h2v2zm0-4H9V7h2v5z" /></svg>
+                </span>
+                Not a betting site
               </div>
             </div>
           </div>
@@ -272,7 +286,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onScan, onLogin, on
             <div className="rounded-3xl bg-white/5 p-8 ring-1 ring-white/10 hover:ring-white/20 transition-all">
               <div className="flex items-center justify-between">
                 <div className="text-sm font-semibold text-white">Activate this board</div>
-                <div className="text-lg font-semibold text-white">$14.99</div>
+                <div className="text-lg font-semibold text-white">$9.99</div>
               </div>
               <div className="mt-1 text-sm text-white/65">Perfect for a one-off event.</div>
 
