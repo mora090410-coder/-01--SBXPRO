@@ -234,6 +234,41 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
         localStorage.setItem('squares_board', JSON.stringify(board));
     }, [game, board, dataReady, loadingPool]);
 
+    // Guest -> Auth Migration
+    useEffect(() => {
+        if (!auth.user || !guestBoard || !guestBoard.adminPasscode || activePoolId) return;
+
+        console.log("Found guest board for new user, syncing...");
+        const doSync = async () => {
+            try {
+                const newId = await poolData.syncGuestBoardToSupabase(
+                    guestBoard.game,
+                    guestBoard.board,
+                    auth.user!.id,
+                    guestBoard.adminPasscode
+                );
+                console.log("Synced Guest Board to:", newId);
+                // Clear guest context
+                // setGuestBoard(null); // Actually, we might want to keep it briefly or rely on activePoolId taking over
+                // But cleaning up is good.
+                // guestBoard.clearGuestBoard(); // Need to expose clear? or set null
+                setGuestBoard(null);
+
+                // URL update is handled inside syncGuestBoardToSupabase or we do it here?
+                // poolData updates activePoolId, but we should update URL
+                const newUrl = new URL(window.location.href);
+                newUrl.searchParams.set('poolId', newId);
+                window.history.replaceState({ poolId: newId }, '', newUrl.toString());
+
+                alert("Your guest board has been saved to your account!");
+            } catch (err) {
+                console.error("Migration failed", err);
+                alert("Failed to save your guest board. Please try saving manually.");
+            }
+        };
+        doSync();
+    }, [auth.user, guestBoard, activePoolId]);
+
     // fetchLive and its polling useEffect are now handled by useLiveScoring hook
 
     const highlights = useMemo<WinnerHighlights>(() => {
@@ -326,6 +361,14 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
         setShowShareModal(false);
     };
 
+    const handleShareClick = () => {
+        if (!activePoolId || activePoolId === 'guest-session') {
+            setShowPaywallModal(true);
+        } else {
+            setShowShareModal(true);
+        }
+    };
+
     const handlePublish = async (token: string, currentData?: { game: GameState, board: BoardData, adminEmail?: string }) => {
         const g = currentData?.game || game;
         const b = currentData?.board || board;
@@ -400,35 +443,29 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
             const targetBoard = manualBoard || board;
             const targetCover = manualCover !== undefined ? manualCover : (game.coverImage || '');
 
-            // Pass wizardEmail to handlePublish
-            const newId = await handlePublish(pass, {
+            // MAGIC FIRST: Just set local state, do not save to DB yet.
+            const guestState = {
                 game: { ...game, title: leagueTitle, coverImage: targetCover },
                 board: targetBoard,
-                adminEmail: wizardEmail  // Added
-            });
-            if (!newId) throw new Error("Game initialization failed to assign a unique ID.");
+                adminPasscode: pass
+            };
 
+            setGuestBoard(guestState);
             setBoard(targetBoard);
-            setGame(prev => ({ ...prev, title: leagueTitle, coverImage: targetCover }));
+            setGame(guestState.game);
+
             setWizardSuccess(true);
             setIsInitialized(true);
             setIsPreviewMode(false); // Force Edit Mode
             setShowAdminView(true); // Open Admin Panel
             setActiveTab('board');
 
-            const newUrl = new URL(window.location.href);
-            newUrl.searchParams.set('poolId', newId);
-            window.history.replaceState({ poolId: newId }, '', newUrl.toString());
+            // No URL change to poolId yet, stick to guest mode
 
             setTimeout(() => {
                 setHasEnteredApp(true);
                 setShowWizardModal(false);
-                if (auth.user) {
-                    setShowShareModal(true);
-                } else {
-                    // For guests, we don't popup share modal immediately as it's gated.
-                    // We just let them see the board.
-                }
+                // No share modal for guest
             }, 1800);
         } catch (e: any) {
             setWizardError(e.message || "Initialization failed. Please check your connection and try again.");
@@ -810,11 +847,11 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                                 </button>
 
                                 {activePoolId ? (
-                                    <button onClick={() => setShowShareModal(true)} className="p-2.5 rounded-full bg-white/5 hover:bg-white/10 transition-colors text-white/70 hover:text-white border border-white/5">
+                                    <button onClick={handleShareClick} className="p-2.5 rounded-full bg-white/5 hover:bg-white/10 transition-colors text-white/70 hover:text-white border border-white/5">
                                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
                                     </button>
                                 ) : (
-                                    <button onClick={() => setShowPaywallModal(true)} className="p-2.5 rounded-full bg-[#FFC72C]/20 hover:bg-[#FFC72C]/30 transition-colors text-[#FFC72C] border border-[#FFC72C]/30">
+                                    <button onClick={handleShareClick} className="p-2.5 rounded-full bg-[#FFC72C]/20 hover:bg-[#FFC72C]/30 transition-colors text-[#FFC72C] border border-[#FFC72C]/30">
                                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
                                     </button>
                                 )}

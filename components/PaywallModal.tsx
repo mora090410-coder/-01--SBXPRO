@@ -49,7 +49,7 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({ onClose }) => {
                             <div className="space-y-2">
                                 <h2 className="text-2xl font-black text-white tracking-tight">Unlock Your Board</h2>
                                 <p className="text-gray-400 text-sm leading-relaxed">
-                                    Pay <b>$14.99</b> to <b>Save</b> your board, <b>Share</b> with friends, and get <b>Live Updates</b> during the game.
+                                    Payment required to <b>Generate Live Link</b> and <b>Enable Score Syncing</b>.
                                 </p>
                             </div>
 
