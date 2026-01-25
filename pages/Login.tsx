@@ -56,6 +56,21 @@ const Login: React.FC = () => {
                     throw new Error('First and last name are required');
                 }
 
+                // MAGIC FIRST: "Try Login First" Strategy
+                // If the user is claiming a board, they might enter their existing credentials.
+                // We try to sign them in silently first. If it works, great! If not, we proceed to create.
+                if (isClaim) {
+                    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+                        email,
+                        password,
+                    });
+                    if (!signInError && signInData.session) {
+                        // Success! They are logged in. The session effect will handle the redirect.
+                        return;
+                    }
+                    // If login failed, we proceed to signup...
+                }
+
                 // Attempt usage of existing user check if possible, or just sign up
                 // Note: Supabase signUp returns success for existing users if email confirmation is on. 
                 // We depend on the user checking their email or getting a "User already registered" error depending on config.
@@ -85,7 +100,7 @@ const Login: React.FC = () => {
                     setError('An account with this email already exists. Please log in using your password.');
                     setIsSignUp(false); // Auto-switch to login for them
                 } else {
-                    alert('Check your email for the confirmation link!');
+                    alert(`Confirmation link sent to ${email}!\n\nIMPORTANT: If you already have an account, you will NOT receive a link. Please Log In instead.`);
                     setIsSignUp(false); // Switch to login view so they can wait for email
                 }
             } else {
