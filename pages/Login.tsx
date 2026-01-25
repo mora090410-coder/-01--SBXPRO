@@ -16,6 +16,7 @@ const Login: React.FC = () => {
     const [isSignUp, setIsSignUp] = useState(searchParams.get('mode') === 'signup');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
     // If already logged in, redirect to dashboard
     React.useEffect(() => {
@@ -28,6 +29,7 @@ const Login: React.FC = () => {
         e.preventDefault();
         setLoading(true);
         setError(null);
+        setSuccessMessage(null);
 
         try {
             if (isSignUp) {
@@ -63,7 +65,9 @@ const Login: React.FC = () => {
                     throw new Error('Account already exists. Please sign in.');
                 }
 
-                alert('Check your email for the confirmation link!');
+                setSuccessMessage('Check your email for the confirmation link!');
+                setLoading(false);
+                return; // Stop execution so we don't clear loading/state below
             } else {
                 const { error } = await supabase.auth.signInWithPassword({
                     email,
@@ -86,9 +90,31 @@ const Login: React.FC = () => {
             }
             setError(msg);
         } finally {
-            setLoading(false);
+            if (!successMessage) setLoading(false);
         }
     };
+
+    if (successMessage) {
+        return (
+            <div className="min-h-screen bg-[#050505] flex items-center justify-center p-4">
+                <div className="w-full max-w-md bg-[#1c1c1e]/40 backdrop-blur-md border border-white/10 rounded-2xl p-8 shadow-2xl animate-in zoom-in duration-300 text-center">
+                    <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center mx-auto mb-6">
+                        <svg className="w-8 h-8 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                    </div>
+                    <h2 className="text-xl font-bold text-white mb-2">Check your inbox</h2>
+                    <p className="text-gray-400 mb-6">{successMessage}</p>
+                    <button
+                        onClick={() => setSuccessMessage(null)}
+                        className="text-sm text-white/50 hover:text-white transition-colors underline"
+                    >
+                        Back to Login
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-[#050505] flex items-center justify-center p-4">

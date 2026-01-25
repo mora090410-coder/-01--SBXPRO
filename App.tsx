@@ -22,6 +22,17 @@ const Home = () => {
     return <BoardView />;
   }
 
+  // If user is logged in, redirect to dashboard
+  if (user) {
+    // Wrap in useEffect to avoid state update during render warning, or just use Navigate component
+    // Since we are in the render body, using Navigate is cleaner if allowed, but here let's validly straightforward return.
+    // Actually, side-effects in render are bad. Better to use useEffect.
+    React.useEffect(() => {
+      navigate('/dashboard');
+    }, [navigate]);
+    return null; // or a loading spinner
+  }
+
   // Otherwise show the landing page
   return (
     <LandingPage

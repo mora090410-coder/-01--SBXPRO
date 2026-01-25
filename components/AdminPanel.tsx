@@ -258,7 +258,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
     } catch (err: unknown) {
       console.error("OCR Failure:", err);
       const errMsg = err instanceof Error ? err.message : "Check API Key";
-      setScanStatus(`Scan Failed: ${errMsg}`);
+      setScanStatus(errMsg.includes('overloaded') ? "AI Overloaded. Trying again..." : `Scan Failed: ${errMsg}`);
       setTimeout(() => setScanStatus(null), 6000);
     } finally {
       setIsScanning(false);

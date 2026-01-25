@@ -20,10 +20,10 @@ const CreateContest: React.FC = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [successPoolId, setSuccessPoolId] = useState<string | null>(null);
+    const [scanSuccess, setScanSuccess] = useState(false);
     const fileRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
-        console.log("CreateContest: user=", user, "authLoading=", authLoading); // Debug
         if (!authLoading && !user) {
             navigate('/login?mode=signup');
         }
@@ -45,6 +45,7 @@ const CreateContest: React.FC = () => {
 
         setIsLoading(true);
         setError(null);
+        setScanSuccess(false);
 
         const reader = new FileReader();
         reader.onload = async (ev) => {
@@ -56,9 +57,11 @@ const CreateContest: React.FC = () => {
                 // Scan with Gemini
                 const scannedBoard = await parseBoardImage(compressed);
                 setBoard(scannedBoard);
+                setScanSuccess(true);
             } catch (err: any) {
                 console.warn("Scan failed", err);
                 setError("Image processed, but grid scan failed: " + (err.message || "Invalid format"));
+                setScanSuccess(false);
             } finally {
                 setIsLoading(false);
             }
@@ -167,7 +170,15 @@ const CreateContest: React.FC = () => {
                     {error && (
                         <div className="mb-6 bg-red-900/20 border border-red-500/30 rounded-xl p-4 text-red-400 text-sm font-medium flex items-center gap-3">
                             <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                            {error}
+                            <span className="flex-1">{error}</span>
+                            {error.includes('overloaded') && (
+                                <button
+                                    onClick={() => handlePublish()} // Retry the same action
+                                    className="px-3 py-1 bg-red-800/50 hover:bg-red-800 rounded text-xs font-bold uppercase"
+                                >
+                                    Retry
+                                </button>
+                            )}
                         </div>
                     )}
 
@@ -283,10 +294,10 @@ const CreateContest: React.FC = () => {
                             <div className="pt-4 space-y-3">
                                 <button
                                     onClick={() => handlePublish()}
-                                    disabled={isLoading || !game.coverImage}
-                                    className={`w-full btn-cardinal py-3 rounded-xl uppercase font-black text-sm tracking-widest shadow-lg ${(!game.coverImage || isLoading) ? 'opacity-50 cursor-not-allowed' : 'hover:scale-[1.02] active:scale-95 transition-all'}`}
+                                    disabled={isLoading || !game.coverImage || !!error || !scanSuccess}
+                                    className={`w-full btn-cardinal py-3 rounded-xl uppercase font-black text-sm tracking-widest shadow-lg ${(!game.coverImage || isLoading || !!error || !scanSuccess) ? 'opacity-50 cursor-not-allowed' : 'hover:scale-[1.02] active:scale-95 transition-all'}`}
                                 >
-                                    {isLoading ? 'Processing...' : 'Launch Scanned Board'}
+                                    {isLoading ? 'Processing...' : error ? 'Scan Failed' : 'Launch Scanned Board'}
                                 </button>
 
                                 <button
