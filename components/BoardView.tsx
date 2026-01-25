@@ -766,7 +766,9 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                         {/* Header / Nav */}
                         <div className="flex-shrink-0 flex items-center justify-between p-4 md:py-6 bg-transparent z-50">
                             <div className="flex items-center gap-4">
-                                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#9D2235] to-[#7f1d2b] flex items-center justify-center text-white font-bold tracking-tight shadow-lg border border-white/10">SBX</div>
+                                <div className="w-10 h-10 rounded-xl bg-black/20 flex items-center justify-center shadow-lg border border-white/10 overflow-hidden">
+                                    <img src="/icons/gridone-icon-256.png" alt="GridOne" className="w-full h-full object-cover" />
+                                </div>
                                 <div className="flex flex-col">
                                     <h1 className="text-xl font-bold leading-none tracking-tight text-white mb-1">{game.title || 'Super Bowl LIX'}</h1>
                                     <div className="flex items-center gap-2">

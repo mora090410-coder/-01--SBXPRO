@@ -418,8 +418,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
 
         {/* LEFT: Brand + Title */}
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#9D2235] to-[#7f1d2b] flex items-center justify-center text-white font-bold text-xs shadow-md border border-white/10 flex-shrink-0">
-            SBX
+          <div className="w-9 h-9 rounded-xl bg-black/20 flex items-center justify-center shadow-md border border-white/10 flex-shrink-0 overflow-hidden">
+            <img src="/icons/gridone-icon-256.png" alt="GridOne" className="w-full h-full object-cover" />
           </div>
           <div className="min-w-0">
             <h3 className="text-base font-semibold text-white tracking-tight">Organizer</h3>
