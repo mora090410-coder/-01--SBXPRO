@@ -43,13 +43,13 @@ const BoardGrid: React.FC<BoardGridProps> = ({ board, highlights, live, selected
 
   // Determine current axes to display
   const currentBearsAxis = React.useMemo(() => {
-    if (!board.isDynamic) return board.bearsAxis;
-    return board.bearsAxisByQuarter?.[viewQuarter] || board.bearsAxis;
+    if (!board.isDynamic) return board.bearsAxis.slice(0, 10);
+    return (board.bearsAxisByQuarter?.[viewQuarter] || board.bearsAxis).slice(0, 10);
   }, [board, viewQuarter]);
 
   const currentOppAxis = React.useMemo(() => {
-    if (!board.isDynamic) return board.oppAxis;
-    return board.oppAxisByQuarter?.[viewQuarter] || board.oppAxis;
+    if (!board.isDynamic) return board.oppAxis.slice(0, 10);
+    return (board.oppAxisByQuarter?.[viewQuarter] || board.oppAxis).slice(0, 10);
   }, [board, viewQuarter]);
 
   // Build a map of winning cell IDs to their milestone labels
