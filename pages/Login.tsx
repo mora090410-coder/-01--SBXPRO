@@ -14,8 +14,9 @@ const Login: React.FC = () => {
     const [lastName, setLastName] = useState('');
     const [searchParams] = useSearchParams();
     const mode = searchParams.get('mode');
+    const redirect = searchParams.get('redirect');
     const isClaim = mode === 'claim';
-    const [isSignUp, setIsSignUp] = useState(mode === 'signup' || mode === 'claim');
+    const [isSignUp, setIsSignUp] = useState(mode === 'signup' || isClaim);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -25,14 +26,17 @@ const Login: React.FC = () => {
         if (emailParam) {
             setEmail(decodeURIComponent(emailParam));
         }
-    }, [searchParams]);
+        // If claiming, we want to start in signup mode primarily, but if they switch tabs we handle state
+        if (mode === 'signin') setIsSignUp(false);
+        if (mode === 'signup') setIsSignUp(true);
+    }, [searchParams, mode]);
 
-    // If already logged in, redirect to dashboard
+    // If already logged in, redirect
     React.useEffect(() => {
         if (session) {
-            navigate('/dashboard');
+            navigate(redirect || '/dashboard');
         }
-    }, [session, navigate]);
+    }, [session, navigate, redirect]);
 
     const handleAuth = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -52,7 +56,11 @@ const Login: React.FC = () => {
                     throw new Error('First and last name are required');
                 }
 
-                const { error } = await supabase.auth.signUp({
+                // Attempt usage of existing user check if possible, or just sign up
+                // Note: Supabase signUp returns success for existing users if email confirmation is on. 
+                // We depend on the user checking their email or getting a "User already registered" error depending on config.
+
+                const { error: signUpError } = await supabase.auth.signUp({
                     email,
                     password,
                     options: {
@@ -63,8 +71,19 @@ const Login: React.FC = () => {
                         }
                     }
                 });
-                if (error) throw error;
-                alert('Check your email for the confirmation link!');
+
+                if (signUpError) {
+                    // Smart error handling for existing users
+                    if (signUpError.message.includes('already registered') || signUpError.message.includes('unique constraint')) {
+                        setError('This email is already registered. Please sign in instead.');
+                        // Optional: auto-switch to sign in?
+                        // setIsSignUp(false); 
+                    } else {
+                        throw signUpError;
+                    }
+                } else {
+                    alert('Check your email for the confirmation link!');
+                }
             } else {
                 const { error } = await supabase.auth.signInWithPassword({
                     email,
@@ -92,6 +111,22 @@ const Login: React.FC = () => {
                         {isClaim ? 'Create an account to save your paid board.' : (isSignUp ? 'Start organizing your pools' : 'Login to manage your contests')}
                     </p>
                 </div>
+
+                {isClaim && isSignUp && (
+                    <div className="bg-[#FFC72C]/10 border border-[#FFC72C]/20 rounded-xl p-4 mb-6 text-center animate-in slide-in-from-top-2">
+                        <p className="text-[#FFC72C] text-xs font-bold uppercase tracking-wider mb-2">Already have an account?</p>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setIsSignUp(false);
+                                setError(null);
+                            }}
+                            className="w-full py-2 bg-[#FFC72C] text-black text-sm font-bold rounded-lg hover:brightness-110 transition-all shadow-lg"
+                        >
+                            Log In to Claim
+                        </button>
+                    </div>
+                )}
 
                 {error && (
                     <div className="mb-6 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-medium">

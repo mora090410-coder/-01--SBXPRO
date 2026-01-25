@@ -8,8 +8,10 @@ import CreateContest from './pages/CreateContest';
 import ScanPage from './pages/ScanPage';
 import BoardView from './components/BoardView';
 import LandingPage from './components/LandingPage';
+
 import FullScreenLoading from './components/loading/FullScreenLoading';
 import Layout from './components/layout/Layout';
+import { GuestMigrator } from './components/GuestMigrator';
 
 // Wrapper to handle root routing logic
 const Home = () => {
@@ -47,6 +49,7 @@ const App: React.FC = () => {
     <Router>
       <AuthProvider>
         <GuestProvider>
+          <GuestMigrator />
           <React.Suspense fallback={<FullScreenLoading />}>
             <Routes>
               <Route path="/" element={<Home />} />

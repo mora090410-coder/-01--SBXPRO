@@ -24,7 +24,7 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({ onClose }) => {
             // In a real app, we would create the user or send magic link here
             // For now, we redirect to login with special params to simulate "Claiming"
             // But checking requirements: "Capture email... create account for anthony.mora13..."
-            navigate('/login?mode=claim&email=' + encodeURIComponent(email));
+            navigate('/login?mode=claim&email=' + encodeURIComponent(email) + '&redirect=/');
         }, 1500);
     };
 
