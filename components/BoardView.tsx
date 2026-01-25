@@ -165,7 +165,7 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
     // In demo mode, we always bypass landing
     const showLanding = !demoMode && !activePoolId && !urlPoolId && !loadingPool && !hasEnteredApp && !isInitialized && !wizardSuccess;
     // Commissioner Mode gated by Preview Mode
-    const { guestBoard } = useGuest();
+    const { guestBoard, setGuestBoard } = useGuest();
     const isOwner = (auth.user && ownerId && auth.user.id === ownerId) || (!activePoolId && !!guestBoard);
     const isCommissionerMode = (showAdminView && !!adminToken && !isPreviewMode) || (isOwner && !isPreviewMode);
 
@@ -327,16 +327,18 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
     };
 
     const handlePublish = async (token: string, currentData?: { game: GameState, board: BoardData, adminEmail?: string }) => {
-        // Paywall Gate for Guest Users
+        const g = currentData?.game || game;
+        const b = currentData?.board || board;
+
+        // Guest Mode: Save to local context implies success
         if (!auth.user) {
-            setShowPaywallModal(true);
-            throw new Error("Login Required");
+            setGuestBoard({ game: g, board: b });
+            // Generate a temp ID for local routing if needed, or just rely on 'guest' state
+            // For routing purposes, we return a placeholder ID if one doesn't exist
+            return "guest-session";
         }
 
         try {
-            const g = currentData?.game || game;
-            const b = currentData?.board || board;
-
             // Scenario 1: Existing Pool -> Update via Hook
             if (activePoolId && isOwner) {
                 const success = await updatePool(activePoolId, token, { game: g, board: b });
@@ -421,7 +423,12 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
             setTimeout(() => {
                 setHasEnteredApp(true);
                 setShowWizardModal(false);
-                setShowShareModal(true);
+                if (auth.user) {
+                    setShowShareModal(true);
+                } else {
+                    // For guests, we don't popup share modal immediately as it's gated.
+                    // We just let them see the board.
+                }
             }, 1800);
         } catch (e: any) {
             setWizardError(e.message || "Initialization failed. Please check your connection and try again.");
@@ -802,8 +809,12 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                                     My Contests
                                 </button>
 
-                                {activePoolId && (
+                                {activePoolId ? (
                                     <button onClick={() => setShowShareModal(true)} className="p-2.5 rounded-full bg-white/5 hover:bg-white/10 transition-colors text-white/70 hover:text-white border border-white/5">
+                                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
+                                    </button>
+                                ) : (
+                                    <button onClick={() => setShowPaywallModal(true)} className="p-2.5 rounded-full bg-[#FFC72C]/20 hover:bg-[#FFC72C]/30 transition-colors text-[#FFC72C] border border-[#FFC72C]/30">
                                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
                                     </button>
                                 )}

@@ -13,9 +13,19 @@ const Login: React.FC = () => {
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
     const [searchParams] = useSearchParams();
-    const [isSignUp, setIsSignUp] = useState(searchParams.get('mode') === 'signup');
+    const mode = searchParams.get('mode');
+    const isClaim = mode === 'claim';
+    const [isSignUp, setIsSignUp] = useState(mode === 'signup' || mode === 'claim');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    // Pre-fill email from query param if claiming
+    React.useEffect(() => {
+        const emailParam = searchParams.get('email');
+        if (emailParam) {
+            setEmail(decodeURIComponent(emailParam));
+        }
+    }, [searchParams]);
 
     // If already logged in, redirect to dashboard
     React.useEffect(() => {
@@ -76,10 +86,10 @@ const Login: React.FC = () => {
                 <div className="text-center mb-8">
                     <img src="/icons/gridone-icon-256.png" alt="GridOne" className="w-16 h-16 rounded-xl shadow-2xl shadow-[#8F1D2C]/20 mx-auto mb-4 hover:scale-105 transition-transform" />
                     <h1 className="text-2xl font-bold text-white tracking-tight">
-                        {isSignUp ? 'Create Account' : 'Welcome Back'}
+                        {isClaim ? 'Claim Your Board' : (isSignUp ? 'Create Account' : 'Welcome Back')}
                     </h1>
                     <p className="text-sm text-gray-400 mt-2">
-                        {isSignUp ? 'Start organizing your pools' : 'Login to manage your contests'}
+                        {isClaim ? 'Create an account to save your paid board.' : (isSignUp ? 'Start organizing your pools' : 'Login to manage your contests')}
                     </p>
                 </div>
 

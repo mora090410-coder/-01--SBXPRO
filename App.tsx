@@ -37,6 +37,7 @@ const Home = () => {
       onScan={() => navigate('/create?mode=scan')}
       onLogin={() => navigate('/login?mode=signin')}
       onDemo={() => navigate('/demo')}
+      isAuthenticated={!!user}
     />
   );
 };
