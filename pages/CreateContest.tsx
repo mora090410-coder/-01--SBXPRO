@@ -25,7 +25,7 @@ const CreateContest: React.FC = () => {
     useEffect(() => {
         console.log("CreateContest: user=", user, "authLoading=", authLoading); // Debug
         if (!authLoading && !user) {
-            navigate('/login');
+            navigate('/login?mode=signup');
         }
     }, [user, authLoading, navigate]);
 

@@ -42,7 +42,7 @@ const Login: React.FC = () => {
                     throw new Error('First and last name are required');
                 }
 
-                const { error } = await supabase.auth.signUp({
+                const { data, error } = await supabase.auth.signUp({
                     email,
                     password,
                     options: {
@@ -53,18 +53,38 @@ const Login: React.FC = () => {
                         }
                     }
                 });
+
                 if (error) throw error;
+
+                // Check if user identity is missing (could happen if confirmed user re-signs up? uncommon with email pass)
+                if (data.user && data.user.identities && data.user.identities.length === 0) {
+                    // Check if this specific case happens for existing users depending on config
+                    // But typically error is thrown.
+                    throw new Error('Account already exists. Please sign in.');
+                }
+
                 alert('Check your email for the confirmation link!');
             } else {
                 const { error } = await supabase.auth.signInWithPassword({
                     email,
                     password,
                 });
-                if (error) throw error;
+                if (error) {
+                    // Customize "Invalid login credentials" if needed
+                    throw error;
+                }
                 // Session update in context will trigger redirect
             }
         } catch (err: any) {
-            setError(err.message);
+            let msg = err.message;
+            // Handle "User already registered" error from Supabase
+            if (msg.includes('already registered') || msg.includes('User already exists')) {
+                msg = 'Account already exists. Please sign in.';
+                setIsSignUp(false); // Switch to Sign In mode
+            } else if (msg.includes('Invalid login credentials')) {
+                msg = 'No account found or incorrect password. Create one?';
+            }
+            setError(msg);
         } finally {
             setLoading(false);
         }
