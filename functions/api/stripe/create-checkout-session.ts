@@ -3,12 +3,16 @@ import Stripe from 'stripe';
 type PagesFunction<T = any> = any;
 
 export const onRequestPost: PagesFunction<Env> = async (context) => {
-    const stripe = new Stripe(context.env.STRIPE_SECRET_KEY, {
-        apiVersion: '2025-12-15.clover', // Updated to match installed types
-        httpClient: Stripe.createFetchHttpClient(),
-    });
-
     try {
+        if (!context.env.STRIPE_SECRET_KEY) {
+            console.error('Missing STRIPE_SECRET_KEY env var');
+            return new Response(JSON.stringify({ error: 'Server configuration error: STRIPE_SECRET_KEY missing' }), { status: 500 });
+        }
+
+        const stripe = new Stripe(context.env.STRIPE_SECRET_KEY, {
+            apiVersion: '2025-12-15.clover', // Updated to match installed types
+            httpClient: Stripe.createFetchHttpClient(),
+        });
         const { contestId } = await context.request.json() as { contestId: string };
 
         if (!contestId) {
