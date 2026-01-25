@@ -94,9 +94,9 @@ const Login: React.FC = () => {
                     } else {
                         throw signUpError;
                     }
-                } else if (data.user && (!data.user.identities || data.user.identities.length === 0)) {
+                } else if (data.user && ((!data.user.identities || data.user.identities.length === 0) || (new Date(data.user.created_at).getTime() < Date.now() - 60000))) {
                     // CRITICAL: Supabase returns success but empty/missing identities if user exists (security masking)
-                    // We catch this to prevent "silent failure" where user waits for email that never comes.
+                    // We also check created_at: if the user was created > 60s ago, it's definitely an existing user.
                     setError('An account with this email already exists. Please log in using your password.');
                     setIsSignUp(false); // Auto-switch to login for them
                 } else {
