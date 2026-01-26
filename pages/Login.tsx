@@ -18,12 +18,19 @@ const Login: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+    const isClaim = searchParams.get('mode') === 'claim';
+
     // If already logged in, redirect to dashboard
     React.useEffect(() => {
         if (session) {
-            navigate('/dashboard');
+            // Preserve 'mode=claim' if it exists to trigger downstream logic
+            if (isClaim) {
+                navigate('/dashboard?mode=claim');
+            } else {
+                navigate('/dashboard');
+            }
         }
-    }, [session, navigate]);
+    }, [session, navigate, isClaim]);
 
     const handleAuth = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -58,33 +65,33 @@ const Login: React.FC = () => {
 
                 if (error) throw error;
 
-                // Check if user identity is missing (could happen if confirmed user re-signs up? uncommon with email pass)
+                // SMART PIVOT: Check if user identity is empty (Indicates email exists but user tried to sign up)
                 if (data.user && data.user.identities && data.user.identities.length === 0) {
-                    // Check if this specific case happens for existing users depending on config
-                    // But typically error is thrown.
-                    throw new Error('Account already exists. Please sign in.');
+                    setIsSignUp(false); // Pivot to Sign In
+                    setError('This email is already registered. Please sign in with your password to claim your board.');
+                    setLoading(false);
+                    return; // Stop here, let them type password and click Sign In
                 }
 
                 setSuccessMessage('Check your email for the confirmation link!');
                 setLoading(false);
-                return; // Stop execution so we don't clear loading/state below
+                return;
             } else {
                 const { error } = await supabase.auth.signInWithPassword({
                     email,
                     password,
                 });
                 if (error) {
-                    // Customize "Invalid login credentials" if needed
                     throw error;
                 }
                 // Session update in context will trigger redirect
             }
         } catch (err: any) {
             let msg = err.message;
-            // Handle "User already registered" error from Supabase
+            // Fallback for unexpected error formats
             if (msg.includes('already registered') || msg.includes('User already exists')) {
+                setIsSignUp(false);
                 msg = 'Account already exists. Please sign in.';
-                setIsSignUp(false); // Switch to Sign In mode
             } else if (msg.includes('Invalid login credentials')) {
                 msg = 'No account found or incorrect password. Create one?';
             }
@@ -118,11 +125,11 @@ const Login: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-[#050505] flex items-center justify-center p-4">
-            <div className="w-full max-w-md bg-[#1c1c1e]/40 backdrop-blur-md border border-white/10 rounded-2xl p-8 shadow-2xl animate-in zoom-in duration-300">
+            <div className="w-full max-w-md bg-[#1c1c1e]/40 backdrop-blur-md border border-white/10 rounded-2xl p-8 shadow-2xl animate-in zoom-in duration-300 transition-all">
                 <div className="text-center mb-8">
                     <img src="/icons/gridone-icon-256.png" alt="GridOne" className="w-16 h-16 rounded-xl shadow-2xl shadow-[#8F1D2C]/20 mx-auto mb-4 hover:scale-105 transition-transform" />
                     <h1 className="text-2xl font-bold text-white tracking-tight">
-                        {isSignUp ? 'Create Account' : 'Welcome Back'}
+                        {isSignUp ? 'Create Account' : (isClaim ? 'Sign In to Claim' : 'Welcome Back')}
                     </h1>
                     <p className="text-sm text-gray-400 mt-2">
                         {isSignUp ? 'Start organizing your pools' : 'Login to manage your contests'}
@@ -130,14 +137,14 @@ const Login: React.FC = () => {
                 </div>
 
                 {error && (
-                    <div className="mb-6 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-medium">
+                    <div className="mb-6 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-medium animate-in slide-in-from-top-2">
                         {error}
                     </div>
                 )}
 
                 <form onSubmit={handleAuth} className="space-y-4">
                     {isSignUp && (
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-2 gap-3 animate-in fade-in slide-in-from-top-4 duration-500">
                             <div className="space-y-1">
                                 <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">First Name</label>
                                 <input
@@ -188,7 +195,7 @@ const Login: React.FC = () => {
                     </div>
 
                     {isSignUp && (
-                        <div className="space-y-1">
+                        <div className="space-y-1 animate-in fade-in slide-in-from-top-4 duration-500 delay-100">
                             <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Confirm Password</label>
                             <input
                                 type="password"
@@ -206,7 +213,7 @@ const Login: React.FC = () => {
                         disabled={loading}
                         className="w-full py-3.5 rounded-xl bg-white text-black font-bold text-sm uppercase tracking-wide hover:bg-gray-200 transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed mt-4"
                     >
-                        {loading ? 'Processing...' : (isSignUp ? 'Create Account' : 'Sign In')}
+                        {loading ? 'Processing...' : (isSignUp ? 'Create Account' : (isClaim ? 'Sign In & Claim Board' : 'Sign In'))}
                     </button>
                 </form>
 
