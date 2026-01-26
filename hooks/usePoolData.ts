@@ -55,6 +55,7 @@ interface UsePoolDataReturn extends PoolDataState {
     loadPoolData: (poolId: string) => Promise<void>;
     publishPool: (adminToken: string, currentData?: { game: GameState; board: BoardData }) => Promise<string | void>;
     updatePool: (poolId: string, adminToken: string, data: { game: GameState; board: BoardData }) => Promise<boolean>;
+    migrateGuestBoard: (user: any, guestData: { game: GameState; board: BoardData }) => Promise<string>;
     clearError: () => void;
 }
 
@@ -183,6 +184,37 @@ export function usePoolData(): UsePoolDataReturn {
         }
     }, []);
 
+    // Migrate guest board to Supabase
+    const migrateGuestBoard = useCallback(async (
+        user: any,
+        guestData: { game: GameState; board: BoardData }
+    ): Promise<string> => {
+        try {
+            const leagueTitle = guestData.game.title?.trim() || "My First Pool";
+
+            const payload = {
+                owner_id: user.id,
+                title: leagueTitle,
+                settings: { ...guestData.game, title: leagueTitle },
+                board_data: guestData.board,
+                created_at: new Date().toISOString()
+            };
+
+            const { data, error } = await supabase
+                .from('contests')
+                .insert([payload])
+                .select('id')
+                .single();
+
+            if (error) throw error;
+
+            return data.id;
+        } catch (err: any) {
+            console.error("Migration Error:", err);
+            throw err;
+        }
+    }, []);
+
     const clearError = useCallback(() => setError(null), []);
 
     return {
@@ -199,6 +231,7 @@ export function usePoolData(): UsePoolDataReturn {
         loadPoolData,
         publishPool,
         updatePool,
+        migrateGuestBoard,
         clearError,
         isActivated
     };

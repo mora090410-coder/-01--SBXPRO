@@ -1,12 +1,12 @@
 
 import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Trophy, Save } from 'lucide-react'; // Added Save icon
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../services/supabase';
-import { GameState } from '../types';
+import usePoolData from '../hooks/usePoolData'; // Added Hook
+import { GameState, BoardData } from '../types';
 import EmptyState from '../components/empty/EmptyState';
-import { Trophy } from 'lucide-react';
 
 interface Contest {
     id: string;
@@ -18,14 +18,59 @@ interface Contest {
 const Dashboard: React.FC = () => {
     const { user, loading: authLoading } = useAuth();
     const navigate = useNavigate();
+    const { migrateGuestBoard } = usePoolData(); // Use Hook
     const [contests, setContests] = useState<Contest[]>([]);
     const [loading, setLoading] = useState(true);
+    const [pendingGuestBoard, setPendingGuestBoard] = useState<{ game: any, board: any } | null>(null);
+    const [migrating, setMigrating] = useState(false); // Local migrating state
+
+    const [searchParams] = React.useMemo(() => [new URLSearchParams(window.location.search)], []);
+    const [showMigratedToast, setShowMigratedToast] = useState(false);
 
     useEffect(() => {
         if (!authLoading && !user) {
             navigate('/login');
         }
     }, [user, authLoading, navigate]);
+
+    useEffect(() => {
+        if (searchParams.get('migrated') === 'true') {
+            setShowMigratedToast(true);
+            // Clean URL without refresh
+            window.history.replaceState({}, '', '/dashboard');
+            setTimeout(() => setShowMigratedToast(false), 5000);
+        }
+    }, [searchParams]);
+
+    useEffect(() => {
+        // Check for pending guest board
+        const storedGame = localStorage.getItem('squares_game');
+        const storedBoard = localStorage.getItem('squares_board');
+        if (storedGame && storedBoard) {
+            try {
+                const g = JSON.parse(storedGame);
+                const b = JSON.parse(storedBoard);
+                setPendingGuestBoard({ game: g, board: b });
+            } catch (e) { console.error("Bad storage", e); }
+        }
+    }, []);
+
+    const handleManualMigration = async () => {
+        if (!user || !pendingGuestBoard) return;
+        setMigrating(true);
+        try {
+            const newId = await migrateGuestBoard(user, pendingGuestBoard);
+            // Clear storage
+            localStorage.removeItem('squares_game');
+            localStorage.removeItem('squares_board');
+            // Show success and reload
+            window.location.href = `/?poolId=${newId}&migrated=true`;
+        } catch (err) {
+            console.error("Manual migration failed", err);
+            alert("Failed to save board. Please try again.");
+            setMigrating(false);
+        }
+    };
 
     useEffect(() => {
         async function fetchContests() {
@@ -88,7 +133,61 @@ const Dashboard: React.FC = () => {
     }
 
     return (
-        <div className="min-h-screen bg-[#050505] text-white p-6 font-sans">
+        <div className="min-h-screen bg-[#050505] text-white p-6 font-sans relative">
+            {pendingGuestBoard && !showMigratedToast && (
+                <div className="max-w-6xl mx-auto mb-6 animate-in slide-in-from-top-4 fade-in duration-500">
+                    <div className="bg-gradient-to-r from-indigo-900/40 to-purple-900/40 border border-indigo-500/30 rounded-2xl p-6 flex items-center justify-between shadow-lg backdrop-blur-md">
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-full bg-indigo-500/20 flex items-center justify-center border border-indigo-500/20">
+                                <Save className="w-6 h-6 text-indigo-400" />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-bold text-white mb-1">Unsaved Board Found</h3>
+                                <p className="text-sm text-indigo-200">
+                                    We found "{pendingGuestBoard.game.title || 'a board'}" on this device. Save it to your account now.
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => {
+                                    if (confirm("Discard this board? This cannot be undone.")) {
+                                        localStorage.removeItem('squares_game');
+                                        localStorage.removeItem('squares_board');
+                                        setPendingGuestBoard(null);
+                                    }
+                                }}
+                                className="px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest text-indigo-300 hover:text-white transition-colors"
+                            >
+                                Discard
+                            </button>
+                            <button
+                                onClick={handleManualMigration}
+                                disabled={migrating}
+                                className="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold uppercase tracking-widest shadow-lg transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
+                            >
+                                {migrating ? 'Saving...' : 'Save to Account'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showMigratedToast && (
+                <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-top-4 fade-in duration-300">
+                    <div className="bg-green-500/10 border border-green-500/20 backdrop-blur-md text-green-400 px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-4">
+                        <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                        </div>
+                        <div>
+                            <h3 className="text-sm font-bold uppercase tracking-wide text-white">Board Saved!</h3>
+                            <p className="text-xs text-green-400/80">Your guest board has been successfully saved to your account.</p>
+                        </div>
+                        <button onClick={() => setShowMigratedToast(false)} className="ml-2 hover:text-white">&times;</button>
+                    </div>
+                </div>
+            )}
+
             <div className="max-w-6xl mx-auto space-y-8">
 
                 {/* Header */}

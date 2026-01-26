@@ -23,11 +23,7 @@ const CreateContest: React.FC = () => {
     const [scanSuccess, setScanSuccess] = useState(false);
     const fileRef = useRef<HTMLInputElement>(null);
 
-    useEffect(() => {
-        if (!authLoading && !user) {
-            navigate('/login?mode=signup');
-        }
-    }, [user, authLoading, navigate]);
+    // Auth redirect removed to allow guest creation
 
     const handleTeamChange = (side: 'left' | 'top', abbr: string) => {
         const team = NFL_TEAMS.find(t => t.abbr === abbr);
@@ -74,13 +70,41 @@ const CreateContest: React.FC = () => {
     };
 
     const handlePublish = async (manualBoard?: BoardData) => {
-        if (!user) return;
+        const finalBoard = manualBoard || board;
+        const leagueTitle = game.title?.trim();
+
+        // 1. GUEST FLOW: If not logged in, save to local storage and redirect
+        if (!user) {
+            if (!leagueTitle) {
+                setError("League Name is required.");
+                return;
+            }
+
+            try {
+                setIsLoading(true);
+                // Mock a quick delay to feel like "Processing"
+                await new Promise(r => setTimeout(r, 800));
+
+                // Save to Local Storage
+                localStorage.setItem('squares_game', JSON.stringify({ ...game, title: leagueTitle }));
+                localStorage.setItem('squares_board', JSON.stringify(finalBoard));
+
+                // Redirect to Signup (which triggers MigrationWrapper)
+                navigate('/login?mode=signup');
+                return;
+            } catch (err) {
+                console.error("Guest Save Error", err);
+                setError("Failed to save board locally.");
+                setIsLoading(false);
+                return;
+            }
+        }
+
+        // 2. AUTH FLOW: Proceed with Supabase Insert
         setIsLoading(true);
         setError(null);
 
         try {
-            const finalBoard = manualBoard || board;
-            const leagueTitle = game.title?.trim();
             if (!leagueTitle) throw new Error("League Name is required.");
 
             // Create payload matching Supabase schema
@@ -89,20 +113,8 @@ const CreateContest: React.FC = () => {
                 title: leagueTitle,
                 settings: { ...game, title: leagueTitle }, // GameState goes into settings
                 board_data: finalBoard,
-                // We might want to store passcode somewhere safe, or hashing it. 
-                // For now, sticking to the existing pattern (maybe in settings or separate?)
-                // The `contests` table schema doesn't have a `passcode` column.
-                // The legacy `API_URL` publish likely stored it. 
-                // We'll store it in `settings` for now as "adminPasscode" (security risk, but consistent with quick prototype)
-                // OR we rely on RLS (owner_id) to edit, and passcode for "public" admin actions?
-                // Given `BoardView` uses handshake with passcode, we need to persist it.
-                // storing custom field in settings jsonb:
                 created_at: new Date().toISOString()
             };
-
-            // Add passcode to settings for legacy compat (handshake)
-            // Ideally this should be a hashed column, but following "Wrapper Strategy" constraints.
-            // (payload.settings as any).adminPasscode = "auth-owner";
 
             const { data, error } = await supabase
                 .from('contests')
@@ -113,7 +125,7 @@ const CreateContest: React.FC = () => {
             if (error) throw error;
             if (!data) throw new Error("No data returned from insert.");
 
-            // Store token locally for immediate access
+            // Store token locally for immediate access (Legacy compat)
             const storedTokens = JSON.parse(localStorage.getItem('sbxpro_tokens') || '{}');
             storedTokens[data.id] = "auth-owner";
             localStorage.setItem('sbxpro_tokens', JSON.stringify(storedTokens));

@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, useSearchParams, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import usePoolData from './hooks/usePoolData'; // Added Import
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import CreateContest from './pages/CreateContest';
@@ -36,13 +37,7 @@ const Home = () => {
   // Otherwise show the landing page
   return (
     <LandingPage
-      onCreate={() => {
-        if (user) {
-          navigate('/create');
-        } else {
-          navigate('/login?mode=signup');
-        }
-      }}
+      onCreate={() => navigate('/create')}
       onLogin={() => navigate('/login?mode=signin')}
       onDemo={() => navigate('/demo')}
     />
@@ -50,40 +45,96 @@ const Home = () => {
 };
 
 const App: React.FC = () => {
+  // Migration Logic Wrapper
+  const MigrationWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const { user } = useAuth();
+    const { migrateGuestBoard } = usePoolData(); // Import the hook
+    const navigate = useNavigate();
+    const [isMigrating, setIsMigrating] = React.useState(false);
+
+    React.useEffect(() => {
+      const checkAndMigrate = async () => {
+        if (!user || isMigrating) return;
+
+        const storedGame = localStorage.getItem('squares_game');
+        const storedBoard = localStorage.getItem('squares_board');
+
+        if (storedGame && storedBoard) {
+          setIsMigrating(true);
+          try {
+            const gameData = JSON.parse(storedGame);
+            const boardData = JSON.parse(storedBoard);
+
+            // Only migrate if there's actual data (basic check)
+            if (gameData.title) {
+              console.log("Migrating guest board...");
+              const newId = await migrateGuestBoard(user, {
+                game: gameData,
+                board: boardData
+              });
+
+              // Clear storage
+              localStorage.removeItem('squares_game');
+              localStorage.removeItem('squares_board');
+
+              // Redirect to new board
+              // Add a query param so Dashboard can show success toast
+              window.location.href = `/?poolId=${newId}&migrated=true`;
+            }
+          } catch (err) {
+            console.error("Migration failed:", err);
+          } finally {
+            setIsMigrating(false);
+          }
+        }
+      };
+
+      checkAndMigrate();
+    }, [user, migrateGuestBoard]);
+
+    if (isMigrating) {
+      return <FullScreenLoading />;
+    }
+
+    return <>{children}</>;
+  };
+
   return (
     <Router>
       <AuthProvider>
         <React.Suspense fallback={<FullScreenLoading />}>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/demo" element={<BoardView demoMode={true} />} />
-            <Route
-              path="/login"
-              element={
-                <Layout>
-                  <Login />
-                </Layout>
-              }
-            />
-            <Route
-              path="/dashboard"
-              element={
-                <Layout>
-                  <Dashboard />
-                </Layout>
-              }
-            />
-            <Route
-              path="/create"
-              element={
-                <Layout>
-                  <CreateContest />
-                </Layout>
-              }
-            />
-            <Route path="/paid" element={<Layout><Paid /></Layout>} />
-            <Route path="*" element={<BoardView />} />
-          </Routes>
+          <MigrationWrapper>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/demo" element={<BoardView demoMode={true} />} />
+              <Route
+                path="/login"
+                element={
+                  <Layout>
+                    <Login />
+                  </Layout>
+                }
+              />
+              <Route
+                path="/dashboard"
+                element={
+                  <Layout>
+                    <Dashboard />
+                  </Layout>
+                }
+              />
+              <Route
+                path="/create"
+                element={
+                  <Layout>
+                    <CreateContest />
+                  </Layout>
+                }
+              />
+              <Route path="/paid" element={<Layout><Paid /></Layout>} />
+              <Route path="*" element={<BoardView />} />
+            </Routes>
+          </MigrationWrapper>
         </React.Suspense>
       </AuthProvider>
     </Router>
