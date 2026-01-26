@@ -29,8 +29,15 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
             if (contestId) {
                 // Init Supabase Admin Client
+                const supabaseUrl = context.env.SUPABASE_URL || (context.env as any).VITE_SUPABASE_URL;
+                const supabaseKey = context.env.SUPABASE_SERVICE_ROLE_KEY || (context.env as any).VITE_SUPABASE_ANON_KEY;
+
+                if (!supabaseUrl) {
+                    throw new Error('Missing Supabase URL');
+                }
+
                 const supabase = createClient(
-                    context.env.SUPABASE_URL,
+                    supabaseUrl,
                     context.env.SUPABASE_SERVICE_ROLE_KEY
                 );
 
