@@ -153,13 +153,24 @@ const Dashboard: React.FC = () => {
                         <div className="flex gap-3">
                             <button
                                 onClick={() => {
-                                    if (confirm("Discard this board? This cannot be undone.")) {
+                                    // Use a temporary state for confirmation to avoid "flash" of native confirm
+                                    const btn = document.activeElement as HTMLElement;
+                                    if (btn.innerText === "CONFIRM DISCARD") {
                                         localStorage.removeItem('squares_game');
                                         localStorage.removeItem('squares_board');
                                         setPendingGuestBoard(null);
+                                    } else {
+                                        btn.innerText = "CONFIRM DISCARD";
+                                        btn.classList.add("text-red-500", "bg-red-500/10");
+                                        setTimeout(() => {
+                                            if (btn && btn.isConnected) {
+                                                btn.innerText = "Discard";
+                                                btn.classList.remove("text-red-500", "bg-red-500/10");
+                                            }
+                                        }, 3000);
                                     }
                                 }}
-                                className="px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest text-indigo-300 hover:text-white transition-colors"
+                                className="px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest text-indigo-300 hover:text-white transition-all"
                             >
                                 Discard
                             </button>
