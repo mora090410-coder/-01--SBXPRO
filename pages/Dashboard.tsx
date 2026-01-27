@@ -23,6 +23,7 @@ const Dashboard: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [pendingGuestBoard, setPendingGuestBoard] = useState<{ game: any, board: any } | null>(null);
     const [migrating, setMigrating] = useState(false); // Local migrating state
+    const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
     const [searchParams] = React.useMemo(() => [new URLSearchParams(window.location.search)], []);
     const [showMigratedToast, setShowMigratedToast] = useState(false);
@@ -100,7 +101,9 @@ const Dashboard: React.FC = () => {
         e.preventDefault(); // Prevent navigation
         e.stopPropagation();
 
-        if (!confirm(`Are you sure you want to delete "${contestTitle}"?\nThis action cannot be undone.`)) {
+        if (deleteConfirmId !== contestId) {
+            setDeleteConfirmId(contestId);
+            setTimeout(() => setDeleteConfirmId(null), 3000);
             return;
         }
 
@@ -302,10 +305,16 @@ const Dashboard: React.FC = () => {
                                 {/* Delete Button (Top Right) */}
                                 <button
                                     onClick={(e) => handleDelete(e, contest.id, contest.title)}
-                                    className="absolute top-4 right-4 p-2 rounded-full bg-black/40 hover:bg-red-500/20 text-white/40 hover:text-red-400 border border-white/5 hover:border-red-500/30 backdrop-blur-sm transition-all opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 z-20"
+                                    className={`absolute top-4 right-4 p-2 rounded-full backdrop-blur-sm transition-all z-20 flex items-center gap-2 ${deleteConfirmId === contest.id
+                                            ? "bg-red-600 text-white opacity-100 border border-red-500 shadow-xl px-3 w-auto translate-y-0"
+                                            : "bg-black/40 text-white/40 hover:bg-red-500/20 hover:text-red-400 border border-white/5 opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 w-8 h-8 justify-center"
+                                        }`}
                                     title="Delete Contest"
                                 >
-                                    <Trash2 className="w-4 h-4" strokeWidth={1.5} />
+                                    <Trash2 className="w-4 h-4 min-w-[16px]" strokeWidth={1.5} />
+                                    {deleteConfirmId === contest.id && (
+                                        <span className="text-[10px] font-bold uppercase tracking-wide whitespace-nowrap">Confirm?</span>
+                                    )}
                                 </button>
                             </div>
 
