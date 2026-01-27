@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import ReactDOM from 'react-dom';
 import { useContestEntries } from '../hooks/useContestEntries';
 import { OrganizerDashboard } from './OrganizerDashboard';
@@ -417,7 +418,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
       <div className="premium-glass px-4 md:px-5 py-3 rounded-2xl flex items-center justify-between gap-4 animate-in slide-in-from-top-4 duration-500 mb-6 backdrop-blur-2xl">
 
         {/* LEFT: Brand + Title */}
-        <a href="/dashboard" className="flex items-center gap-3 min-w-0 group cursor-pointer">
+        <Link to="/dashboard" className="flex items-center gap-3 min-w-0 group cursor-pointer">
           <div className="w-9 h-9 rounded-xl bg-black/20 group-hover:bg-white/10 flex items-center justify-center shadow-md border border-white/10 hover:border-white/20 transition-all flex-shrink-0 overflow-hidden">
             <img src="/icons/gridone-icon-256.png" alt="GridOne" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
           </div>
@@ -427,7 +428,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
               {localGame.title || 'Untitled board'}
             </p>
           </div>
-        </a>
+        </Link>
 
         {/* CENTER: Tab Navigation */}
         <div className="flex items-center bg-black/30 p-0.5 rounded-full border border-white/[0.08]">
