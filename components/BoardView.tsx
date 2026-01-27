@@ -73,6 +73,9 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
     const [showFindSquaresModal, setShowFindSquaresModal] = useState(false);
     const [showPayoutsModal, setShowPayoutsModal] = useState(false);
 
+    // Admin Tab State
+    const [adminStartTab, setAdminStartTab] = useState<'overview' | 'edit'>('overview');
+
     const [copyFeedback, setCopyFeedback] = useState(false);
     const [joinInput, setJoinInput] = useState('');
     const [recoveryEmail, setRecoveryEmail] = useState('');
