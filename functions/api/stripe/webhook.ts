@@ -30,15 +30,20 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
             if (contestId) {
                 // Init Supabase Admin Client
                 const supabaseUrl = context.env.SUPABASE_URL || (context.env as any).VITE_SUPABASE_URL;
-                const supabaseKey = context.env.SUPABASE_SERVICE_ROLE_KEY || (context.env as any).VITE_SUPABASE_ANON_KEY;
+                const supabaseKey = context.env.SUPABASE_SERVICE_ROLE_KEY;
 
                 if (!supabaseUrl) {
                     throw new Error('Missing Supabase URL');
                 }
 
+                if (!supabaseKey) {
+                    console.error('Missing Supabase Key (Service Role or Anon)');
+                    throw new Error('Missing Supabase Key');
+                }
+
                 const supabase = createClient(
                     supabaseUrl,
-                    context.env.SUPABASE_SERVICE_ROLE_KEY
+                    supabaseKey
                 );
 
                 // Update Contest
