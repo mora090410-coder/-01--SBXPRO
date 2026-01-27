@@ -1010,7 +1010,16 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
           />
         )
       }
-    </div >
+      }
+
+      {/* PREVIEW TAB CONTENT */}
+      {activeTab === 'preview' && renderPreview && (
+        <div className="w-full h-full min-h-[calc(100vh-140px)] rounded-2xl overflow-hidden bg-[#09090b] border border-white/10 relative shadow-2xl">
+          {renderPreview()}
+        </div>
+      )}
+
+    </div>
   );
 };
 
@@ -1141,17 +1150,9 @@ const MetadataModal: React.FC<{
         </div>
       </div>
     </div>
-    </>
-  )}
-
-{/* PREVIEW TAB CONTENT */ }
-{
-  activeTab === 'preview' && renderPreview && (
-    <div className="w-full h-full min-h-[calc(100vh-140px)] rounded-2xl overflow-hidden bg-[#09090b] border border-white/10 relative shadow-2xl">
-      {renderPreview()}
-    </div>
-  )
-}
+    </div >
+  );
+};
 
     </div >
   );
