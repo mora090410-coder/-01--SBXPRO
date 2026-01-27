@@ -210,26 +210,30 @@ const Dashboard: React.FC = () => {
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-white/10 pb-6">
                     <div>
                         <h1 className="text-display mb-2">My Contests</h1>
-                        <p className="text-body-secondary">Manage your football squares pools</p>
+                        <p className="text-body-secondary">Manage your football squares contests</p>
                     </div>
                     <div className="flex items-center gap-4">
-                        <Link to="/create" className="btn-cardinal text-button flex items-center gap-2">
-                            <Plus className="w-5 h-5" />
-                            New Contest
-                        </Link>
+                        {contests.length > 0 && (
+                            <Link to="/create" className="btn-cardinal text-button flex items-center gap-2">
+                                <Plus className="w-5 h-5" />
+                                New Contest
+                            </Link>
+                        )}
                     </div>
                 </div>
 
                 {/* Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
-                    {/* Create New Card (Mobile/Desktop Grid Item) */}
-                    <Link to="/create" className="group relative aspect-video bg-[#1c1c1e]/40 border border-white/5 rounded-2xl overflow-hidden hover:border-white/20 transition-all hover:bg-[#1c1c1e]/60 flex flex-col items-center justify-center gap-4 cursor-pointer">
-                        <div className="w-16 h-16 rounded-full bg-white/5 group-hover:bg-white/10 flex items-center justify-center transition-colors border border-white/5 group-hover:scale-110 duration-300">
-                            <Plus className="w-8 h-8 text-white/40 group-hover:text-white" strokeWidth={1.5} />
-                        </div>
-                        <span className="text-button text-gray-400 group-hover:text-white">Create New Pool</span>
-                    </Link>
+                    {/* Create New Card (Mobile/Desktop Grid Item) - Only show if we have contests, otherwise EmptyState takes over */}
+                    {contests.length > 0 && (
+                        <Link to="/create" className="group relative aspect-video bg-[#1c1c1e]/40 border border-white/5 rounded-2xl overflow-hidden hover:border-white/20 transition-all hover:bg-[#1c1c1e]/60 flex flex-col items-center justify-center gap-4 cursor-pointer">
+                            <div className="w-16 h-16 rounded-full bg-white/5 group-hover:bg-white/10 flex items-center justify-center transition-colors border border-white/5 group-hover:scale-110 duration-300">
+                                <Plus className="w-8 h-8 text-white/40 group-hover:text-white" strokeWidth={1.5} />
+                            </div>
+                            <span className="text-button text-gray-400 group-hover:text-white">Create New Contest</span>
+                        </Link>
+                    )}
 
                     {/* Pending Guest Board Card (if exists) */}
                     {pendingGuestBoard && !showMigratedToast && (
@@ -277,8 +281,8 @@ const Dashboard: React.FC = () => {
                             <EmptyState
                                 variant="first-time"
                                 title="No Contests Yet"
-                                description="You haven't created any football squares pools yet. Start a new contest for the big game!"
-                                action={{ label: "Create Your First Pool", to: "/create" }}
+                                description="You haven't created any football squares contests yet. Start a new contest for the big game!"
+                                action={{ label: "Create Your First Contest", to: "/create" }}
                                 icon={<Trophy className="w-8 h-8 text-gold" strokeWidth={1.5} />}
                             />
                         </div>
@@ -306,8 +310,8 @@ const Dashboard: React.FC = () => {
                                 <button
                                     onClick={(e) => handleDelete(e, contest.id, contest.title)}
                                     className={`absolute top-4 right-4 p-2 rounded-full backdrop-blur-sm transition-all z-20 flex items-center gap-2 ${deleteConfirmId === contest.id
-                                            ? "bg-red-600 text-white opacity-100 border border-red-500 shadow-xl px-3 w-auto translate-y-0"
-                                            : "bg-black/40 text-white/40 hover:bg-red-500/20 hover:text-red-400 border border-white/5 opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 w-8 h-8 justify-center"
+                                        ? "bg-red-600 text-white opacity-100 border border-red-500 shadow-xl px-3 w-auto translate-y-0"
+                                        : "bg-black/40 text-white/40 hover:bg-red-500/20 hover:text-red-400 border border-white/5 opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 w-8 h-8 justify-center"
                                         }`}
                                     title="Delete Contest"
                                 >
