@@ -329,9 +329,9 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                         {/* Header */}
                         <div className="flex-shrink-0 flex items-center justify-between p-4 md:py-6 bg-transparent z-50">
                             <div className="flex items-center gap-4">
-                                <div className="w-10 h-10 rounded-xl bg-black/20 flex items-center justify-center shadow-lg border border-white/10 overflow-hidden">
-                                    <img src="/icons/gridone-icon-256.png" alt="GridOne" className="w-full h-full object-cover" />
-                                </div>
+                                <a href="/dashboard" className="w-10 h-10 rounded-xl bg-black/20 hover:bg-white/10 flex items-center justify-center shadow-lg border border-white/10 hover:border-white/20 transition-all overflow-hidden cursor-pointer group">
+                                    <img src="/icons/gridone-icon-256.png" alt="GridOne" className="w-full h-full object-cover opacity-90 group-hover:opacity-100" />
+                                </a>
                                 <div className="flex flex-col">
                                     <h1 className="text-xl font-bold leading-none tracking-tight text-white mb-1">{game.title || 'Super Bowl LIX'}</h1>
                                     <div className="flex items-center gap-2">
