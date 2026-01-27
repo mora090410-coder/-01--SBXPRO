@@ -146,22 +146,15 @@ export const OrganizerDashboard: React.FC<OrganizerDashboardProps> = ({
 
             {/* 2. Payment Status */}
             <DashboardCard title="Payment Status">
-                <div className="flex gap-4 items-center mb-4">
+                <div className="flex gap-4 items-center">
                     <div className="flex-1">
-                        <div className="text-2xl font-bold text-white mb-1">{paymentStats.needsFollowUp}</div>
-                        <div className="text-xs text-red-400 font-medium uppercase tracking-wide">Needs Action</div>
+                        <div className="text-2xl font-bold text-white mb-1">{paymentStats.unpaid}</div>
+                        <div className="text-xs text-red-400 font-medium uppercase tracking-wide">Unpaid</div>
                     </div>
                     <div className="w-px h-10 bg-white/10"></div>
                     <div className="flex-1">
                         <div className="text-2xl font-bold text-white mb-1">{paymentStats.paid}</div>
                         <div className="text-xs text-green-400 font-medium uppercase tracking-wide">Paid</div>
-                    </div>
-                </div>
-                <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-xs text-gray-400">
-                        <div className="w-2 h-2 rounded-full bg-red-400"></div>
-                        <span className="flex-1">Unpaid</span>
-                        <span className="text-white font-mono">{paymentStats.unpaid}</span>
                     </div>
                 </div>
             </DashboardCard>
