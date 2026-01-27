@@ -558,7 +558,7 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
             )}
 
             {isCommissionerMode && (
-                <div className="fixed inset-0 z-[80] bg-[#050101] p-0 overflow-hidden animate-in slide-in-from-bottom-10 duration-300">
+                <div className="fixed inset-0 z-[80] bg-[#050101] p-0 overflow-y-auto animate-in slide-in-from-bottom-10 duration-300 scrollbar-hide">
                     <Suspense fallback={<div className="flex items-center justify-center h-full text-white/50">Loading Organizer...</div>}>
                         <AdminPanel
                             game={game}
