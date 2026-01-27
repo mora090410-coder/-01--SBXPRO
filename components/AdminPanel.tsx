@@ -1010,7 +1010,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
           />
         )
       }
-      }
 
       {/* PREVIEW TAB CONTENT */}
       {activeTab === 'preview' && renderPreview && (
@@ -1150,10 +1149,6 @@ const MetadataModal: React.FC<{
         </div>
       </div>
     </div>
-    </div >
-  );
-};
-
     </div >
   );
 };
