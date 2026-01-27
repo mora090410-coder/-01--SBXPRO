@@ -337,7 +337,7 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                         <div className="flex-shrink-0 z-50 p-4 md:py-6">
                             {(adminToken || isOwner) ? (
                                 /* Admin/Preview Header - Matches AdminPanel Style */
-                                <div className="premium-glass px-4 md:px-5 py-3 rounded-2xl flex items-center justify-between gap-4 backdrop-blur-2xl border border-white/10 shadow-2xl">
+                                <div className="premium-glass px-4 md:px-5 py-3 rounded-2xl flex items-center justify-between gap-4 backdrop-blur-2xl border border-white/10 shadow-2xl mb-6">
                                     {/* LEFT: Organizer Branding */}
                                     <Link to="/dashboard" className="flex items-center gap-3 min-w-0 group cursor-pointer">
                                         <div className="w-9 h-9 rounded-xl bg-black/20 group-hover:bg-white/10 flex items-center justify-center shadow-md border border-white/10 hover:border-white/20 transition-all flex-shrink-0 overflow-hidden">
@@ -355,26 +355,37 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                                     <div className="hidden md:flex items-center bg-black/30 p-0.5 rounded-full border border-white/[0.08]">
                                         <button
                                             onClick={() => { setAdminStartTab('overview'); handleTogglePreview(false); }}
-                                            className="px-4 py-1.5 rounded-full text-xs font-medium text-white/50 hover:text-white transition-colors"
+                                            className="px-4 py-1.5 rounded-full text-xs font-semibold text-white/50 hover:text-white transition-colors"
                                         >
                                             Overview
                                         </button>
                                         <button
                                             onClick={() => { setAdminStartTab('edit'); handleTogglePreview(false); }}
-                                            className="px-4 py-1.5 rounded-full text-xs font-medium text-white/50 hover:text-white transition-colors"
+                                            className="px-4 py-1.5 rounded-full text-xs font-semibold text-white/50 hover:text-white transition-colors"
                                         >
                                             Edit
                                         </button>
-                                        <div className="px-4 py-1.5 rounded-full text-xs font-bold bg-white text-black shadow-lg uppercase tracking-wide">
+                                        <div className="w-px h-3 bg-white/10 mx-1"></div>
+                                        <button
+                                            className="px-4 py-1.5 rounded-full text-xs font-semibold bg-white text-black shadow-sm transition-all"
+                                        >
                                             Preview
-                                        </div>
+                                        </button>
                                     </div>
 
                                     {/* RIGHT: Actions */}
                                     <div className="flex items-center gap-3">
+                                        {/* Status pill - compact (Static Saved for Preview) */}
+                                        <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[0.06] border border-white/10">
+                                            <svg className="w-3.5 h-3.5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                                            </svg>
+                                            <span className="text-[13px] font-semibold text-white/50">Saved</span>
+                                        </div>
+
                                         {activePoolId && isActivated && (
-                                            <button onClick={() => setShowShareModal(true)} className="w-9 h-9 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 transition-colors text-white/70 hover:text-white border border-white/5" title="Share Board">
-                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
+                                            <button onClick={() => setShowShareModal(true)} className="w-9 h-9 flex items-center justify-center rounded-full bg-white/[0.06] hover:bg-white/10 border border-white/10 text-white/60 hover:text-white transition-all focus:outline-none focus:ring-2 focus:ring-white/20" title="Share Board">
+                                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
                                             </button>
                                         )}
                                         {/* Mobile: Simple Edit Button */}
