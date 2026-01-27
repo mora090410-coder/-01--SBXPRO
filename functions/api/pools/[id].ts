@@ -1,10 +1,15 @@
 
+import { createClient } from '@supabase/supabase-js';
+
 type KVNamespace = any;
 type PagesFunction<T = any> = (context: any) => Promise<Response> | Response;
 
 interface Env {
-  POOLS: KVNamespace;
+  POOLS: KVNamespace; // Kept to avoid build errors if bindings exist
   PUBLIC_SITE_URL?: string;
+  VITE_SUPABASE_URL: string;
+  VITE_SUPABASE_ANON_KEY: string;
+  SUPABASE_SERVICE_ROLE_KEY?: string;
 }
 
 // ============= INLINE CRYPTO UTILITIES =============
@@ -26,7 +31,10 @@ async function verifyPassword(password: string, storedHash: string, salt: string
   return result === 0;
 }
 
-// ... existing code ...
+// ============= SUPABASE CLIENT =============
+function getSupabase(env: Env) {
+  return createClient(env.VITE_SUPABASE_URL, env.VITE_SUPABASE_ANON_KEY);
+}
 
 // ============= CORS =============
 const DEFAULT_ALLOWED_ORIGINS = [
@@ -58,22 +66,34 @@ export const onRequestOptions: PagesFunction = async (context) => {
 };
 
 /**
- * Public Access Route - Sanitizes sensitive data
+ * Public Access Route - Read from Supabase
  */
 export const onRequestGet: PagesFunction<Env> = async (context) => {
   const poolId = context.params.id as string;
-  const val = await context.env.POOLS.get(`pool:${poolId}`);
+  const supabase = getSupabase(context.env);
 
-  if (!val) {
-    return new Response(JSON.stringify({ error: 'Pool not found' }), {
+  // Fetch merged data
+  const { data, error } = await supabase
+    .from('contests')
+    .select('settings, board_data, is_activated, activated_at')
+    .eq('id', poolId)
+    .single();
+
+  if (error || !data) {
+    return new Response(JSON.stringify({ error: 'Pool not found', details: error }), {
       status: 404, headers: { ...getCorsHeaders(context.request, context.env.PUBLIC_SITE_URL), 'Content-Type': 'application/json' }
     });
   }
 
-  const parsed = JSON.parse(val);
-  const { passwordHash, passwordSalt, adminToken, ...publicPayload } = parsed;
+  // Construct response matching legacy KV structure
+  const responseData = {
+    ...(data.settings || {}),
+    board: data.board_data || {},
+    is_activated: data.is_activated,
+    activated_at: data.activated_at
+  };
 
-  return new Response(JSON.stringify(publicPayload), {
+  return new Response(JSON.stringify(responseData), {
     status: 200,
     headers: { ...getCorsHeaders(context.request, context.env.PUBLIC_SITE_URL), 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
   });
@@ -81,6 +101,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
 
 /**
  * Authentication Verification Route
+ * Verifies password against Supabase `password_hash` column
  */
 export const onRequestPost: PagesFunction<Env> = async (context) => {
   const poolId = context.params.id as string;
@@ -93,21 +114,26 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     });
   }
 
-  const val = await context.env.POOLS.get(`pool:${poolId}`);
-  if (!val) {
+  const supabase = getSupabase(context.env);
+
+  // Also check if adminToken matches? 
+  // For legacy support, we check `password_hash` column.
+  const { data, error } = await supabase
+    .from('contests')
+    .select('password_hash, password_salt')
+    .eq('id', poolId)
+    .single();
+
+  if (error || !data) {
     return new Response(JSON.stringify({ error: 'Pool not found' }), {
       status: 404, headers: { ...getCorsHeaders(context.request, context.env.PUBLIC_SITE_URL), 'Content-Type': 'application/json' }
     });
   }
 
-  const parsed = JSON.parse(val);
-
-  // Support both old (plaintext) and new (hashed) formats
+  // Verify
   let isValid = false;
-  if (parsed.passwordHash && parsed.passwordSalt) {
-    isValid = await verifyPassword(token, parsed.passwordHash, parsed.passwordSalt);
-  } else if (parsed.adminToken) {
-    isValid = token === parsed.adminToken;
+  if (data.password_hash && data.password_salt) {
+    isValid = await verifyPassword(token, data.password_hash, data.password_salt);
   }
 
   if (!isValid) {
@@ -122,7 +148,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 };
 
 /**
- * Protected Update Route
+ * Protected Update Route - Writes to Supabase
  */
 export const onRequestPut: PagesFunction<Env> = async (context) => {
   const poolId = context.params.id as string;
@@ -135,37 +161,53 @@ export const onRequestPut: PagesFunction<Env> = async (context) => {
     });
   }
 
+  const supabase = getSupabase(context.env);
+
+  // 1. Verify Auth First
+  const { data: existing, error: fetchError } = await supabase
+    .from('contests')
+    .select('password_hash, password_salt')
+    .eq('id', poolId)
+    .single();
+
+  if (fetchError || !existing) {
+    return new Response(JSON.stringify({ error: 'Pool not found' }), {
+      status: 404, headers: { ...getCorsHeaders(context.request, context.env.PUBLIC_SITE_URL), 'Content-Type': 'application/json' }
+    });
+  }
+
+  let isValid = false;
+  if (existing.password_hash && existing.password_salt) {
+    isValid = await verifyPassword(token, existing.password_hash, existing.password_salt);
+  }
+
+  if (!isValid) {
+    return new Response(JSON.stringify({ error: 'Unauthorized: Invalid Token' }), {
+      status: 401, headers: { ...getCorsHeaders(context.request, context.env.PUBLIC_SITE_URL), 'Content-Type': 'application/json' }
+    });
+  }
+
+  // 2. Perform Update
   try {
-    const existing = await context.env.POOLS.get(`pool:${poolId}`);
-    if (!existing) {
-      return new Response(JSON.stringify({ error: 'Pool not found' }), {
-        status: 404, headers: { ...getCorsHeaders(context.request, context.env.PUBLIC_SITE_URL), 'Content-Type': 'application/json' }
-      });
-    }
+    const rawBody = await context.request.json() as any;
 
-    const parsed = JSON.parse(existing);
+    // Check structure. If it's the full nested object or flat?
+    // Standardize: { game: ..., board: ... }
 
-    let isValid = false;
-    if (parsed.passwordHash && parsed.passwordSalt) {
-      isValid = await verifyPassword(token, parsed.passwordHash, parsed.passwordSalt);
-    } else if (parsed.adminToken) {
-      isValid = token === parsed.adminToken;
-    }
-
-    if (!isValid) {
-      return new Response(JSON.stringify({ error: 'Unauthorized: Invalid Token' }), {
-        status: 401, headers: { ...getCorsHeaders(context.request, context.env.PUBLIC_SITE_URL), 'Content-Type': 'application/json' }
-      });
-    }
-
-    const data = await context.request.json();
-    const updated = {
-      ...parsed,
-      updatedAt: new Date().toISOString(),
-      data
+    const updatePayload: any = {
+      updated_at: new Date().toISOString()
     };
 
-    await context.env.POOLS.put(`pool:${poolId}`, JSON.stringify(updated));
+    if (rawBody.game) updatePayload.settings = rawBody.game;
+    if (rawBody.board) updatePayload.board_data = rawBody.board;
+
+    // Safe Update
+    const { error: updateError } = await supabase
+      .from('contests')
+      .update(updatePayload)
+      .eq('id', poolId);
+
+    if (updateError) throw updateError;
 
     return new Response(JSON.stringify({ ok: true }), {
       status: 200, headers: { ...getCorsHeaders(context.request, context.env.PUBLIC_SITE_URL), 'Content-Type': 'application/json' }
