@@ -1142,8 +1142,7 @@ const MetadataModal: React.FC<{
       </div>
     </div>
     </>
-  )
-}
+  )}
 
 {/* PREVIEW TAB CONTENT */ }
 {
