@@ -332,6 +332,11 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                     </div>
 
                     <div className="flex items-center gap-3">
+                        <div className="flex items-center bg-white/10 p-0.5 rounded-full border border-white/5">
+                            <button onClick={() => setActiveTab('live')} className={`px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wide transition-all ${activeTab === 'live' ? 'bg-white text-black shadow-sm' : 'text-white/50 hover:text-white'}`}>Live</button>
+                            <button onClick={() => setActiveTab('board')} className={`px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wide transition-all ${activeTab === 'board' ? 'bg-white text-black shadow-sm' : 'text-white/50 hover:text-white'}`}>Board</button>
+                        </div>
+
                         {activePoolId && isActivated && (
                             <button onClick={() => setShowShareModal(true)} className="p-2.5 rounded-full bg-white/5 hover:bg-white/10 transition-colors text-white/70 hover:text-white border border-white/5">
                                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
@@ -421,13 +426,6 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                         )}
                     </div>
                 </div>
-
-                {!previewMode && (
-                    <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] flex p-1 bg-[#1c1c1e]/95 backdrop-blur-xl border border-white/10 rounded-full shadow-2xl">
-                        <button onClick={() => setActiveTab('live')} className={`px-6 py-2.5 rounded-full text-xs font-semibold transition-all ${activeTab === 'live' ? 'bg-white text-black shadow-lg' : 'text-white/50 hover:text-white'}`}>Live</button>
-                        <button onClick={() => setActiveTab('board')} className={`px-6 py-2.5 rounded-full text-xs font-semibold transition-all ${activeTab === 'board' ? 'bg-white text-black shadow-lg' : 'text-white/50 hover:text-white'}`}>Board</button>
-                    </div>
-                )}
             </div>
         );
     };

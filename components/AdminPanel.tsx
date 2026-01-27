@@ -417,14 +417,14 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
     <div className="space-y-6">
 
       {/* Top Header - Apple-clean 3-zone layout */}
-      <div className="premium-glass px-4 md:px-5 py-3 rounded-2xl flex items-center justify-between gap-4 animate-in slide-in-from-top-4 duration-500 mb-6 backdrop-blur-2xl">
+      <div className="premium-glass px-4 md:px-5 py-3 rounded-2xl flex items-center justify-between gap-2 md:gap-4 animate-in slide-in-from-top-4 duration-500 mb-6 backdrop-blur-2xl">
 
         {/* LEFT: Brand + Title */}
         <Link to="/dashboard" className="flex items-center gap-3 min-w-0 group cursor-pointer">
           <div className="w-9 h-9 rounded-xl bg-black/20 group-hover:bg-white/10 flex items-center justify-center shadow-md border border-white/10 hover:border-white/20 transition-all flex-shrink-0 overflow-hidden ring-1 ring-[#FFC72C]/50">
             <img src="/icons/gridone-icon-256.png" alt="GridOne" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 hidden md:block">
             <h3 className="text-base font-semibold text-white tracking-tight group-hover:text-gold transition-colors">Organizer</h3>
             <p className="text-xs font-medium text-white/50 truncate group-hover:text-white/70 transition-colors">
               {localGame.title || 'Untitled board'}
