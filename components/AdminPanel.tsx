@@ -1149,7 +1149,6 @@ const MetadataModal: React.FC<{
         </div>
       </div>
     </div>
-    </div >
   );
 };
 
