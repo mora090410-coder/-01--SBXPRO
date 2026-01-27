@@ -151,6 +151,13 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
         }
     }, [loadPoolData, setAdminToken, urlPoolId]);
 
+    // Fallback to 'board' tab if not activated
+    useEffect(() => {
+        if (dataReady && !loadingPool && !isActivated && !isOwner && !demoMode) {
+            setActiveTab('board');
+        }
+    }, [dataReady, loadingPool, isActivated, isOwner, demoMode]);
+
     useEffect(() => {
         // FIX: Do NOT overwrite guest draft with loaded pool data.
         // If we are viewing a specific poolId (saved board), we should not touch the local storage drafts.
