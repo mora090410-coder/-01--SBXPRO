@@ -18,7 +18,7 @@ export async function parseBoardImage(base64Image: string): Promise<BoardData> {
   while (retries >= 0) {
     try {
       response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview", // Using stable 1.5 Flash model
+        model: "gemini-3-flash-preview", // User confirmed this works
         contents: {
           parts: [
             {
