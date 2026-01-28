@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../services/supabase';
@@ -355,86 +354,99 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
 
         return (
             <div className="flex-1 relative overflow-hidden flex flex-col pb-6">
-                <InfoCards.LiveStrip game={game} live={liveData} isSynced={isSynced} activeTab={effectiveTab} onTabChange={handleTabChange} />
+                {/* OWNER PAYWALL LOCK */}
+                {isOwner && !isPaid && (
+                    <div className="absolute inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-500">
+                        <div className="max-w-md w-full mx-6 p-8 rounded-2xl bg-[#0a0a0a] border border-[#9D2235]/40 shadow-2xl flex flex-col items-center text-center">
+                            <div className="w-16 h-16 rounded-full bg-[#9D2235]/10 flex items-center justify-center mb-6 border border-[#9D2235]/20">
+                                <svg className="w-8 h-8 text-[#9D2235]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                </svg>
+                            </div>
+                            <h2 className="text-2xl font-bold text-white mb-2">Activate Your Board</h2>
+                            <p className="text-gray-400 mb-8 leading-relaxed">
+                                To open this board to players and enable live syncing, a one-time activation payment is required.
+                            </p>
+                            <button
+                                onClick={() => activePoolId && createCheckoutSession(activePoolId)}
+                                className="w-full py-4 rounded-xl bg-gradient-to-r from-[#9D2235] to-[#B3263C] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl flex items-center justify-center gap-2 group"
+                            >
+                                <span className="text-sm font-black uppercase tracking-widest text-white">Pay $9.99 to Activate</span>
+                            </button>
+                        </div>
+                    </div>
+                )}
 
-                <div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-hide">
-                    <div className="max-w-[960px] mx-auto px-4 md:px-6 py-6 space-y-6">
-                        {effectiveTab === 'live' && (
-                            <div className="relative">
-                                {/* Blur Overlay for Players (!isPaid && !isOwner) */}
-                                {!isPaid && !isOwner && (
-                                    <div className="absolute inset-0 z-50 flex items-center justify-center animate-in fade-in duration-500">
-                                        <LockedLiveView ownerId={ownerId} variant="overlay" />
-                                    </div>
-                                )}
+                <div className={`flex-1 flex flex-col h-full overflow-hidden ${isOwner && !isPaid ? 'blur-sm pointer-events-none select-none' : ''}`}>
+                    <InfoCards.LiveStrip game={game} live={liveData} isSynced={isSynced} activeTab={effectiveTab} onTabChange={handleTabChange} />
 
-                                <div className={`space-y-6 animate-in fade-in duration-300 ${(!isPaid && !isOwner) ? 'blur-xl select-none pointer-events-none opacity-40 transition-all duration-500' : ''}`}>
-                                    {isOwner && !isPaid && (
-                                        <div className="p-4 rounded-xl bg-gradient-to-r from-red-900/40 to-black border border-red-500/30 flex flex-col md:flex-row items-center justify-between gap-4 shadow-lg">
-                                            <div className="flex items-center gap-3">
-                                                <div className="p-2 rounded-full bg-red-500/10 shrink-0"><svg className="w-5 h-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg></div>
-                                                <div>
-                                                    <h3 className="text-sm font-bold text-white">Group Access Locked</h3>
-                                                    <p className="text-xs text-white/70">Your players cannot see live winners or scenarios. Pay $9.99 to activate live syncing for everyone.</p>
+                    <div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-hide">
+                        <div className="max-w-[960px] mx-auto px-4 md:px-6 py-6 space-y-6">
+                            {effectiveTab === 'live' && (
+                                <div className="relative">
+                                    {/* Blur Overlay for Players (!isPaid && !isOwner) */}
+                                    {!isPaid && !isOwner && (
+                                        <div className="absolute inset-0 z-50 flex items-center justify-center animate-in fade-in duration-500">
+                                            <LockedLiveView ownerId={ownerId} variant="overlay" />
+                                        </div>
+                                    )}
+
+                                    <div className={`space-y-6 animate-in fade-in duration-300 ${(!isPaid && !isOwner) ? 'blur-xl select-none pointer-events-none opacity-40 transition-all duration-500' : ''}`}>
+                                        {liveStatus === 'NO MATCH FOUND' && (
+                                            <div className="p-4 rounded-[20px] bg-yellow-500/10 border border-yellow-500/20 flex items-start gap-4">
+                                                <div className="p-2 rounded-full bg-yellow-500/20 text-yellow-500">
+                                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
                                                 </div>
-                                            </div>
-                                            <button onClick={() => activePoolId && createCheckoutSession(activePoolId)} className="w-full md:w-auto px-6 py-2.5 bg-[#9D2235] hover:bg-[#b0263b] rounded-lg text-xs font-black uppercase tracking-widest text-white shadow-lg transition-all whitespace-nowrap">Pay $9.99 to Activate</button>
-                                        </div>
-                                    )}
-                                    {liveStatus === 'NO MATCH FOUND' && (
-                                        <div className="p-4 rounded-[20px] bg-yellow-500/10 border border-yellow-500/20 flex items-start gap-4">
-                                            <div className="p-2 rounded-full bg-yellow-500/20 text-yellow-500">
-                                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                                            </div>
-                                            <div><h4 className="text-sm font-semibold text-yellow-500 mb-1">Live scoring unavailable</h4><p className="text-xs text-yellow-500/80">Check your date and teams in settings.</p></div>
-                                        </div>
-                                    )}
-                                    <InfoCards.WinningNowHero game={game} board={board} live={liveData} highlights={highlights} />
-                                    <div className="grid md:grid-cols-2 gap-4">
-                                        <ScenarioPanel.LeftScenarios game={game} board={board} live={liveData} onScenarioHover={setHighlightedCoords} />
-                                        <ScenarioPanel.TopScenarios game={game} board={board} live={liveData} onScenarioHover={setHighlightedCoords} />
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {effectiveTab === 'board' && (
-                            <div className="space-y-4 animate-in fade-in duration-300">
-                                <div className="sticky top-0 z-20 bg-[#0a0a0a]/95 backdrop-blur-md -mx-4 md:-mx-6 px-4 md:px-6 py-3 border-b border-white/[0.06] flex items-center justify-between gap-3">
-                                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                                        <button onClick={() => setShowFindSquaresModal(true)} className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.04] border border-white/10 text-[13px] font-semibold text-white/70 hover:bg-white/[0.08] hover:text-white transition-all shrink-0">
-                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg><span className="hidden sm:inline">Find my squares</span>
-                                        </button>
-                                        {selectedPlayer && (
-                                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/10 animate-in fade-in duration-200 min-w-0">
-                                                <span className="text-xs font-medium text-white truncate">Showing: {selectedPlayer}</span>
-                                                <button onClick={() => setSelectedPlayer('')} className="w-4 h-4 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors shrink-0"><svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg></button>
+                                                <div><h4 className="text-sm font-semibold text-yellow-500 mb-1">Live scoring unavailable</h4><p className="text-xs text-yellow-500/80">Check your date and teams in settings.</p></div>
                                             </div>
                                         )}
-                                    </div>
-                                    <div className="hidden md:flex items-center gap-1 p-1 bg-white/[0.04] rounded-lg border border-white/10">
-                                        <button onClick={() => setBoardZoom('fit')} className={`px-2.5 py-1 text-[11px] font-medium rounded transition-all ${boardZoom === 'fit' ? 'bg-white text-black' : 'text-white/60 hover:text-white hover:bg-white/10'}`}>Fit</button>
-                                        <button onClick={() => setBoardZoom('100')} className={`px-2.5 py-1 text-[11px] font-medium rounded transition-all ${boardZoom === '100' ? 'bg-white text-black' : 'text-white/60 hover:text-white hover:bg-white/10'}`}>100%</button>
+                                        <InfoCards.WinningNowHero game={game} board={board} live={liveData} highlights={highlights} />
+                                        <div className="grid md:grid-cols-2 gap-4">
+                                            <ScenarioPanel.LeftScenarios game={game} board={board} live={liveData} onScenarioHover={setHighlightedCoords} />
+                                            <ScenarioPanel.TopScenarios game={game} board={board} live={liveData} onScenarioHover={setHighlightedCoords} />
+                                        </div>
                                     </div>
                                 </div>
+                            )}
 
-                                <div className={`relative bg-[#1c1c1e]/40 border border-white/[0.08] rounded-[16px] shadow-xl min-h-[500px] ${boardZoom === '100' ? 'overflow-auto' : 'overflow-hidden'}`}>
-                                    <div className={`${boardZoom === '100' ? 'p-3' : 'absolute inset-0 overflow-hidden p-3 flex items-center justify-center'}`}>
-                                        {isEmptyBoard ? (
-                                            <div className="text-center max-w-sm mx-auto p-8 animate-in fade-in zoom-in duration-500">
-                                                <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6 border border-white/5"><svg className="w-10 h-10 text-white/20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg></div>
-                                                <h3 className="text-xl font-semibold text-white mb-2">Board is empty</h3>
-                                                <p className="text-sm text-gray-500 mb-8 leading-relaxed">The organizer hasn't added names yet.</p>
-                                            </div>
-                                        ) : (
-                                            <div className={`transition-transform duration-300 ${boardZoom === '100' ? 'min-w-[700px]' : 'w-full h-full'}`}>
-                                                <BoardGrid board={board} highlights={highlights} live={liveData} selectedPlayer={selectedPlayer} highlightedCoords={highlightedCoords} leftTeamName={game.leftName || game.leftAbbr} topTeamName={game.topName || game.topAbbr} />
-                                            </div>
-                                        )}
+                            {effectiveTab === 'board' && (
+                                <div className="space-y-4 animate-in fade-in duration-300">
+                                    <div className="sticky top-0 z-20 bg-[#0a0a0a]/95 backdrop-blur-md -mx-4 md:-mx-6 px-4 md:px-6 py-3 border-b border-white/[0.06] flex items-center justify-between gap-3">
+                                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                                            <button onClick={() => setShowFindSquaresModal(true)} className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.04] border border-white/10 text-[13px] font-semibold text-white/70 hover:bg-white/[0.08] hover:text-white transition-all shrink-0">
+                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg><span className="hidden sm:inline">Find my squares</span>
+                                            </button>
+                                            {selectedPlayer && (
+                                                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/10 animate-in fade-in duration-200 min-w-0">
+                                                    <span className="text-xs font-medium text-white truncate">Showing: {selectedPlayer}</span>
+                                                    <button onClick={() => setSelectedPlayer('')} className="w-4 h-4 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors shrink-0"><svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg></button>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="hidden md:flex items-center gap-1 p-1 bg-white/[0.04] rounded-lg border border-white/10">
+                                            <button onClick={() => setBoardZoom('fit')} className={`px-2.5 py-1 text-[11px] font-medium rounded transition-all ${boardZoom === 'fit' ? 'bg-white text-black' : 'text-white/60 hover:text-white hover:bg-white/10'}`}>Fit</button>
+                                            <button onClick={() => setBoardZoom('100')} className={`px-2.5 py-1 text-[11px] font-medium rounded transition-all ${boardZoom === '100' ? 'bg-white text-black' : 'text-white/60 hover:text-white hover:bg-white/10'}`}>100%</button>
+                                        </div>
+                                    </div>
+
+                                    <div className={`relative bg-[#1c1c1e]/40 border border-white/[0.08] rounded-[16px] shadow-xl min-h-[500px] ${boardZoom === '100' ? 'overflow-auto' : 'overflow-hidden'}`}>
+                                        <div className={`${boardZoom === '100' ? 'p-3' : 'absolute inset-0 overflow-hidden p-3 flex items-center justify-center'}`}>
+                                            {isEmptyBoard ? (
+                                                <div className="text-center max-w-sm mx-auto p-8 animate-in fade-in zoom-in duration-500">
+                                                    <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6 border border-white/5"><svg className="w-10 h-10 text-white/20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg></div>
+                                                    <h3 className="text-xl font-semibold text-white mb-2">Board is empty</h3>
+                                                    <p className="text-sm text-gray-500 mb-8 leading-relaxed">The organizer hasn't added names yet.</p>
+                                                </div>
+                                            ) : (
+                                                <div className={`transition-transform duration-300 ${boardZoom === '100' ? 'min-w-[700px]' : 'w-full h-full'}`}>
+                                                    <BoardGrid board={board} highlights={highlights} live={liveData} selectedPlayer={selectedPlayer} highlightedCoords={highlightedCoords} leftTeamName={game.leftName || game.leftAbbr} topTeamName={game.topName || game.topAbbr} />
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        )}
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
