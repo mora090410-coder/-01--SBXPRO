@@ -2,6 +2,9 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { BoardData } from "../types";
 
+// Debug log for environment validation
+console.log("Gemini Service Initializing. API Key present:", !!(import.meta as any).env.VITE_GEMINI_API_KEY);
+
 export async function parseBoardImage(base64Image: string): Promise<BoardData> {
   const apiKey = (import.meta as any).env.VITE_GEMINI_API_KEY;
 
@@ -99,6 +102,12 @@ export async function parseBoardImage(base64Image: string): Promise<BoardData> {
       });
       break; // Success
     } catch (apiError: any) {
+      // Specific handling for Network/TypeError (Load failed)
+      if (apiError instanceof TypeError && apiError.message.includes('Load failed')) {
+        console.error("Network Error: Possible CORS or blocked request.", apiError);
+        throw new Error("Network Error: The request was blocked. Please check your connection or ad-blockers.");
+      }
+
       console.error(`Gemini API Error (Attempt ${4 - retries}/4):`, apiError);
       const isOverloaded = apiError.message?.includes('503') || apiError.message?.includes('overloaded');
 
