@@ -18,20 +18,22 @@ export async function parseBoardImage(base64Image: string): Promise<BoardData> {
   while (retries >= 0) {
     try {
       response = await ai.models.generateContent({
-        model: "gemini-3.0-flash-preview", // Updated to latest model for better availability
+        model: "gemini-2.0-flash-exp", // Reverted to working model
         contents: {
           parts: [
             {
-              text: `Analyze this football squares board image. 
-              1. EXTRACT NAMES: Identify and extract the name written in each of the 100 squares.
-                 - Output 'squaresGrid' as an array of 100 arrays (one per cell, row-by-row).
+              text: `Analyze this image of a football squares board. Return ONLY a valid JSON object. Do not use markdown code blocks.
               
+              Structure:
+              {
+                "bearsAxis": number[], // Top horizontal axis numbers (0-9)
+                "oppAxis": number[],   // Left vertical axis numbers (0-9)
+                "squares": string[][]  // 100 squares (10x10), row-major. Empty string for empty squares.
+              }
               2. DETECT AXIS NUMBERS: Look strictly at the gray or highlighted headers directly adjacent to the grid 10x10.
                  - IGNORE dates (e.g., 12/14), prices ($125), team names, or other text outside the main axis headers.
                  - The top axis must have EXACTLY 10 digits (0-9).
                  - The left axis must have EXACTLY 10 digits (0-9).
-                 - Are there MULTIPLE rows/columns of numbers (e.g. labeled Q1, Q2, Q3, Final)?
-                 - If YES: This is a DYNAMIC BOARD. Extract each set of 10 numbers into 'bearsAxisByQuarter' (left) and 'oppAxisByQuarter' (top).
                  - If NO (just one row/col): Extract the single set into 'bearsAxis' and 'oppAxis'.
               
               3. DATA CLEANING:
