@@ -116,12 +116,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin, onDemo }) 
                 <span className="text-white/80">→</span>
               </button>
 
-              <button
-                disabled
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-white/5 px-6 py-3 text-sm font-semibold text-white/50 ring-1 ring-white/10 cursor-not-allowed"
-              >
-                Coming Soon
-              </button>
+
             </div>
 
             <div className="mt-6 flex flex-wrap items-center gap-4 text-xs text-white/55">
