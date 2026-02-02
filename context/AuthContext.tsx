@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../services/supabase';
 import { Session, User } from '@supabase/supabase-js';
+import FullScreenLoading from '../components/loading/FullScreenLoading';
 
 interface AuthContextType {
     session: Session | null;
@@ -41,7 +42,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return (
         <AuthContext.Provider value={{ session, user, loading, signOut }}>
-            {!loading && children}
+            {loading ? <FullScreenLoading /> : children}
         </AuthContext.Provider>
     );
 };
