@@ -20,17 +20,23 @@ const Login: React.FC = () => {
 
     const isClaim = searchParams.get('mode') === 'claim';
 
-    // If already logged in, redirect to dashboard
+    // If already logged in, redirect to dashboard or return URL
     React.useEffect(() => {
         if (session) {
+            const returnTo = searchParams.get('returnTo');
             // Preserve 'mode=claim' if it exists to trigger downstream logic
-            if (isClaim) {
+            if (returnTo) {
+                const decoded = decodeURIComponent(returnTo);
+                // If returnTo is just query params (e.g. ?poolId=...), prepend /
+                const target = decoded.startsWith('?') ? `/${decoded}` : decoded;
+                navigate(target);
+            } else if (isClaim) {
                 navigate('/dashboard?mode=claim');
             } else {
                 navigate('/dashboard');
             }
         }
-    }, [session, navigate, isClaim]);
+    }, [session, navigate, isClaim, searchParams]);
 
     const handleAuth = async (e: React.FormEvent) => {
         e.preventDefault();

@@ -12,7 +12,6 @@ const AdminPanel = lazy(() => import('./AdminPanel'));
 import BoardGrid from './BoardGrid';
 import InfoCards from './InfoCards';
 import ScenarioPanel from './ScenarioPanel';
-import LockedLiveView from './LockedLiveView';
 import PlayerFilter from './PlayerFilter';
 import LandingPage from './LandingPage';
 import ErrorBoundary from './ErrorBoundary';
@@ -63,6 +62,19 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
 
     const auth = useAuth();
     const { adminToken, setAdminToken, logout: authLogout } = auth;
+
+    // Strict Auth Enforcement (Lead Gen)
+    useEffect(() => {
+        if (!auth.loading && !auth.user && !loadingPool) {
+            // Redirect to login if trying to view a board without auth
+            const returnUrl = encodeURIComponent(window.location.search);
+            navigate(`/login?returnTo=${returnUrl}`);
+        }
+    }, [auth.loading, auth.user, loadingPool, navigate]);
+
+    if (!auth.loading && !auth.user) {
+        return <FullScreenLoading message="Signing needed to view boards..." />;
+    }
 
     // 2. UI State
     const [showShareModal, setShowShareModal] = useState(false);
@@ -354,28 +366,7 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
 
         return (
             <div className="flex-1 relative overflow-hidden flex flex-col pb-6">
-                {/* OWNER PAYWALL LOCK */}
-                {isOwner && !isPaid && (
-                    <div className="absolute inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-500">
-                        <div className="max-w-md w-full mx-6 p-8 rounded-2xl bg-[#0a0a0a] border border-[#9D2235]/40 shadow-2xl flex flex-col items-center text-center">
-                            <div className="w-16 h-16 rounded-full bg-[#9D2235]/10 flex items-center justify-center mb-6 border border-[#9D2235]/20">
-                                <svg className="w-8 h-8 text-[#9D2235]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                                </svg>
-                            </div>
-                            <h2 className="text-2xl font-bold text-white mb-2">Activate Your Board</h2>
-                            <p className="text-gray-400 mb-8 leading-relaxed">
-                                To open this board to players and enable live syncing, a one-time activation payment is required.
-                            </p>
-                            <button
-                                onClick={() => activePoolId && createCheckoutSession(activePoolId)}
-                                className="w-full py-4 rounded-xl bg-gradient-to-r from-[#9D2235] to-[#B3263C] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl flex items-center justify-center gap-2 group"
-                            >
-                                <span className="text-sm font-black uppercase tracking-widest text-white">Pay $9.99 to Activate</span>
-                            </button>
-                        </div>
-                    </div>
-                )}
+                {/* OWNER PAYWALL LOCK REMOVED */}
 
                 <div className={`flex-1 flex flex-col h-full overflow-hidden ${isOwner && !isPaid ? 'blur-sm pointer-events-none select-none' : ''}`}>
                     <InfoCards.LiveStrip game={game} live={liveData} isSynced={isSynced} activeTab={effectiveTab} onTabChange={handleTabChange} />
@@ -384,14 +375,9 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                         <div className="max-w-[960px] mx-auto px-4 md:px-6 py-6 space-y-6">
                             {effectiveTab === 'live' && (
                                 <div className="relative">
-                                    {/* Blur Overlay for Players (!isPaid && !isOwner) */}
-                                    {!isPaid && !isOwner && (
-                                        <div className="absolute inset-0 z-50 flex items-center justify-center animate-in fade-in duration-500">
-                                            <LockedLiveView ownerId={ownerId} variant="overlay" />
-                                        </div>
-                                    )}
+                                    {/* Blur Overlay REMOVED */}
 
-                                    <div className={`space-y-6 animate-in fade-in duration-300 ${(!isPaid && !isOwner) ? 'blur-xl select-none pointer-events-none opacity-40 transition-all duration-500' : ''}`}>
+                                    <div className={`space-y-6 animate-in fade-in duration-300`}>
                                         {liveStatus === 'NO MATCH FOUND' && (
                                             <div className="p-4 rounded-[20px] bg-yellow-500/10 border border-yellow-500/20 flex items-start gap-4">
                                                 <div className="p-2 rounded-full bg-yellow-500/20 text-yellow-500">
