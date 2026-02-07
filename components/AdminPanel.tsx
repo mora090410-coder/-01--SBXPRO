@@ -52,7 +52,13 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error'>('saved');
   const [showMenu, setShowMenu] = useState(false);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const onPublishRef = useRef(onPublish);
   const isFirstRender = useRef(true);
+
+  // Keep latest publish handler without making autosave effect depend on callback identity.
+  useEffect(() => {
+    onPublishRef.current = onPublish;
+  }, [onPublish]);
 
   const saveEntryMeta = async (meta: EntryMeta) => {
     if (!activePoolId) return;
@@ -103,7 +109,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
     // Debounce the actual save by 800ms
     saveTimeoutRef.current = setTimeout(async () => {
       try {
-        await onPublish(adminToken, {
+        await onPublishRef.current(adminToken, {
           game: localGame,
           board: localBoard
         });
@@ -119,7 +125,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [localGame, localBoard, adminToken, onPublish]);
+  }, [localGame, localBoard, adminToken]);
 
   // Self-healing: Ensure dynamic boards have quarter axes initialized
   useEffect(() => {

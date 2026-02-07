@@ -101,6 +101,14 @@ interface ESPNEvent {
     competitions: Competition[];
 }
 
+const getTeamTotalScore = (team?: Competitor): number => {
+    const raw = Number(team?.score);
+    const linescoreTotal = (team?.linescores || []).reduce((sum, ls) => sum + Number(ls?.value || 0), 0);
+    if (!Number.isFinite(raw)) return linescoreTotal;
+    // Historical ESPN payloads occasionally lag `score` while linescores are complete.
+    return Math.max(raw, linescoreTotal);
+};
+
 const competitorMatchesTeam = (competitor: Competitor, target: string): boolean => {
     if (!target) return false;
     const keys = [
@@ -232,8 +240,8 @@ export function useLiveScoring(game: GameState, dataReady: boolean, loadingPool:
             const gameState = normalizeGameState(status?.type?.state);
 
             setLiveData({
-                leftScore: Number(resolvedLeftTeam?.score || 0),
-                topScore: Number(resolvedTopTeam?.score || 0),
+                leftScore: getTeamTotalScore(resolvedLeftTeam),
+                topScore: getTeamTotalScore(resolvedTopTeam),
                 quarterScores: {
                     Q1: { left: Number(resolvedLeftTeam?.linescores?.[0]?.value || 0), top: Number(resolvedTopTeam?.linescores?.[0]?.value || 0) },
                     Q2: { left: Number(resolvedLeftTeam?.linescores?.[1]?.value || 0), top: Number(resolvedTopTeam?.linescores?.[1]?.value || 0) },
