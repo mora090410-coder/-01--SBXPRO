@@ -8,6 +8,13 @@ const getLogoUrl = (abbr: string) => {
   return `https://a.espncdn.com/i/teamlogos/nfl/500/${code}.png`;
 };
 
+const formatGameDate = (isoDate?: string): string => {
+  if (!isoDate) return 'TBD';
+  const parsed = new Date(`${isoDate}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) return isoDate;
+  return parsed.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+};
+
 type WinnerQuarter = 'Q1' | 'Q2' | 'Q3' | 'Final';
 
 const getPlayersAtScoreForQuarter = (board: BoardData, key: string, quarter: WinnerQuarter): string[] => {
@@ -55,7 +62,7 @@ const LiveStrip: React.FC<{
         )}
         {isFinal && <span className="text-xs font-semibold text-white/60">Final</span>}
         {!isLive && !isFinal && live?.state === 'pre' && (
-          <span className="text-xs text-white/40">{game.dates || 'TBD'}</span>
+          <span className="text-xs text-white/40">Waiting for kickoff{game.dates ? ` - ${formatGameDate(game.dates)}` : ''}</span>
         )}
       </div>
 
@@ -176,6 +183,11 @@ const WinnerHeroCard: React.FC<{
             {getMilestoneLabel(currentMilestone, isLive)}
           </span>
         </div>
+        {live.state === 'pre' && (
+          <p className="text-xs text-white/40 text-center mb-4">
+            Game has not started yet. Waiting for kickoff{game.dates ? ` on ${formatGameDate(game.dates)}` : ''}.
+          </p>
+        )}
 
         {/* Winner name - hero size */}
         <h2 className="text-3xl md:text-4xl font-bold text-white text-center mb-4 tracking-tight">

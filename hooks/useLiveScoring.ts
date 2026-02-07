@@ -246,7 +246,13 @@ export function useLiveScoring(game: GameState, dataReady: boolean, loadingPool:
                 isManual: false
             });
 
-            setLiveStatus(gameState === 'post' ? 'FINAL' : 'LIVE');
+            if (gameState === 'post') {
+                setLiveStatus('FINAL');
+            } else if (gameState === 'in') {
+                setLiveStatus('LIVE');
+            } else {
+                setLiveStatus('PRE-GAME');
+            }
             setIsSynced(true);
             setLastUpdated(new Date().toLocaleTimeString());
         } catch (err: unknown) {
