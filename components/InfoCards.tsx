@@ -1,10 +1,24 @@
 
 import React, { useState } from 'react';
 import { GameState, LiveGameData, BoardData, WinnerHighlights } from '../types';
+import { getAxisForQuarter } from '../utils/winnerLogic';
 
 const getLogoUrl = (abbr: string) => {
   const code = abbr.toLowerCase() === 'was' ? 'wsh' : abbr.toLowerCase();
   return `https://a.espncdn.com/i/teamlogos/nfl/500/${code}.png`;
+};
+
+type WinnerQuarter = 'Q1' | 'Q2' | 'Q3' | 'Final';
+
+const getPlayersAtScoreForQuarter = (board: BoardData, key: string, quarter: WinnerQuarter): string[] => {
+  if (!key) return [];
+  const [topDigit, leftDigit] = key.split('-').map(Number);
+  const topAxis = getAxisForQuarter(board, 'top', quarter);
+  const leftAxis = getAxisForQuarter(board, 'left', quarter);
+  const colIdx = topAxis.indexOf(topDigit);
+  const rowIdx = leftAxis.indexOf(leftDigit);
+  if (colIdx === -1 || rowIdx === -1) return [];
+  return board.squares[rowIdx * 10 + colIdx] || [];
 };
 
 // ========== NEW PLAYER VIEW COMPONENTS ==========
@@ -147,10 +161,10 @@ const WinnerHeroCard: React.FC<{
   const topDigit = parseInt(topDigitStr) || 0;
   const leftDigit = parseInt(leftDigitStr) || 0;
 
-  // Get current winner(s) from board
-  const colIdx = board.oppAxis.indexOf(topDigit);
-  const rowIdx = board.bearsAxis.indexOf(leftDigit);
-  const winners = (colIdx !== -1 && rowIdx !== -1) ? (board.squares[rowIdx * 10 + colIdx] || []) : [];
+  const winnerQuarter: WinnerQuarter = currentMilestone === 'Half'
+    ? 'Q2'
+    : (currentMilestone as WinnerQuarter);
+  const winners = getPlayersAtScoreForQuarter(board, currentKey, winnerQuarter);
 
   return (
     <div className="p-6 md:p-8 rounded-[20px] bg-gradient-to-br from-white/[0.06] to-white/[0.02] border border-white/10 relative overflow-hidden">
@@ -246,9 +260,7 @@ const WinnersMilestoneRow: React.FC<{
     const [topDigitStr, leftDigitStr] = scoreKey.split('-');
     const topDigit = parseInt(topDigitStr) || 0;
     const leftDigit = parseInt(leftDigitStr) || 0;
-    const colIdx = board.oppAxis.indexOf(topDigit);
-    const rowIdx = board.bearsAxis.indexOf(leftDigit);
-    const winners = (colIdx !== -1 && rowIdx !== -1) ? (board.squares[rowIdx * 10 + colIdx] || []) : [];
+    const winners = getPlayersAtScoreForQuarter(board, scoreKey, qKey as WinnerQuarter);
 
     return {
       label: key === 'Half' ? 'Half' : key,
@@ -348,15 +360,6 @@ const PayoutsAccordion: React.FC<{
     return 'winner';
   };
 
-  const getPlayersAtScore = (board: BoardData, key: string) => {
-    if (!key) return [];
-    const [topDigit, leftDigit] = key.split('-').map(Number);
-    const colIdx = board.oppAxis.indexOf(topDigit);
-    const rowIdx = board.bearsAxis.indexOf(leftDigit);
-    if (colIdx === -1 || rowIdx === -1) return [];
-    return board.squares[rowIdx * 10 + colIdx] || [];
-  };
-
   const currentStatus = live ? live.state : 'pre';
   const currentPeriod = live ? live.period : 0;
   const p = game.payouts || { Q1: 125, Q2: 125, Q3: 125, Final: 250 };
@@ -367,7 +370,7 @@ const PayoutsAccordion: React.FC<{
     const lockedKey = status === 'winner' && !live?.isManual ? highlights.quarterWinners[qKey] : null;
     const currentKey = live ? `${live.topScore % 10}-${live.leftScore % 10}` : null;
     const winnerKey = lockedKey || (status === 'current' ? currentKey : null);
-    const winners = winnerKey ? getPlayersAtScore(board, winnerKey) : [];
+    const winners = winnerKey ? getPlayersAtScoreForQuarter(board, winnerKey, qKey as WinnerQuarter) : [];
 
     return (
       <div key={qKey} className={`flex items-center justify-between py-3 ${!isFinal ? 'border-b border-white/5' : ''}`}>
@@ -564,13 +567,8 @@ const getRowStatus = (isFinal: boolean, qNum: number, state: 'pre' | 'in' | 'pos
   return 'winner';
 };
 
-const getPlayersAtScore = (board: BoardData, key: string) => {
-  if (!key) return [];
-  const [topDigit, leftDigit] = key.split('-').map(Number);
-  const colIdx = board.oppAxis.indexOf(topDigit);
-  const rowIdx = board.bearsAxis.indexOf(leftDigit);
-  if (colIdx === -1 || rowIdx === -1) return [];
-  return board.squares[rowIdx * 10 + colIdx] || [];
+const getPlayersAtScore = (board: BoardData, key: string, quarter: WinnerQuarter) => {
+  return getPlayersAtScoreForQuarter(board, key, quarter);
 };
 
 const Payouts: React.FC<{
@@ -590,13 +588,13 @@ const Payouts: React.FC<{
     if (status === 'winner' && !live?.isManual) {
       const lockedKey = highlights.quarterWinners[qKey];
       if (lockedKey) {
-        winnerData = { names: getPlayersAtScore(board, lockedKey), statusText: 'Winner', key: lockedKey };
+        winnerData = { names: getPlayersAtScore(board, lockedKey, qKey as WinnerQuarter), statusText: 'Winner', key: lockedKey };
       }
     } else if (status === 'current' || live?.isManual) {
       if (live) {
         isActive = true;
         const currentKey = `${live.topScore % 10}-${live.leftScore % 10}`;
-        winnerData = { names: getPlayersAtScore(board, currentKey), statusText: live.isManual ? 'Current Score' : 'Current Holder', key: currentKey };
+        winnerData = { names: getPlayersAtScore(board, currentKey, qKey as WinnerQuarter), statusText: live.isManual ? 'Current Score' : 'Current Holder', key: currentKey };
       }
     }
 
