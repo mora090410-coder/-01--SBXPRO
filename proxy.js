@@ -17,7 +17,8 @@ export default {
     }
 
     const url = new URL(request.url);
-    const dates = url.searchParams.get('dates');
+    // Support both `dates` (ESPN style) and legacy `date` query keys.
+    const dates = url.searchParams.get('dates') || url.searchParams.get('date');
     const espnUrl = `https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard${dates ? `?dates=${dates}` : ''}`;
 
     try {

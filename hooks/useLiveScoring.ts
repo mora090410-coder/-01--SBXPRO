@@ -92,7 +92,8 @@ export function useLiveScoring(game: GameState, dataReady: boolean, loadingPool:
 
         try {
             const formattedDate = game.dates.replace(/-/g, '');
-            const url = `${LIVE_PROXY_URL}?date=${formattedDate}`;
+            // Send both keys for backward compatibility with deployed proxy variants.
+            const url = `${LIVE_PROXY_URL}?dates=${formattedDate}&date=${formattedDate}`;
             const res = await fetch(url);
 
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
