@@ -421,8 +421,8 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                                         </div>
                                     </div>
 
-                                    <div className={`relative bg-[#1c1c1e]/40 border border-white/[0.08] rounded-[16px] shadow-xl min-h-[500px] ${boardZoom === '100' ? 'overflow-auto' : 'overflow-hidden'}`}>
-                                        <div className={`${boardZoom === '100' ? 'p-3' : 'absolute inset-0 overflow-hidden p-3 flex items-center justify-center'}`}>
+                                    <div className={`relative bg-[#1c1c1e]/40 border border-white/[0.08] rounded-[16px] shadow-xl min-h-[500px] ${boardZoom === '100' ? 'overflow-auto' : 'overflow-auto md:overflow-hidden'}`}>
+                                        <div className={`${boardZoom === '100' ? 'p-3' : 'absolute inset-0 p-3 md:p-4 overflow-auto md:overflow-hidden flex items-start md:items-center justify-center'}`}>
                                             {isEmptyBoard ? (
                                                 <div className="text-center max-w-sm mx-auto p-8 animate-in fade-in zoom-in duration-500">
                                                     <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6 border border-white/5"><svg className="w-10 h-10 text-white/20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg></div>
@@ -430,7 +430,7 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                                                     <p className="text-sm text-gray-500 mb-8 leading-relaxed">The organizer hasn't added names yet.</p>
                                                 </div>
                                             ) : (
-                                                <div className={`transition-transform duration-300 ${boardZoom === '100' ? 'min-w-[700px]' : 'w-full h-full'}`}>
+                                                <div className={`transition-transform duration-300 ${boardZoom === '100' ? 'min-w-[700px]' : 'w-full h-full max-w-[980px]'}`}>
                                                     <BoardGrid board={board} highlights={highlights} live={liveData} selectedPlayer={selectedPlayer} highlightedCoords={highlightedCoords} leftTeamName={game.leftName || game.leftAbbr} topTeamName={game.topName || game.topAbbr} />
                                                 </div>
                                             )}

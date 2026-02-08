@@ -29,6 +29,7 @@ const formatCellDisplay = (players: string[]): string => {
 
 const BoardGrid: React.FC<BoardGridProps> = ({ board, highlights, live, selectedPlayer, leftTeamName, topTeamName, highlightedCoords }) => {
   const isFinal = live?.state === 'post';
+  const isFilteringByPlayer = selectedPlayer.trim().length > 0;
   const [viewQuarter, setViewQuarter] = React.useState<'Q1' | 'Q2' | 'Q3' | 'Q4'>('Q1');
 
   // Auto-switch view to current quarter during live game
@@ -85,18 +86,18 @@ const BoardGrid: React.FC<BoardGridProps> = ({ board, highlights, live, selected
   const getLiveScoreKey = (topScore: number, leftScore: number) => `${topScore % 10}-${leftScore % 10}`;
 
   return (
-    <div className="flex flex-col items-center justify-center w-full h-full gap-4">
+    <div className="flex flex-col items-center justify-center w-full h-full gap-3 md:gap-4">
       {/* Quarter Selector for Dynamic Boards */}
       {board.isDynamic && (
-        <div className="flex items-center gap-1 bg-[#1c1c1e]/90 p-1 rounded-lg border border-white/10 shadow-lg">
+        <div className="flex items-center gap-1 bg-[#1c1c1e]/92 p-1 rounded-xl border border-white/10 shadow-lg">
           <span className="text-[10px] uppercase font-semibold text-white/40 px-2 tracking-wide">Axis:</span>
           {(['Q1', 'Q2', 'Q3', 'Q4'] as const).map(q => (
             <button
               key={q}
               onClick={() => setViewQuarter(q)}
-              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${viewQuarter === q
-                ? 'bg-white text-black'
-                : 'text-white/50 hover:text-white hover:bg-white/10'
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${viewQuarter === q
+                ? 'bg-white text-black shadow-sm'
+                : 'text-white/60 hover:text-white hover:bg-white/10'
                 }`}
             >
               {q === 'Q4' ? 'Final' : q}
@@ -106,9 +107,11 @@ const BoardGrid: React.FC<BoardGridProps> = ({ board, highlights, live, selected
       )}
 
       {/* Main Board Container */}
-      <div className="relative rounded-xl overflow-visible bg-[#1c1c1e]/60 border border-white/[0.08]
-                      w-auto h-auto 
-                      md:h-[75vh] md:max-h-[75vh] md:aspect-square">
+      <div className={`relative rounded-2xl overflow-visible bg-[#1c1c1e]/62 border w-full max-w-[920px] aspect-square mx-auto transition-all duration-200 ${
+        isFilteringByPlayer
+          ? 'border-[#64D2FF]/45 shadow-[0_0_0_1px_rgba(100,210,255,0.15),0_18px_40px_rgba(10,132,255,0.12)]'
+          : 'border-white/[0.08]'
+      }`}>
 
         <table className="border-collapse table-fixed w-full h-full">
           <colgroup>
@@ -121,7 +124,7 @@ const BoardGrid: React.FC<BoardGridProps> = ({ board, highlights, live, selected
             {/* Top Team Header - Compact */}
             <tr className="h-8 md:h-10">
               <th colSpan={2} className="bg-transparent border-none"></th>
-              <th colSpan={10} className="bg-white/[0.03] border-b border-white/[0.08] text-center align-middle p-1">
+              <th colSpan={10} className="bg-white/[0.04] border-b border-white/[0.08] text-center align-middle p-1">
                 <span className="font-bold tracking-wider uppercase text-white/80" style={{ fontSize: 'clamp(0.65rem, 1.5vh, 1.2rem)' }}>
                   {topTeamName}
                 </span>
@@ -134,9 +137,9 @@ const BoardGrid: React.FC<BoardGridProps> = ({ board, highlights, live, selected
                 <div className="absolute inset-0 flex items-center justify-center rotate-[-45deg] opacity-50">TOP</div>
               </th>
               {currentOppAxis.map((n, i) => (
-                <th key={i} className="bg-white/[0.03] border-b border-r border-white/[0.08] last:border-r-0 align-middle transition-colors hover:bg-white/[0.06]">
+                <th key={i} className="bg-white/[0.04] border-b border-r border-white/[0.08] last:border-r-0 align-middle transition-colors hover:bg-white/[0.08]">
                   <div className="flex items-center justify-center h-9 md:h-11 w-full">
-                    <span className="font-bold text-white" style={{ fontSize: 'clamp(0.8rem, 2vh, 1.5rem)' }}>{n}</span>
+                    <span className="font-bold text-white/95" style={{ fontSize: 'clamp(0.85rem, 2vh, 1.5rem)' }}>{n}</span>
                   </div>
                 </th>
               ))}
@@ -164,9 +167,9 @@ const BoardGrid: React.FC<BoardGridProps> = ({ board, highlights, live, selected
                 )}
 
                 {/* Left Axis Numbers */}
-                <th className="bg-white/[0.03] border-r border-b border-white/[0.08] last:border-b-0 align-middle transition-colors hover:bg-white/[0.06]">
+                <th className="bg-white/[0.04] border-r border-b border-white/[0.08] last:border-b-0 align-middle transition-colors hover:bg-white/[0.08]">
                   <div className="flex items-center justify-center h-full w-full">
-                    <span className="font-bold text-white" style={{ fontSize: 'clamp(0.8rem, 2vh, 1.5rem)' }}>{leftDigit}</span>
+                    <span className="font-bold text-white/95" style={{ fontSize: 'clamp(0.85rem, 2vh, 1.5rem)' }}>{leftDigit}</span>
                   </div>
                 </th>
 
@@ -200,8 +203,8 @@ const BoardGrid: React.FC<BoardGridProps> = ({ board, highlights, live, selected
                   // Clean cell styling - Apple-clean, minimal
                   let cellClass = "relative border-r border-b border-white/[0.06] last:border-r-0 transition-all duration-200 p-0.5 cursor-pointer ";
 
-                  if (selectedPlayer && !hasSelectedPlayer) {
-                    cellClass += "bg-black/40 opacity-20 ";
+                  if (isFilteringByPlayer && !hasSelectedPlayer) {
+                    cellClass += "bg-black/55 opacity-20 ";
                   } else {
                     cellClass += "bg-white/[0.02] hover:bg-white/[0.05] ";
                   }
@@ -213,11 +216,12 @@ const BoardGrid: React.FC<BoardGridProps> = ({ board, highlights, live, selected
                   } else if (isLiveScore) {
                     // Current winning cell - thin gold outline + subtle gold fill
                     cellClass += "z-40 bg-[#FFC72C]/12 ring-1 ring-inset ring-[#FFC72C] ";
+                  } else if (hasSelectedPlayer) {
+                    // Player search match - prominent iOS-like blue highlight
+                    cellClass += "z-30 bg-[#0A84FF]/22 ring-2 ring-inset ring-[#64D2FF] shadow-[0_0_0_1px_rgba(100,210,255,0.25),0_10px_20px_rgba(10,132,255,0.18)] ";
                   } else if (hasFinishedWinner) {
                     // Past winner cell - subtle gold hint  
                     cellClass += "z-30 bg-[#FFC72C]/8 ring-1 ring-inset ring-[#FFC72C]/50 ";
-                  } else if (hasSelectedPlayer) {
-                    cellClass += "z-10 bg-white/[0.06] ring-1 ring-inset ring-white/20 ";
                   }
 
                   return (
@@ -227,9 +231,9 @@ const BoardGrid: React.FC<BoardGridProps> = ({ board, highlights, live, selected
                     >
                       <div className="w-full h-full flex items-center justify-center">
                         <div
-                          className={`text-center leading-tight flex items-center justify-center w-full transition-colors ${isLiveScore ? 'text-[#FFC72C] font-bold' : hasFinishedWinner || isHighlightedScenario ? 'text-white font-semibold' : 'text-white/60 font-medium'
+                          className={`text-center leading-tight flex items-center justify-center w-full transition-colors ${isLiveScore ? 'text-[#FFC72C] font-bold' : hasSelectedPlayer ? 'text-white font-bold' : hasFinishedWinner || isHighlightedScenario ? 'text-white font-semibold' : 'text-white/60 font-medium'
                             }`}
-                          style={{ fontSize: 'clamp(9px, 1.3vh, 14px)' }}
+                          style={{ fontSize: 'clamp(10px, 1.35vw, 14px)' }}
                         >
                           {formatCellDisplay(players)}
                         </div>
