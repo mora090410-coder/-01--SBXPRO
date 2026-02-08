@@ -123,8 +123,8 @@ const BoardGrid: React.FC<BoardGridProps> = ({ board, highlights, live, selected
           <thead>
             {/* Top Team Header - Compact */}
             <tr className="h-8 md:h-10">
-              <th colSpan={2} className="bg-transparent border-none"></th>
-              <th colSpan={10} className="bg-white/[0.04] border-b border-white/[0.08] text-center align-middle p-1">
+              <th colSpan={2} className="bg-transparent border-none sticky top-0 z-40"></th>
+              <th colSpan={10} className="bg-[#232327]/95 backdrop-blur-sm border-b border-white/[0.08] text-center align-middle p-1 sticky top-0 z-40">
                 <span className="font-bold tracking-wider uppercase text-white/80" style={{ fontSize: 'clamp(0.65rem, 1.5vh, 1.2rem)' }}>
                   {topTeamName}
                 </span>
@@ -132,12 +132,12 @@ const BoardGrid: React.FC<BoardGridProps> = ({ board, highlights, live, selected
             </tr>
             {/* Top Axis Numbers */}
             <tr className="h-9 md:h-11">
-              <th className="bg-transparent border-none"></th>
-              <th className="bg-white/[0.03] text-white/30 text-[7px] md:text-[9px] font-medium border-r border-b border-white/[0.08] relative p-0">
+              <th className="bg-transparent border-none sticky top-8 md:top-10 z-40"></th>
+              <th className="bg-[#232327]/95 backdrop-blur-sm text-white/30 text-[7px] md:text-[9px] font-medium border-r border-b border-white/[0.08] relative p-0 sticky top-8 md:top-10 z-40">
                 <div className="absolute inset-0 flex items-center justify-center rotate-[-45deg] opacity-50">TOP</div>
               </th>
               {currentOppAxis.map((n, i) => (
-                <th key={i} className="bg-white/[0.04] border-b border-r border-white/[0.08] last:border-r-0 align-middle transition-colors hover:bg-white/[0.08]">
+                <th key={i} className="bg-[#232327]/95 backdrop-blur-sm border-b border-r border-white/[0.08] last:border-r-0 align-middle transition-colors hover:bg-white/[0.08] sticky top-8 md:top-10 z-40">
                   <div className="flex items-center justify-center h-9 md:h-11 w-full">
                     <span className="font-bold text-white/95" style={{ fontSize: 'clamp(0.85rem, 2vh, 1.5rem)' }}>{n}</span>
                   </div>
