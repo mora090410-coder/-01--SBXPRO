@@ -119,7 +119,7 @@ const BoardGrid: React.FC<BoardGridProps> = ({ board, highlights, live, selected
 
           <thead>
             {/* Top Team Header - Compact */}
-            <tr className="h-[6%] md:h-[7%]">
+            <tr className="h-8 md:h-10">
               <th colSpan={2} className="bg-transparent border-none"></th>
               <th colSpan={10} className="bg-white/[0.03] border-b border-white/[0.08] text-center align-middle p-1">
                 <span className="font-bold tracking-wider uppercase text-white/80" style={{ fontSize: 'clamp(0.65rem, 1.5vh, 1.2rem)' }}>
@@ -128,14 +128,14 @@ const BoardGrid: React.FC<BoardGridProps> = ({ board, highlights, live, selected
               </th>
             </tr>
             {/* Top Axis Numbers */}
-            <tr className="h-[5%] md:h-[6%]">
+            <tr className="h-9 md:h-11">
               <th className="bg-transparent border-none"></th>
               <th className="bg-white/[0.03] text-white/30 text-[7px] md:text-[9px] font-medium border-r border-b border-white/[0.08] relative p-0">
                 <div className="absolute inset-0 flex items-center justify-center rotate-[-45deg] opacity-50">TOP</div>
               </th>
               {currentOppAxis.map((n, i) => (
                 <th key={i} className="bg-white/[0.03] border-b border-r border-white/[0.08] last:border-r-0 align-middle transition-colors hover:bg-white/[0.06]">
-                  <div className="flex items-center justify-center h-full w-full">
+                  <div className="flex items-center justify-center h-9 md:h-11 w-full">
                     <span className="font-bold text-white" style={{ fontSize: 'clamp(0.8rem, 2vh, 1.5rem)' }}>{n}</span>
                   </div>
                 </th>
@@ -304,4 +304,3 @@ const arePropsEqual = (prev: BoardGridProps, next: BoardGridProps) => {
 };
 
 export default React.memo(BoardGrid, arePropsEqual);
-
