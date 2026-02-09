@@ -47,6 +47,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
   const [assignLabel, setAssignLabel] = useState('');
   const [assignPaidDefault, setAssignPaidDefault] = useState<EntryMeta['paid_status']>('unpaid');
   const [selectedCellIndices, setSelectedCellIndices] = useState<Set<number>>(new Set());
+  const [isDragAssigning, setIsDragAssigning] = useState(false);
+  const dragAssignedIndicesRef = useRef<Set<number>>(new Set());
 
   // Auto-save status: 'saved' | 'saving' | 'error'
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error'>('saved');
@@ -286,15 +288,24 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
     setSelectedCellIndices(newSet);
   };
 
-  const handleBulkApply = () => {
+  interface BulkEntryMetaUpdate {
+    contest_id: string | null;
+    cell_index: number;
+    paid_status: EntryMeta['paid_status'];
+    notify_opt_in: boolean;
+    contact_type: EntryMeta['contact_type'] | null;
+    contact_value: string | null;
+    updated_at: string;
+  }
+
+  const applyAssignToIndices = (indices: number[], options?: { keepAssignMode?: boolean; resetLabel?: boolean }) => {
     if (!assignLabel.trim()) {
       alert("Please enter a label.");
       return;
     }
-    if (selectedCellIndices.size === 0) return;
+    if (indices.length === 0) return;
 
     // Check for conflicts
-    const indices = Array.from(selectedCellIndices);
     const conflicts = indices.filter(idx => localBoard.squares[idx] && localBoard.squares[idx].length > 0);
 
     if (conflicts.length > 0) {
@@ -310,7 +321,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
     const label = assignLabel.trim();
 
     // Prepare batch metadata updates
-    const metaUpdates: any[] = [];
+    const metaUpdates: BulkEntryMetaUpdate[] = [];
     const newEntryMetaByIndex = { ...entryMetaByIndex };
 
     indices.forEach(idx => {
@@ -375,10 +386,70 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
     }
 
     setSelectedCellIndices(new Set());
-    setIsAssignMode(false);
-    setAssignLabel('');
-    setAssignPaidDefault('unpaid');
+    if (!options?.keepAssignMode) {
+      setIsAssignMode(false);
+    }
+    if (options?.resetLabel ?? true) {
+      setAssignLabel('');
+      setAssignPaidDefault('unpaid');
+    }
   };
+
+  const handleBulkApply = () => {
+    applyAssignToIndices(Array.from(selectedCellIndices), { keepAssignMode: false, resetLabel: true });
+  };
+
+  const endDragAssign = () => {
+    if (!isDragAssigning) return;
+    setIsDragAssigning(false);
+
+    const draggedIndices = Array.from(dragAssignedIndicesRef.current);
+    dragAssignedIndicesRef.current = new Set();
+
+    if (draggedIndices.length === 0) {
+      setSelectedCellIndices(new Set());
+      return;
+    }
+
+    applyAssignToIndices(draggedIndices, { keepAssignMode: true, resetLabel: false });
+  };
+
+  const beginDragAssign = (index: number) => {
+    if (!isAssignMode) return;
+    if (!assignLabel.trim()) {
+      toggleCellSelection(index);
+      return;
+    }
+
+    const next = new Set<number>();
+    next.add(index);
+    dragAssignedIndicesRef.current = next;
+    setSelectedCellIndices(new Set(next));
+    setIsDragAssigning(true);
+  };
+
+  const continueDragAssign = (index: number) => {
+    if (!isAssignMode || !isDragAssigning) return;
+    if (!assignLabel.trim()) return;
+
+    if (!dragAssignedIndicesRef.current.has(index)) {
+      dragAssignedIndicesRef.current.add(index);
+      setSelectedCellIndices(new Set(dragAssignedIndicesRef.current));
+    }
+  };
+
+  useEffect(() => {
+    if (!isDragAssigning) return;
+
+    const handleWindowPointerUp = () => {
+      endDragAssign();
+    };
+
+    window.addEventListener('pointerup', handleWindowPointerUp);
+    return () => {
+      window.removeEventListener('pointerup', handleWindowPointerUp);
+    };
+  }, [isDragAssigning]);
 
   // --- Manual Grid Editor Sync Functions ---
 
@@ -836,6 +907,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                   <button
                     onClick={() => {
                       setIsAssignMode(!isAssignMode);
+                      setIsDragAssigning(false);
+                      dragAssignedIndicesRef.current = new Set();
                       setSelectedCellIndices(new Set());
                     }}
                     className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${isAssignMode ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' : 'bg-white/10 text-white/70 hover:bg-white/20'}`}
@@ -876,7 +949,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
 
                   <div className="flex items-end gap-2 w-full md:w-auto pt-4 md:pt-0">
                     <button
-                      onClick={() => setIsAssignMode(false)}
+                      onClick={() => {
+                        setIsAssignMode(false);
+                        setIsDragAssigning(false);
+                        dragAssignedIndicesRef.current = new Set();
+                        setSelectedCellIndices(new Set());
+                      }}
                       className="px-4 py-2 rounded-lg text-xs font-bold text-white/50 hover:bg-white/5 hover:text-white transition-colors"
                     >
                       Cancel
@@ -888,6 +966,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                     >
                       Apply to {selectedCellIndices.size}
                     </button>
+                  </div>
+
+                  <div className="w-full text-[11px] text-indigo-200/80 md:pt-5">
+                    Drag across squares to paint this label in one sweep.
                   </div>
                 </div>
               )}
@@ -992,11 +1074,20 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                               {/* Unified Click Handler */}
                               <div
                                 onClick={() => {
-                                  if (isAssignMode) {
-                                    toggleCellSelection(cellIdx);
-                                  } else {
-                                    setEditingMetaIndex(cellIdx);
-                                  }
+                                  if (isAssignMode) return;
+                                  setEditingMetaIndex(cellIdx);
+                                }}
+                                onPointerDown={(e) => {
+                                  if (!isAssignMode) return;
+                                  e.preventDefault();
+                                  beginDragAssign(cellIdx);
+                                }}
+                                onPointerEnter={() => {
+                                  continueDragAssign(cellIdx);
+                                }}
+                                onPointerUp={() => {
+                                  if (!isAssignMode) return;
+                                  endDragAssign();
                                 }}
                                 className={`w-full h-full border rounded-lg flex flex-col items-center justify-center p-1 cursor-pointer transition-all group active:scale-95 ${isAssignMode && selectedCellIndices.has(cellIdx)
                                   ? 'bg-indigo-500/30 border-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.3)]'
