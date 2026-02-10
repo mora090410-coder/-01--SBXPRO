@@ -47,9 +47,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
   const [assignLabel, setAssignLabel] = useState('');
   const [assignPaidDefault, setAssignPaidDefault] = useState<EntryMeta['paid_status']>('unpaid');
   const [selectedCellIndices, setSelectedCellIndices] = useState<Set<number>>(new Set());
+  const selectedCellIndicesRef = useRef<Set<number>>(new Set());
   const [isDragAssigning, setIsDragAssigning] = useState(false);
   const isDragAssigningRef = useRef(false);
   const dragAssignedIndicesRef = useRef<Set<number>>(new Set());
+  const dragStartCellRef = useRef<number | null>(null);
+  const dragHasMovedRef = useRef(false);
 
   // Auto-save status: 'saved' | 'saving' | 'error'
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error'>('saved');
@@ -280,13 +283,15 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
 
   // --- Bulk Assign Logic ---
   const toggleCellSelection = (index: number) => {
-    const newSet = new Set(selectedCellIndices);
-    if (newSet.has(index)) {
-      newSet.delete(index);
-    } else {
-      newSet.add(index);
-    }
-    setSelectedCellIndices(newSet);
+    setSelectedCellIndices(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(index)) {
+        newSet.delete(index);
+      } else {
+        newSet.add(index);
+      }
+      return newSet;
+    });
   };
 
   interface BulkEntryMetaUpdate {
@@ -407,37 +412,44 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
 
     const draggedIndices = Array.from(dragAssignedIndicesRef.current);
     dragAssignedIndicesRef.current = new Set();
+    const dragStartCell = dragStartCellRef.current;
+    dragStartCellRef.current = null;
+    const didDragAcrossCells = dragHasMovedRef.current;
+    dragHasMovedRef.current = false;
 
     if (draggedIndices.length === 0) {
-      setSelectedCellIndices(new Set());
       return;
     }
 
-    applyAssignToIndices(draggedIndices, { keepAssignMode: true, resetLabel: false });
+    // Single click toggles one cell. Drag adds a range to existing selections.
+    if (!didDragAcrossCells && dragStartCell !== null) {
+      toggleCellSelection(dragStartCell);
+      return;
+    }
+
+    setSelectedCellIndices(prev => {
+      const next = new Set(prev);
+      draggedIndices.forEach(idx => next.add(idx));
+      return next;
+    });
   };
 
   const beginDragAssign = (index: number) => {
     if (!isAssignMode) return;
-    if (!assignLabel.trim()) {
-      toggleCellSelection(index);
-      return;
-    }
 
-    const next = new Set<number>();
-    next.add(index);
-    dragAssignedIndicesRef.current = next;
+    dragStartCellRef.current = index;
+    dragHasMovedRef.current = false;
+    dragAssignedIndicesRef.current = new Set([index]);
     isDragAssigningRef.current = true;
-    setSelectedCellIndices(new Set(next));
     setIsDragAssigning(true);
   };
 
   const continueDragAssign = (index: number, buttons: number) => {
     if (!isAssignMode || !isDragAssigningRef.current || (buttons & 1) !== 1) return;
-    if (!assignLabel.trim()) return;
 
     if (!dragAssignedIndicesRef.current.has(index)) {
+      dragHasMovedRef.current = true;
       dragAssignedIndicesRef.current.add(index);
-      setSelectedCellIndices(new Set(dragAssignedIndicesRef.current));
     }
   };
 
@@ -457,10 +469,16 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
   useEffect(() => {
     if (isAssignMode) return;
     isDragAssigningRef.current = false;
+    dragStartCellRef.current = null;
+    dragHasMovedRef.current = false;
     setIsDragAssigning(false);
     dragAssignedIndicesRef.current = new Set();
     setSelectedCellIndices(new Set());
   }, [isAssignMode]);
+
+  useEffect(() => {
+    selectedCellIndicesRef.current = selectedCellIndices;
+  }, [selectedCellIndices]);
 
   // --- Manual Grid Editor Sync Functions ---
 
@@ -919,6 +937,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                     onClick={() => {
                       setIsAssignMode(!isAssignMode);
                       isDragAssigningRef.current = false;
+                      dragStartCellRef.current = null;
+                      dragHasMovedRef.current = false;
                       setIsDragAssigning(false);
                       dragAssignedIndicesRef.current = new Set();
                       setSelectedCellIndices(new Set());
@@ -965,6 +985,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                         onClick={() => {
                           setIsAssignMode(false);
                           isDragAssigningRef.current = false;
+                          dragStartCellRef.current = null;
+                          dragHasMovedRef.current = false;
                           setIsDragAssigning(false);
                           dragAssignedIndicesRef.current = new Set();
                           setSelectedCellIndices(new Set());
@@ -983,7 +1005,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                     </div>
 
                     <div className="md:col-span-12 text-[11px] text-indigo-200/80">
-                      Click and hold, then drag across squares to paint this label in one sweep.
+                      Click cells to toggle selection, or click-drag to select a range. Then press Apply to update all selected squares.
                     </div>
                   </div>
                 </div>
