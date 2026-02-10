@@ -431,8 +431,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
     setIsDragAssigning(true);
   };
 
-  const continueDragAssign = (index: number, isPrimaryDown: boolean) => {
-    if (!isAssignMode || !isDragAssigningRef.current || !isPrimaryDown) return;
+  const continueDragAssign = (index: number, buttons: number) => {
+    if (!isAssignMode || !isDragAssigningRef.current || (buttons & 1) !== 1) return;
     if (!assignLabel.trim()) return;
 
     if (!dragAssignedIndicesRef.current.has(index)) {
@@ -932,8 +932,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
 
               {/* Bulk Assign Panel */}
               {isAssignMode && (
-                <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-4 flex flex-col md:flex-row gap-4 items-center animate-in slide-in-from-top-2">
-                  <div className="flex-1 w-full space-y-1">
+                <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-4 animate-in slide-in-from-top-2">
+                  <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                    <div className="md:col-span-5 space-y-1">
                     <label className="text-[10px] font-bold text-indigo-300 uppercase tracking-widest">Label to Apply</label>
                     <input
                       type="text"
@@ -942,47 +943,48 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                       placeholder="e.g. Mora"
                       className="w-full bg-[#1c1c1e] border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-indigo-500 outline-none"
                     />
-                  </div>
+                    </div>
 
-                  <div className="w-full md:w-auto space-y-1">
+                    <div className="md:col-span-3 space-y-1">
                     <label className="text-[10px] font-bold text-indigo-300 uppercase tracking-widest">Payment Status</label>
-                    <div className="flex bg-[#1c1c1e] rounded-lg p-1 border border-white/10">
+                    <div className="w-full flex bg-[#1c1c1e] rounded-lg p-1 border border-white/10">
                       {(['unpaid', 'paid'] as const).map(status => (
                         <button
                           key={status}
                           onClick={() => setAssignPaidDefault(status)}
-                          className={`px-3 py-1.5 rounded-md text-xs font-bold capitalize transition-all ${assignPaidDefault === status ? 'bg-indigo-500 text-white' : 'text-gray-500 hover:text-white'}`}
+                          className={`flex-1 px-3 py-1.5 rounded-md text-xs font-bold capitalize transition-all ${assignPaidDefault === status ? 'bg-indigo-500 text-white' : 'text-gray-500 hover:text-white'}`}
                         >
                           {status}
                         </button>
                       ))}
                     </div>
-                  </div>
+                    </div>
 
-                  <div className="flex items-end gap-2 w-full md:w-auto pt-4 md:pt-0">
-                    <button
-                      onClick={() => {
-                        setIsAssignMode(false);
-                        isDragAssigningRef.current = false;
-                        setIsDragAssigning(false);
-                        dragAssignedIndicesRef.current = new Set();
-                        setSelectedCellIndices(new Set());
-                      }}
-                      className="px-4 py-2 rounded-lg text-xs font-bold text-white/50 hover:bg-white/5 hover:text-white transition-colors"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleBulkApply}
-                      disabled={!assignLabel.trim() || selectedCellIndices.size === 0}
-                      className="px-6 py-2 rounded-lg text-sm font-bold bg-indigo-500 text-white shadow-lg shadow-indigo-500/20 hover:bg-indigo-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                    >
-                      Apply to {selectedCellIndices.size}
-                    </button>
-                  </div>
+                    <div className="md:col-span-4 flex items-end justify-start md:justify-end gap-2">
+                      <button
+                        onClick={() => {
+                          setIsAssignMode(false);
+                          isDragAssigningRef.current = false;
+                          setIsDragAssigning(false);
+                          dragAssignedIndicesRef.current = new Set();
+                          setSelectedCellIndices(new Set());
+                        }}
+                        className="px-4 py-2 rounded-lg text-xs font-bold text-white/50 hover:bg-white/5 hover:text-white transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleBulkApply}
+                        disabled={!assignLabel.trim() || selectedCellIndices.size === 0}
+                        className="px-6 py-2 rounded-lg text-sm font-bold bg-indigo-500 text-white shadow-lg shadow-indigo-500/20 hover:bg-indigo-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                      >
+                        Apply to {selectedCellIndices.size}
+                      </button>
+                    </div>
 
-                  <div className="w-full text-[11px] text-indigo-200/80 md:pt-5">
-                    Drag across squares to paint this label in one sweep.
+                    <div className="md:col-span-12 text-[11px] text-indigo-200/80">
+                      Click and hold, then drag across squares to paint this label in one sweep.
+                    </div>
                   </div>
                 </div>
               )}
@@ -1076,7 +1078,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                       ))}
                     </div>
 
-                    <div className="flex-1 grid grid-cols-10 gap-2 ml-2">
+                    <div className="flex-1 grid grid-cols-10 gap-2 ml-2 select-none">
                       {[...Array(10)].map((_, r) => (
                         [...Array(10)].map((_, c) => {
                           const cellIdx = (r * 10) + c;
@@ -1096,7 +1098,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                                   beginDragAssign(cellIdx);
                                 }}
                                 onPointerEnter={(e) => {
-                                  continueDragAssign(cellIdx, e.buttons === 1);
+                                  continueDragAssign(cellIdx, e.buttons);
+                                }}
+                                onPointerOver={(e) => {
+                                  continueDragAssign(cellIdx, e.buttons);
                                 }}
                                 onPointerUp={() => {
                                   if (!isAssignMode) return;
