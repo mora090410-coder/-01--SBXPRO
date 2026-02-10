@@ -51,6 +51,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
   const [isDragAssigning, setIsDragAssigning] = useState(false);
   const isDragAssigningRef = useRef(false);
   const dragAssignedIndicesRef = useRef<Set<number>>(new Set());
+  const dragBaseSelectionRef = useRef<Set<number>>(new Set());
   const dragStartCellRef = useRef<number | null>(null);
   const dragHasMovedRef = useRef(false);
   const justFinishedDragRef = useRef(false);
@@ -431,11 +432,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
     // Drag adds a range to existing selections. Single-click selection is handled by onClick.
     if (didDragAcrossCells) {
       justFinishedDragRef.current = true;
-      setSelectedCellIndices(prev => {
-        const next = new Set(prev);
-        draggedIndices.forEach(idx => next.add(idx));
-        return next;
-      });
+      setSelectedCellIndices(new Set(selectedCellIndicesRef.current));
       window.setTimeout(() => {
         justFinishedDragRef.current = false;
       }, 0);
@@ -449,6 +446,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
     dragStartCellRef.current = index;
     dragHasMovedRef.current = false;
     dragAssignedIndicesRef.current = new Set([index]);
+    dragBaseSelectionRef.current = new Set(selectedCellIndicesRef.current);
     isDragAssigningRef.current = true;
     setIsDragAssigning(true);
   };
@@ -459,6 +457,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
     if (!dragAssignedIndicesRef.current.has(index)) {
       dragHasMovedRef.current = true;
       dragAssignedIndicesRef.current.add(index);
+      const preview = new Set(dragBaseSelectionRef.current);
+      dragAssignedIndicesRef.current.forEach(idx => preview.add(idx));
+      setSelectedCellIndices(preview);
     }
   };
 
@@ -483,6 +484,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
     justFinishedDragRef.current = false;
     setIsDragAssigning(false);
     dragAssignedIndicesRef.current = new Set();
+    dragBaseSelectionRef.current = new Set();
     setSelectedCellIndices(new Set());
   }, [isAssignMode]);
 
@@ -952,6 +954,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                       justFinishedDragRef.current = false;
                       setIsDragAssigning(false);
                       dragAssignedIndicesRef.current = new Set();
+                      dragBaseSelectionRef.current = new Set();
                       setSelectedCellIndices(new Set());
                     }}
                     className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${isAssignMode ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' : 'bg-white/10 text-white/70 hover:bg-white/20'}`}
@@ -1001,6 +1004,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                           justFinishedDragRef.current = false;
                           setIsDragAssigning(false);
                           dragAssignedIndicesRef.current = new Set();
+                          dragBaseSelectionRef.current = new Set();
                           setSelectedCellIndices(new Set());
                         }}
                         className="px-4 py-2 rounded-lg text-xs font-bold text-white/50 hover:bg-white/5 hover:text-white transition-colors"
