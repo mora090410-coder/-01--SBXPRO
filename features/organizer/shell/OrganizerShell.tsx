@@ -12,6 +12,21 @@ import ViewerPreviewWorkspace from './ViewerPreviewWorkspace';
 import PublishReviewDialog from './PublishReviewDialog';
 import GameDayControls from './GameDayControls';
 import CorrectionFlow from './CorrectionFlow';
+import {
+  EMPTY_MANUAL_SCORES,
+  manualPeriodForState,
+  seedManualScoreFromSnapshot,
+  type ManualGameState,
+  type ManualQuarterKey,
+  type ManualScoreSide,
+} from '../game-day/manualScoringModel';
+import {
+  enableManualScoringOnServer,
+  returnAutomaticScoringOnServer,
+  saveManualScoreToServer,
+} from '../services/game-day/manualScoreService';
+import { publishedOpenSquaresAreAssignable } from '../services/game-day/publishedOpenSquares';
+import { publishMilestoneCorrectionToServer, type MilestoneCorrectionDraft } from '../services/corrections/milestoneCorrectionService';
 
 export interface OrganizerShellProps {
   game: GameState;
@@ -58,25 +73,50 @@ export default function OrganizerShell({
   notificationDeliveryIssues,
   onApply,
   onPublish,
-  onSavePayoutDescriptions: _onSavePayoutDescriptions,
-  onAssignOpenSquares: _onAssignOpenSquares,
+  onSavePayoutDescriptions,
+  onAssignOpenSquares,
   onReload,
   onOpenViewer,
   onLogout,
-  isActivated: _isActivated,
+  isActivated,
   isPublished,
   shareCode,
   renderPreview,
   saveState = { status: 'clean', revision: 0 },
 }: OrganizerShellProps) {
   const [draftBoard, setDraftBoard] = useState(board);
+  const [localGame, setLocalGame] = useState(game);
   const [drawPreview, setDrawPreview] = useState<{ top: number[]; left: number[] } | null>(null);
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
   const [publishMessage, setPublishMessage] = useState<string | null>(null);
   const [publishError, setPublishError] = useState<string | null>(null);
   const [publishPending, setPublishPending] = useState(false);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [payoutSaveStatus, setPayoutSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [scoreSaveStatus, setScoreSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [assignmentLabel, setAssignmentLabel] = useState('');
+  const [selectedOpenSquare, setSelectedOpenSquare] = useState<number | null>(null);
+  const [assigningOpenSquares, setAssigningOpenSquares] = useState(false);
+  const [correctionHistory, setCorrectionHistory] = useState(winnerHistory);
+  const [correctionDraft, setCorrectionDraft] = useState<MilestoneCorrectionDraft | null>(null);
+  const [clockNow, setClockNow] = useState(() => Date.now());
   const lastSyncedRevision = useRef<number | null>(saveState.revision);
   const lastBoardProp = useRef(board);
+
+  useEffect(() => {
+    setLocalGame(game);
+  }, [game]);
+
+  useEffect(() => {
+    setCorrectionHistory(winnerHistory);
+  }, [winnerHistory]);
+
+  useEffect(() => {
+    if (!isPublished) return;
+    const interval = window.setInterval(() => setClockNow(Date.now()), 30_000);
+    return () => window.clearInterval(interval);
+  }, [isPublished]);
 
   useEffect(() => {
     const revisionChanged = lastSyncedRevision.current !== saveState.revision;
@@ -95,8 +135,8 @@ export default function OrganizerShell({
     board: {
       id: activePoolId || '',
       ownerId: activePoolId ? 'server-owner-known' : '',
-      title: game.title,
-      scheduledGame: game.gameExternalId && game.kickoffAt ? { id: game.gameExternalId, kickoffAt: game.kickoffAt } : null,
+      title: localGame.title,
+      scheduledGame: localGame.gameExternalId && localGame.kickoffAt ? { id: localGame.gameExternalId, kickoffAt: localGame.kickoffAt } : null,
       cells: lifecycleCells(draftBoard),
       topAxis: draftBoard.topAxis,
       sideAxis: draftBoard.leftAxis,
@@ -107,7 +147,7 @@ export default function OrganizerShell({
       finalResolutionsComplete: liveData?.state === 'post' && winnerHistory.some((w) => w.milestone === 'FINAL'),
     },
     save: saveState,
-  }), [activePoolId, draftBoard, game, isPublished, liveData?.state, saveState, winnerHistory]);
+  }), [activePoolId, draftBoard, localGame, isPublished, liveData?.state, saveState, winnerHistory]);
 
   const conflictBlocked = saveState.status === 'conflicted';
   const hardBlocked = model.hardBlockers.length > 0;
@@ -131,7 +171,7 @@ export default function OrganizerShell({
     };
     setDraftBoard(nextBoard);
     setDrawPreview(null);
-    onApply(game, nextBoard);
+    onApply(localGame, nextBoard);
   };
   const publish = async () => {
     setPublishMessage(null);
@@ -140,8 +180,8 @@ export default function OrganizerShell({
       board: {
         id: activePoolId || '',
         ownerId: activePoolId ? 'server-owner-known' : '',
-        title: game.title,
-        scheduledGame: game.gameExternalId && game.kickoffAt ? { id: game.gameExternalId, kickoffAt: game.kickoffAt } : null,
+        title: localGame.title,
+        scheduledGame: localGame.gameExternalId && localGame.kickoffAt ? { id: localGame.gameExternalId, kickoffAt: localGame.kickoffAt } : null,
         cells: lifecycleCells(draftBoard),
         topAxis: draftBoard.topAxis,
         sideAxis: draftBoard.leftAxis,
@@ -158,7 +198,7 @@ export default function OrganizerShell({
     }
     setPublishPending(true);
     try {
-      const result = await onPublish({ game, board: draftBoard });
+      const result = await onPublish({ game: localGame, board: draftBoard });
       setPublishMessage(result ? `Published: ${result}` : 'Published.');
       setPublishDialogOpen(false);
     } catch (error: any) {
@@ -168,22 +208,202 @@ export default function OrganizerShell({
     }
   };
 
+  const openSquareCount = draftBoard.squares.filter((names) => !names.length).length;
+  const canAssignPublishedOpenSquares = publishedOpenSquaresAreAssignable({
+    isPublished,
+    openSquareCount,
+    kickoffAt: localGame.kickoffAt,
+    now: clockNow,
+  });
+
+  const updatePayoutDescription = (field: keyof PayoutDescriptions, value: string) => {
+    setPayoutSaveStatus('idle');
+    setLocalGame((current) => ({
+      ...current,
+      payoutDescriptions: { ...current.payoutDescriptions, [field]: value },
+    }));
+  };
+
+  const savePayoutDescriptions = async () => {
+    if (!activePoolId) return;
+    setActionError(null);
+    setActionMessage(null);
+    setPayoutSaveStatus('saving');
+    try {
+      const saved = await onSavePayoutDescriptions(localGame.payoutDescriptions || {});
+      const nextGame = { ...localGame, payoutDescriptions: saved };
+      setLocalGame(nextGame);
+      onApply(nextGame, draftBoard);
+      await onReload?.();
+      setPayoutSaveStatus('saved');
+      setActionMessage('Payout descriptions saved. Published viewers will see them on reload.');
+    } catch (error: any) {
+      setPayoutSaveStatus('error');
+      setActionError(error.message || 'Payout descriptions could not be saved.');
+    }
+  };
+
+  const assignOpenSquare = async () => {
+    const label = assignmentLabel.trim();
+    if (!isPublished || !canAssignPublishedOpenSquares || selectedOpenSquare === null || !label) return;
+    const nextBoard = { ...draftBoard, squares: [...draftBoard.squares] };
+    if (nextBoard.squares[selectedOpenSquare]?.length) {
+      setActionError('Published assignments cannot be changed. Select OPEN squares only.');
+      return;
+    }
+    nextBoard.squares[selectedOpenSquare] = [label];
+    setAssigningOpenSquares(true);
+    setActionError(null);
+    try {
+      await onAssignOpenSquares(nextBoard.squares);
+      await onReload?.();
+      setAssignmentLabel('');
+      setSelectedOpenSquare(null);
+      setActionMessage(`Square ${selectedOpenSquare + 1} assigned before kickoff.`);
+    } catch (error: any) {
+      setActionError(error.message || 'The OPEN squares could not be assigned. Reload and try again.');
+    } finally {
+      setAssigningOpenSquares(false);
+    }
+  };
+
+  const enableManualScoring = async () => {
+    if (!activePoolId || localGame.useManualScores) return;
+    setScoreSaveStatus('saving');
+    setActionError(null);
+    try {
+      await enableManualScoringOnServer(activePoolId);
+      setLocalGame((current) => {
+        const seed = seedManualScoreFromSnapshot(current.scoreSnapshot ?? liveData);
+        return { ...current, useManualScores: true, scoreSnapshot: null, manualQuarterScores: seed.manualQuarterScores, manualPeriod: seed.manualPeriod, manualGameState: seed.manualGameState };
+      });
+      await onReload?.();
+      setScoreSaveStatus('idle');
+      setActionMessage('Manual scoring authority is on. Enter and publish the organizer score.');
+    } catch (error: any) {
+      setScoreSaveStatus('error');
+      setActionError(error.message || 'Manual scoring could not be enabled.');
+    }
+  };
+
+  const saveManualScore = async () => {
+    if (!activePoolId) return;
+    setScoreSaveStatus('saving');
+    setActionError(null);
+    try {
+      const result = await saveManualScoreToServer(activePoolId, localGame);
+      setLocalGame((current) => ({ ...current, useManualScores: true, scoreSnapshot: result.score }));
+      await onReload?.();
+      setScoreSaveStatus('saved');
+      setActionMessage('Manual score is live. Completed-quarter winners were resolved once.');
+    } catch (error: any) {
+      setScoreSaveStatus('error');
+      setActionError(error.message || 'Unable to save the score.');
+    }
+  };
+
+  const enableAutomaticScoring = async () => {
+    if (!activePoolId) return;
+    setScoreSaveStatus('saving');
+    setActionError(null);
+    try {
+      await returnAutomaticScoringOnServer(activePoolId);
+      setLocalGame((current) => ({ ...current, useManualScores: false, scoreSnapshot: null }));
+      await onReload?.();
+      setScoreSaveStatus('idle');
+      setActionMessage('Automatic score checks are enabled.');
+    } catch (error: any) {
+      setScoreSaveStatus('error');
+      setActionError(error.message || 'Automatic scoring could not be enabled.');
+    }
+  };
+
+  const updateManualQuarter = (quarter: ManualQuarterKey, side: ManualScoreSide, value: number) => {
+    setLocalGame((current) => {
+      const base = current.manualQuarterScores ?? EMPTY_MANUAL_SCORES;
+      return { ...current, manualQuarterScores: { ...base, [quarter]: { ...base[quarter], [side]: Math.max(0, value) } } };
+    });
+  };
+
+  const updateManualGameState = (state: ManualGameState) => {
+    setLocalGame((current) => ({
+      ...current,
+      manualGameState: state,
+      manualPeriod: manualPeriodForState(state, current.manualPeriod, current.manualQuarterScores),
+    }));
+  };
+
+  const publishCorrection = async () => {
+    if (!activePoolId || !correctionDraft) return;
+    setScoreSaveStatus('saving');
+    setActionError(null);
+    try {
+      const result = await publishMilestoneCorrectionToServer(activePoolId, correctionDraft);
+      if (Array.isArray(result.winnerHistory)) setCorrectionHistory(result.winnerHistory);
+      setCorrectionDraft(null);
+      await onReload?.();
+      setScoreSaveStatus('saved');
+      setActionMessage('Correction published. Public audit history updated.');
+    } catch (error: any) {
+      setScoreSaveStatus('error');
+      setActionError(error.message || 'The correction could not be published.');
+    }
+  };
+
   return (
-    <main data-feature-flag="organizer_v2" data-variant="organizer_v2:on" className="min-h-[100dvh] overflow-x-hidden overflow-y-auto bg-broadcast-white text-ink">
-      <TaskHeader game={game} phase={model.phase} saveState={saveState} isPublished={isPublished} />
+    <main data-feature-flag="organizer_v2" data-variant="organizer_v2:on" className="min-h-[100dvh] max-w-[100vw] overflow-x-hidden overflow-y-auto bg-broadcast-white text-ink" style={{ contain: 'inline-size paint', overflowX: 'clip' }}>
+      <TaskHeader game={localGame} phase={model.phase} saveState={saveState} isPublished={isPublished} />
       <ProgressDisclosure phase={model.phase} />
-      <div className="mx-auto grid w-full max-w-7xl gap-5 px-4 py-5">
+      <div className="mx-auto grid min-w-0 w-full max-w-7xl gap-5 px-4 py-5">
         {publishMessage && <p role="status" className="border border-newsprint p-3">{publishMessage}</p>}
         {publishError && <p role="alert" className="border border-cardinal p-3 text-cardinal">{publishError}</p>}
+        {actionMessage && <p role="status" className="border border-newsprint p-3">{actionMessage}</p>}
+        {actionError && <p role="alert" className="border border-cardinal p-3 text-cardinal">{actionError}</p>}
         {conflictBlocked && onReload && <button type="button" className="oa-btn oa-btn-primary justify-self-start" onClick={() => void onReload()}>Reload latest board</button>}
         {isPublished ? (
           <>
-            <GameDayControls liveData={liveData} shareCode={shareCode} issues={notificationDeliveryIssues} onOpenViewer={onOpenViewer} />
-            <CorrectionFlow winnerHistory={winnerHistory} />
+            <GameDayControls
+              game={localGame}
+              liveData={liveData}
+              shareCode={shareCode}
+              issues={notificationDeliveryIssues}
+              payoutSaveStatus={payoutSaveStatus}
+              scoreSaveStatus={scoreSaveStatus}
+              onOpenViewer={onOpenViewer}
+              onUpdatePayoutDescription={updatePayoutDescription}
+              onSavePayoutDescriptions={savePayoutDescriptions}
+              onEnableAutomaticScoring={enableAutomaticScoring}
+              onEnableManualScoring={enableManualScoring}
+              onUpdateManualGameState={updateManualGameState}
+              onUpdateManualPeriod={(period) => setLocalGame((current) => ({ ...current, manualPeriod: period }))}
+              onUpdateManualQuarter={updateManualQuarter}
+              onSaveManualScore={saveManualScore}
+              disabled={!activePoolId || conflictBlocked || scoreSaveStatus === 'saving'}
+              isActivated={isActivated}
+            />
+            <AssignmentWorkspace
+              board={draftBoard}
+              game={localGame}
+              published
+              canAssignOpenSquares={canAssignPublishedOpenSquares && !conflictBlocked}
+              selectedOpenSquare={selectedOpenSquare}
+              assignmentLabel={assignmentLabel}
+              pending={assigningOpenSquares}
+              onSelectOpenSquare={setSelectedOpenSquare}
+              onAssignmentLabelChange={setAssignmentLabel}
+              onAssignOpenSquare={assignOpenSquare}
+            />
+            <CorrectionFlow
+              winnerHistory={correctionHistory}
+              draft={correctionDraft}
+              pending={scoreSaveStatus === 'saving'}
+              onDraftChange={setCorrectionDraft}
+              onPublishCorrection={publishCorrection}
+            />
           </>
         ) : (
           <>
-            {!axesCommitted && <AssignmentWorkspace board={draftBoard} game={game} />}
+            {!axesCommitted && <AssignmentWorkspace board={draftBoard} game={localGame} />}
             <ReconcileChecklist model={model} />
             {!axesCommitted && (
               <button type="button" className="oa-btn oa-btn-primary justify-self-start" disabled={hardBlocked} onClick={() => document.getElementById('slice10-draw')?.scrollIntoView()}>
@@ -196,7 +416,7 @@ export default function OrganizerShell({
         )}
         <button type="button" className="oa-btn justify-self-start" onClick={onLogout}>Log out</button>
       </div>
-      <PublishReviewDialog open={publishDialogOpen} game={game} board={draftBoard} pending={publishPending} error={publishError} disabled={publishDisabled} onClose={() => setPublishDialogOpen(false)} onPublish={publish} />
+      <PublishReviewDialog open={publishDialogOpen} game={localGame} board={draftBoard} pending={publishPending} error={publishError} disabled={publishDisabled} onClose={() => setPublishDialogOpen(false)} onPublish={publish} />
     </main>
   );
 }

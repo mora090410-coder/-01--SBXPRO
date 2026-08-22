@@ -1,27 +1,80 @@
 import React from 'react';
-import type { LiveGameData, NotificationDeliveryIssue } from '../../../types';
+import type { GameState, LiveGameData, NotificationDeliveryIssue, PayoutDescriptions } from '../../../types';
+import { ManualScoringPanel } from '../game-day/ManualScoringPanel';
+import type { ManualGameState, ManualQuarterKey, ManualScoreSide } from '../game-day/manualScoringModel';
 
 export default function GameDayControls({
+  game,
   liveData,
   shareCode,
   issues,
+  payoutSaveStatus,
+  scoreSaveStatus,
   onOpenViewer,
+  onUpdatePayoutDescription,
+  onSavePayoutDescriptions,
+  onEnableAutomaticScoring,
+  onEnableManualScoring,
+  onUpdateManualGameState,
+  onUpdateManualPeriod,
+  onUpdateManualQuarter,
+  onSaveManualScore,
+  disabled,
+  isActivated,
 }: {
+  game: GameState;
   liveData: LiveGameData | null;
   shareCode: string | null;
   issues: NotificationDeliveryIssue[];
+  payoutSaveStatus: 'idle' | 'saving' | 'saved' | 'error';
+  scoreSaveStatus: 'idle' | 'saving' | 'saved' | 'error';
   onOpenViewer?: () => void;
+  onUpdatePayoutDescription: (field: keyof PayoutDescriptions, value: string) => void;
+  onSavePayoutDescriptions: () => void;
+  onEnableAutomaticScoring: () => void;
+  onEnableManualScoring: () => void;
+  onUpdateManualGameState: (state: ManualGameState) => void;
+  onUpdateManualPeriod: (period: number) => void;
+  onUpdateManualQuarter: (quarter: ManualQuarterKey, side: ManualScoreSide, value: number) => void;
+  onSaveManualScore: () => void;
+  disabled: boolean;
+  isActivated: boolean;
 }) {
+  const payoutDescriptions = game.payoutDescriptions || {};
   return (
-    <section role="region" aria-label="Game-day controls" className="grid gap-3 border border-ink p-4">
+    <section role="region" aria-label="Game-day controls" className="grid gap-4 border border-ink p-4">
       <h2 className="text-2xl font-semibold">Game-day controls</h2>
-      <p>Score authority: {liveData?.isManual ? 'Manual scoring authority' : 'Automatic scoring authority'}.</p>
+      <p>Score authority: {game.useManualScores || liveData?.isManual ? 'Manual scoring authority' : 'Automatic scoring authority'}.</p>
       {shareCode && onOpenViewer ? (
-        <button type="button" className="oa-btn oa-btn-primary" onClick={onOpenViewer}>Open viewer /b/{shareCode}</button>
+        <button type="button" className="oa-btn oa-btn-primary justify-self-start" onClick={onOpenViewer}>Open viewer /b/{shareCode}</button>
       ) : (
         <p>Viewer link unavailable until the server returns a share code.</p>
       )}
-      <p>Manual authority changes remain in the legacy server-backed controls until the v2 callback seam exists.</p>
+      <div className="grid gap-2 border border-newsprint p-3" role="group" aria-label="Payout descriptions">
+        <h3 className="text-lg font-semibold">Payout descriptions</h3>
+        {(['Q1', 'HALF', 'Q3', 'FINAL', 'notes'] as const).map((field) => (
+          <label key={field} className="grid gap-1 text-sm">
+            <span>{field === 'notes' ? 'Payout notes' : `${field} payout`}</span>
+            <input className="oa-input" value={payoutDescriptions[field] || ''} onChange={(event) => onUpdatePayoutDescription(field, event.target.value)} disabled={disabled || payoutSaveStatus === 'saving'} />
+          </label>
+        ))}
+        <button type="button" className="oa-btn oa-btn-primary justify-self-start" onClick={onSavePayoutDescriptions} disabled={disabled || payoutSaveStatus === 'saving'} aria-busy={payoutSaveStatus === 'saving'}>
+          {payoutSaveStatus === 'saving' ? 'Saving payout descriptions…' : 'Save payout descriptions'}
+        </button>
+      </div>
+      <div className="border border-newsprint p-3">
+        <ManualScoringPanel
+          isActivated={isActivated}
+          game={game}
+          scoreSaveStatus={scoreSaveStatus}
+          onEnableAutomaticScoring={onEnableAutomaticScoring}
+          onEnableManualScoring={onEnableManualScoring}
+          onUpdateManualGameState={onUpdateManualGameState}
+          onUpdateManualPeriod={onUpdateManualPeriod}
+          onUpdateManualQuarter={onUpdateManualQuarter}
+          onSaveManualScore={onSaveManualScore}
+        />
+      </div>
       {issues.length ? <p role="status">Review delivery issue</p> : <p>No delivery issues.</p>}
     </section>
   );

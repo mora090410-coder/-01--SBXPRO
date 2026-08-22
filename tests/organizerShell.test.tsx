@@ -2,7 +2,18 @@ import React from 'react';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import OrganizerShell from '../features/organizer/shell/OrganizerShell';
-import type { BoardData, GameState } from '../types';
+import type { BoardData, GameState, WinnerResolution } from '../types';
+import { enableManualScoringOnServer, returnAutomaticScoringOnServer, saveManualScoreToServer } from '../features/organizer/services/game-day/manualScoreService';
+import { publishMilestoneCorrectionToServer } from '../features/organizer/services/corrections/milestoneCorrectionService';
+
+vi.mock('../features/organizer/services/game-day/manualScoreService', () => ({
+  enableManualScoringOnServer: vi.fn(async () => ({})),
+  saveManualScoreToServer: vi.fn(async () => ({ score: { leftScore: 3, topScore: 7, quarterScores: { Q1: { left: 3, top: 7 }, Q2: { left: 0, top: 0 }, Q3: { left: 0, top: 0 }, Q4: { left: 0, top: 0 }, OT: { left: 0, top: 0 } }, clock: '0:00', period: 1, state: 'in', detail: 'Manual', isOvertime: false } })),
+  returnAutomaticScoringOnServer: vi.fn(async () => ({})),
+}));
+vi.mock('../features/organizer/services/corrections/milestoneCorrectionService', () => ({
+  publishMilestoneCorrectionToServer: vi.fn(async (_poolId, draft) => ({ winnerHistory: [{ milestone: draft.milestone, sideScore: draft.sideScore, topScore: draft.topScore, sideDigit: draft.sideScore % 10, topDigit: draft.topScore % 10, participantName: 'Ava', resolvedAt: '2026-09-13T20:00:00.000Z', resolutionVersion: draft.expectedVersion + 1, corrected: true, correctionReason: draft.reason }] })),
+}));
 
 const digits = [0,1,2,3,4,5,6,7,8,9];
 
@@ -134,13 +145,60 @@ describe('OrganizerShell Slice 10 B2', () => {
     unmount();
   });
 
-  it('renders game-day controls without decorative manual buttons and correction flow boundaries', () => {
+  it('renders game-day controls with real server-backed seams and correction flow boundaries', () => {
     const onOpenViewer = vi.fn();
-    renderShell({ board: board({ topAxis: digits, leftAxis: digits }), isPublished: true, onOpenViewer });
+    renderShell({ board: board({ topAxis: digits, leftAxis: digits }), isActivated: true, isPublished: true, onOpenViewer });
     expect(screen.getByRole('region', { name: /game-day controls/i })).toHaveTextContent(/Automatic scoring authority/i);
     fireEvent.click(screen.getByRole('button', { name: /Open viewer/i }));
     expect(onOpenViewer).toHaveBeenCalledTimes(1);
-    expect(screen.queryByRole('button', { name: /Switch to Manual scoring authority/i })).toBeNull();
+    expect(screen.getByRole('button', { name: /^Manual$/i })).toBeVisible();
     expect(screen.getByRole('region', { name: /correction flow/i })).toHaveTextContent(/audited public correction/i);
+    expect(screen.getByLabelText(/Final Record read-only durable history/i)).toBeVisible();
+  });
+
+  it('saves payout descriptions through the existing BoardView callback and refreshes', async () => {
+    const onSavePayoutDescriptions = vi.fn(async (descriptions) => descriptions);
+    const onReload = vi.fn();
+    renderShell({ board: board({ topAxis: digits, leftAxis: digits }), isPublished: true, onSavePayoutDescriptions, onReload });
+    fireEvent.change(screen.getByLabelText(/Q1 payout/i), { target: { value: 'Q1 wins gift card' } });
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /Save payout descriptions/i })); });
+    expect(onSavePayoutDescriptions).toHaveBeenCalledWith(expect.objectContaining({ Q1: 'Q1 wins gift card' }));
+    expect(onReload).toHaveBeenCalledTimes(1);
+    expect(await screen.findByRole('status')).toHaveTextContent(/Payout descriptions saved/i);
+  });
+
+  it('assigns a late OPEN square before kickoff through the existing callback and reloads server data', async () => {
+    const onAssignOpenSquares = vi.fn(async () => undefined);
+    const onReload = vi.fn();
+    renderShell({ board: board({ topAxis: digits, leftAxis: digits }), isPublished: true, onAssignOpenSquares, onReload });
+    fireEvent.change(screen.getByLabelText(/Purchaser label/i), { target: { value: 'Moss Family' } });
+    fireEvent.click(screen.getByRole('button', { name: /Square 2:\s*OPEN/i }));
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /Assign selected OPEN square/i })); });
+    expect(onAssignOpenSquares).toHaveBeenCalledWith(expect.arrayContaining([['Ava'], ['Moss Family']]));
+    expect(onReload).toHaveBeenCalledTimes(1);
+    expect(await screen.findByRole('status')).toHaveTextContent(/Square 2 assigned before kickoff/i);
+  });
+
+  it('drives manual score enable, save, and automatic return through unchanged score API service seams', async () => {
+    const onReload = vi.fn();
+    renderShell({ board: board({ topAxis: digits, leftAxis: digits }), isActivated: true, isPublished: true, onReload });
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /^Manual$/i })); });
+    expect(enableManualScoringOnServer).toHaveBeenCalledWith('board_1');
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /Publish manual score/i })); });
+    expect(saveManualScoreToServer).toHaveBeenCalledWith('board_1', expect.objectContaining({ useManualScores: true }));
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /^Auto$/i })); });
+    expect(returnAutomaticScoringOnServer).toHaveBeenCalledWith('board_1');
+    expect(onReload).toHaveBeenCalled();
+  });
+
+  it('publishes milestone correction with expected revision, reason, and public audit history', async () => {
+    const history: WinnerResolution[] = [{ milestone: 'Q1', sideScore: 3, topScore: 7, sideDigit: 3, topDigit: 7, participantName: 'Ava', resolvedAt: '2026-09-13T19:00:00.000Z', resolutionVersion: 2 }];
+    renderShell({ board: board({ topAxis: digits, leftAxis: digits }), isPublished: true, winnerHistory: history });
+    fireEvent.change(screen.getByLabelText(/Resolved milestone/i), { target: { value: 'Q1' } });
+    fireEvent.change(screen.getByLabelText(/Correct side score/i), { target: { value: '13' } });
+    fireEvent.change(screen.getByLabelText(/Public audit reason/i), { target: { value: 'Official correction' } });
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /Publish audited correction/i })); });
+    expect(publishMilestoneCorrectionToServer).toHaveBeenCalledWith('board_1', expect.objectContaining({ milestone: 'Q1', expectedVersion: 2, sideScore: 13, reason: 'Official correction' }));
+    expect(await screen.findByText(/Q1: Ava rev 3 corrected: Official correction/i)).toBeVisible();
   });
 });

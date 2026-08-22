@@ -29,8 +29,16 @@ import {
   type ManualQuarterKey,
   type ManualScoreSide,
 } from '../features/organizer/game-day/manualScoringModel';
+import {
+  enableManualScoringOnServer,
+  returnAutomaticScoringOnServer,
+  saveManualScoreToServer,
+} from '../features/organizer/services/game-day/manualScoreService';
+import { publishedOpenSquaresAreAssignable } from '../features/organizer/services/game-day/publishedOpenSquares';
+import { publishMilestoneCorrectionToServer } from '../features/organizer/services/corrections/milestoneCorrectionService';
 
 export { manualPeriodForState, seedManualScoreFromSnapshot } from '../features/organizer/game-day/manualScoringModel';
+export { publishedOpenSquaresAreAssignable } from '../features/organizer/services/game-day/publishedOpenSquares';
 
 export const secureShuffleDigits = () => {
   const digits = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
@@ -43,26 +51,6 @@ export const secureShuffleDigits = () => {
     [digits[index], digits[target]] = [digits[target], digits[index]];
   }
   return digits;
-};
-
-export const publishedOpenSquaresAreAssignable = ({
-  isPublished,
-  openSquareCount,
-  kickoffAt,
-  now = Date.now(),
-}: {
-  isPublished: boolean;
-  openSquareCount: number;
-  kickoffAt?: string;
-  now?: number;
-}) => {
-  const kickoffTime = kickoffAt ? Date.parse(kickoffAt) : Number.NaN;
-  return Boolean(
-    isPublished
-    && openSquareCount > 0
-    && Number.isFinite(kickoffTime)
-    && now < kickoffTime
-  );
 };
 
 interface AdminPanelProps {
@@ -497,17 +485,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
     if (!activePoolId || localGame.useManualScores) return;
     setScoreSaveStatus('saving');
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData.session?.access_token;
-      if (!token) throw new Error('Sign in before changing score authority.');
-      const response = await fetch(`/api/pools/${activePoolId}/score/manual`, {
-        method: 'PUT',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const result = await response.json();
-      if (!response.ok) {
-        throw new Error(result.error || 'Manual scoring could not be enabled.');
-      }
+      await enableManualScoringOnServer(activePoolId);
       setLocalGame((current) => {
         const snapshot = current.scoreSnapshot ?? liveData;
         const seed = seedManualScoreFromSnapshot(snapshot);
@@ -582,24 +560,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
     if (!activePoolId) return;
     setScoreSaveStatus('saving');
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData.session?.access_token;
-      if (!token) throw new Error('Sign in before saving the score.');
-      const response = await fetch(`/api/pools/${activePoolId}/score/manual`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
-          quarterScores: localGame.manualQuarterScores ?? EMPTY_MANUAL_SCORES,
-          period: manualPeriodForState(
-            localGame.manualGameState ?? 'in',
-            localGame.manualPeriod,
-            localGame.manualQuarterScores,
-          ),
-          state: localGame.manualGameState ?? 'in',
-        }),
-      });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || 'Unable to save the score.');
+      const result = await saveManualScoreToServer(activePoolId, localGame);
       setLocalGame((current) => ({ ...current, useManualScores: true, scoreSnapshot: result.score }));
       setScoreSaveStatus('saved');
       setActionMessage('Manual score is live. Completed-quarter winners were resolved once.');
@@ -612,17 +573,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
   const enableAutomaticScoring = async () => {
     if (!activePoolId) return;
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData.session?.access_token;
-      if (!token) return;
-      const response = await fetch(`/api/pools/${activePoolId}/score/manual`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!response.ok) {
-        const result = await response.json();
-        throw new Error(result.error || 'Automatic scoring could not be enabled.');
-      }
+      await returnAutomaticScoringOnServer(activePoolId);
       setLocalGame((current) => ({ ...current, useManualScores: false, scoreSnapshot: null }));
       setActionMessage('Automatic score checks are enabled.');
     } catch (error: any) {
@@ -634,22 +585,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
     if (!activePoolId || !correctionDraft) return;
     setScoreSaveStatus('saving');
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData.session?.access_token;
-      if (!token) throw new Error('Sign in before correcting a result.');
-      const response = await fetch(
-        `/api/pools/${activePoolId}/milestones/${correctionDraft.milestone}/correct`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(correctionDraft),
-        },
-      );
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || 'The correction could not be published.');
+      const result = await publishMilestoneCorrectionToServer(activePoolId, correctionDraft);
       if (Array.isArray(result.winnerHistory)) setCorrectionHistory(result.winnerHistory);
       setCorrectionDraft(null);
       setScoreSaveStatus('saved');

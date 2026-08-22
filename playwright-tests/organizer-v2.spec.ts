@@ -92,7 +92,27 @@ test.describe('organizer_v2 Slice 10 shell', () => {
     await expect(shell).toBeVisible();
     await expect(page.getByRole('banner', { name: /organizer task header/i })).toBeVisible();
     await expect(page.getByRole('button', { name: /Preview draw/i })).toBeVisible();
-    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
-    expect(overflow).toBeLessThanOrEqual(1);
+    const overflow = await page.evaluate(() => {
+      const width = document.documentElement.clientWidth;
+      const offenders = Array.from(document.body.querySelectorAll<HTMLElement>('*'))
+        .filter((element) => !element.closest('[data-testid="contained-board-overflow"]'))
+        .filter((element) => element.getBoundingClientRect().right > width + 1)
+        .map((element) => ({ tag: element.tagName, className: element.className, right: element.getBoundingClientRect().right }));
+      const boardViewport = document.querySelector<HTMLElement>('[data-testid="contained-board-overflow"]');
+      window.scrollTo(999, 0);
+      return {
+        amount: document.documentElement.scrollWidth - width,
+        windowScrollX: window.scrollX,
+        bodyScrollWidth: document.body.scrollWidth,
+        shellWidth: document.querySelector<HTMLElement>('[data-feature-flag="organizer_v2"]')?.getBoundingClientRect().width,
+        boardClientWidth: boardViewport?.clientWidth,
+        boardScrollWidth: boardViewport?.scrollWidth,
+        offenders,
+      };
+    });
+    expect(overflow.amount, JSON.stringify(overflow)).toBe(0);
+    expect(overflow.windowScrollX).toBe(0);
+    expect(overflow.offenders).toEqual([]);
+    expect(overflow.boardScrollWidth).toBeGreaterThan(overflow.boardClientWidth || 0);
   });
 });

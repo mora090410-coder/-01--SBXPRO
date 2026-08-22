@@ -239,7 +239,7 @@ Remove `tests/designAudit.test.ts`, `scripts/design-audit.mjs`, the two package 
 
 ## 2026-08-22 — Slice 10 B2 organizer shell behind organizer_v2
 
-- **Status:** B2 shell foundation complete and verified behind default-off `organizer_v2`; full Slice 10 remains in progress until the omitted server mutation seams are extracted and migrated.
+- **Status:** Complete and verified behind default-off `organizer_v2`; AdminPanel remains rollback.
 - **Files touched:**
   - `features/organizer/shell/OrganizerShell.tsx`
   - `features/organizer/shell/TaskHeader.tsx`
@@ -257,7 +257,26 @@ Remove `tests/designAudit.test.ts`, `scripts/design-audit.mjs`, the two package 
   - `docs/REFACTOR_LOG.md`
 - **Behavior boundary:** `AdminPanel` remains intact as rollback. No package, schema, API, server, env-file, deployment, git, or commit action was performed. `BoardView` still selects `OrganizerShell` only in owner commissioner mode when resolved `organizer_v2` is true; production mutation query overrides remain ignored by the existing feature-flag resolver.
 - **Review correction:** removed the Slice 10 `Math.random` draw and reused the existing `secureShuffleDigits` durable browser-crypto draw path; shell lifecycle input no longer synthesizes participant IDs and fails closed through the existing lifecycle ambiguity blocker when private participant metadata is unavailable; draw/progression/publish are blocked by lifecycle and save blockers; publish rechecks at click, disables while pending/blocked, surfaces errors, and closes only on success; draft board state syncs on prop/revision changes without clobbering dirty local state; decorative manual-authority button was deleted; Open viewer and Reload latest board now require real callbacks from `BoardView`.
-- **Omitted instead of faked:** v2 payout editing, late OPEN-square assignment UI, manual authority mutation UI, milestone correction mutation UI, and final-record mutation UI remain omitted from the shell until their feature-local callback/data seams are extracted from `components/AdminPanel.tsx`. Existing server endpoints observed but not re-wired in this correction: `/api/pools/:id/score/manual`, `/api/pools/:id/milestones/:milestone/correct`, `/api/pools/:id/open-squares`, and `/api/pools/:id` PATCH payout descriptions.
+- **Server-backed completion:** payout editing, late OPEN-square assignment before kickoff, manual score enable/save/return-auto, audited milestone correction, and durable Final Record are wired through extracted feature-local services or existing BoardView callbacks. No decorative mutation controls remain.
 - **Coverage added/updated:** unit coverage for conflict/reload, lifecycle draw blockers, private-metadata fail-closed behavior, draft sync, publish payload/pending/error/disabled/close-on-success, focus on the publish dialog, and absence of fake manual buttons; browser coverage now requires explicit `VITE_GRIDONE_ORGANIZER_V2=true` process env rather than a query parameter and checks owner shell phone overflow.
-- **Verification:** shell/lifecycle/draft/manual contracts passed **24/24**; full unit suite passed **64 files / 385 tests**; env-enabled owner-shell Chromium Playwright passed **2/2**; production build passed; design audit remained at the exact 75-finding baseline.
+- **Verification:** organizer/server-backed contracts passed **35/35**; full unit suite passed **64 files / 389 tests**; env-enabled owner-shell Chromium Playwright passed **2/2** including actual `window.scrollX=0` at 390px; production build passed; design audit remained at the exact 75-finding baseline.
 - **Rollback:** revert the listed Slice 10 files to the previous Slice 10 state. No domain state is affected.
+
+## 2026-08-22 — Slice 10 server-backed organizer seams
+
+- **Status:** Complete and verified.
+- **Files touched:**
+  - `features/organizer/services/game-day/manualScoreService.ts`
+  - `features/organizer/services/game-day/publishedOpenSquares.ts`
+  - `features/organizer/services/corrections/milestoneCorrectionService.ts`
+  - `features/organizer/shell/OrganizerShell.tsx`
+  - `features/organizer/shell/GameDayControls.tsx`
+  - `features/organizer/shell/AssignmentWorkspace.tsx`
+  - `features/organizer/shell/CorrectionFlow.tsx`
+  - `components/AdminPanel.tsx`
+  - `tests/organizerShell.test.tsx`
+  - `docs/REFACTOR_LOG.md`
+- **Behavior boundary:** no package, schema, API endpoint, env, deploy, git, or commit changes. Existing `/score/manual`, `/milestones/:milestone/correct`, payout callback, and published OPEN-square callback payload shapes were preserved.
+- **RED evidence:** focused organizer shell tests were added/updated first for payout save/reload, late OPEN assignment/reload, manual enable/save/auto return, milestone correction expected revision/reason, and read-only Final Record.
+- **GREEN evidence:** focused server-backed organizer contracts passed **35/35**; full unit suite passed **389/389**; env-enabled owner-shell Playwright passed **2/2**; build passed; audit remained at baseline. Phone overflow required shell-level inline-size/paint containment around the intentionally scrollable 640px board; browser verification confirms `document` overflow and `window.scrollX` are zero while `boardScrollWidth > boardClientWidth` remains true. Final review removed the stale optimistic board write after authoritative OPEN-square reload so server state always wins.
+- **Rollback:** remove the three service files, restore the previous Slice 10 shell component stubs, restore `AdminPanel` inline service calls if desired, and revert the organizer shell test changes.
