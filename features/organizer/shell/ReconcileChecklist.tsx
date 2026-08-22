@@ -1,0 +1,6 @@
+import React from 'react';
+import type { OrganizerLifecycleModel } from '../lifecycle/organizerLifecycle';
+const advisoryText: Record<string,string> = { open_squares_remaining: 'Open squares remain. This is a private advisory after acknowledgement.', unpaid_or_unknown_payment_status: 'Unpaid or unknown private payment follow-up.', seller_attribution_gaps: 'Seller attribution gaps are private follow-up.' };
+export default function ReconcileChecklist({ model }: { model: OrganizerLifecycleModel }) {
+  return <section aria-label="Reconcile checklist" className="grid gap-4 md:grid-cols-2"><div role="region" aria-label="Hard blockers" className="border border-ink p-4"><h2 className="font-semibold">Hard blockers</h2>{model.hardBlockers.length ? <ul>{model.hardBlockers.map((b) => <li key={b}>{b === 'save_conflicted' ? 'This board changed in another session.' : b}</li>)}</ul> : <p>No hard blockers.</p>}</div><div role="region" aria-label="Private advisories" className="border border-newsprint p-4"><h2 className="font-semibold">Private advisories</h2>{model.advisories.length ? <ul>{model.advisories.map((a) => <li key={a}>{advisoryText[a] || a}</li>)}</ul> : <p>No private advisories.</p>}</div></section>;
+}

@@ -14,6 +14,7 @@ import { SAMPLE_BOARD } from '../constants';
 import AdminPanel from './AdminPanel';
 import GameDayHorizon from './GameDayHorizon';
 import ViewerShell from '../features/viewer/shell/ViewerShell';
+import OrganizerShell from '../features/organizer/shell/OrganizerShell';
 import ErrorBoundary from './ErrorBoundary';
 import FullScreenLoading from './loading/FullScreenLoading';
 import SyntheticScoreTestBanner from './SyntheticScoreTestBanner';
@@ -122,6 +123,7 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
         routeIntent: isReadOnlyViewerRoute ? 'read_only_preview' : 'production_mutation',
     });
     const viewerV2Enabled = featureFlags.flags.viewer_v2;
+    const organizerV2Enabled = Boolean(isOwner && featureFlags.flags.organizer_v2);
 
     // 5. Effects
     useEffect(() => {
@@ -351,35 +353,70 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
 
             {isCommissionerMode && (
                 <div className="oa-root relative z-[80] min-h-[100dvh] w-full bg-broadcast-white p-0 text-ink">
-                    <AdminPanel
-                        game={game}
-                        board={board}
-                        activePoolId={activePoolId || ''}
-                        liveData={liveData}
-                        winnerHistory={liveWinnerHistory}
-                        notificationDeliveryIssues={notificationDeliveryIssues}
-                        initialTab={adminStartTab}
-                        onApply={(g, b) => { setGame(g); setBoard(b); }}
-                        onPublish={handlePublish}
-                        onSavePayoutDescriptions={(descriptions) => {
-                            if (!activePoolId) throw new Error('Save this board before adding payout descriptions.');
-                            return updatePayoutDescriptions(activePoolId, descriptions);
-                        }}
-                        onAssignOpenSquares={async (squares) => {
-                            if (!activePoolId) throw new Error('Reload this board before assigning OPEN squares.');
-                            await updatePublishedOpenSquares(activePoolId, squares);
-                            await loadPoolData(activePoolId);
-                        }}
-                        onLogout={handleLogout}
-                        isActivated={isActivated}
-                        isPublished={isPublished}
-                        shareCode={shareCode}
-                        renderPreview={() => (
-                            <div className="relative z-50 flex min-h-[calc(100dvh-6rem)] w-full flex-col">
-                                {renderMainContent(true)}
-                            </div>
-                        )}
-                    />
+                    {organizerV2Enabled ? (
+                        <OrganizerShell
+                            game={game}
+                            board={board}
+                            activePoolId={activePoolId || ''}
+                            liveData={liveData}
+                            winnerHistory={liveWinnerHistory}
+                            notificationDeliveryIssues={notificationDeliveryIssues}
+                            onApply={(g, b) => { setGame(g); setBoard(b); }}
+                            onPublish={handlePublish}
+                            onSavePayoutDescriptions={(descriptions) => {
+                                if (!activePoolId) throw new Error('Save this board before adding payout descriptions.');
+                                return updatePayoutDescriptions(activePoolId, descriptions);
+                            }}
+                            onAssignOpenSquares={async (squares) => {
+                                if (!activePoolId) throw new Error('Reload this board before assigning OPEN squares.');
+                                await updatePublishedOpenSquares(activePoolId, squares);
+                                await loadPoolData(activePoolId);
+                            }}
+                            onReload={() => activePoolId ? loadPoolData(activePoolId) : undefined}
+                            onOpenViewer={() => {
+                                if (shareCode) window.open(`/b/${shareCode}`, '_blank', 'noopener,noreferrer');
+                            }}
+                            onLogout={handleLogout}
+                            isActivated={isActivated}
+                            isPublished={isPublished}
+                            shareCode={shareCode}
+                            renderPreview={() => (
+                                <div className="relative z-50 flex min-h-[calc(100dvh-6rem)] w-full flex-col">
+                                    {renderMainContent(true)}
+                                </div>
+                            )}
+                        />
+                    ) : (
+                        <AdminPanel
+                            game={game}
+                            board={board}
+                            activePoolId={activePoolId || ''}
+                            liveData={liveData}
+                            winnerHistory={liveWinnerHistory}
+                            notificationDeliveryIssues={notificationDeliveryIssues}
+                            initialTab={adminStartTab}
+                            onApply={(g, b) => { setGame(g); setBoard(b); }}
+                            onPublish={handlePublish}
+                            onSavePayoutDescriptions={(descriptions) => {
+                                if (!activePoolId) throw new Error('Save this board before adding payout descriptions.');
+                                return updatePayoutDescriptions(activePoolId, descriptions);
+                            }}
+                            onAssignOpenSquares={async (squares) => {
+                                if (!activePoolId) throw new Error('Reload this board before assigning OPEN squares.');
+                                await updatePublishedOpenSquares(activePoolId, squares);
+                                await loadPoolData(activePoolId);
+                            }}
+                            onLogout={handleLogout}
+                            isActivated={isActivated}
+                            isPublished={isPublished}
+                            shareCode={shareCode}
+                            renderPreview={() => (
+                                <div className="relative z-50 flex min-h-[calc(100dvh-6rem)] w-full flex-col">
+                                    {renderMainContent(true)}
+                                </div>
+                            )}
+                        />
+                    )}
                 </div>
             )}
         </div>

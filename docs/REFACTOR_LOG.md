@@ -236,3 +236,28 @@ Remove `tests/designAudit.test.ts`, `scripts/design-audit.mjs`, the two package 
 - **Review hardening:** malformed revisions and malformed local revisions force `save_failed`; remote acknowledgements/recovery/conflict resolution require monotonic server revisions relative to local work; only a valid-revision `clean` state is publishable; malformed or partial committed axes cannot enter Draw; Preview cannot skip Go Live; public scheduled-game snapshots whitelist and clone public fields instead of copying private/internal metadata.
 - **GREEN evidence:** lifecycle/draft/legacy adapter suites passed **19/19**; full unit suite passed **63 files / 376 tests**; production build passed; design audit remained at the exact 75-finding baseline.
 - **Rollback:** remove the two new feature model files, the two new test files, and this log entry. No domain state is affected.
+
+## 2026-08-22 — Slice 10 B2 organizer shell behind organizer_v2
+
+- **Status:** B2 shell foundation complete and verified behind default-off `organizer_v2`; full Slice 10 remains in progress until the omitted server mutation seams are extracted and migrated.
+- **Files touched:**
+  - `features/organizer/shell/OrganizerShell.tsx`
+  - `features/organizer/shell/TaskHeader.tsx`
+  - `features/organizer/shell/ProgressDisclosure.tsx`
+  - `features/organizer/shell/AssignmentWorkspace.tsx`
+  - `features/organizer/shell/ReconcileChecklist.tsx`
+  - `features/organizer/shell/DrawWorkspace.tsx`
+  - `features/organizer/shell/ViewerPreviewWorkspace.tsx`
+  - `features/organizer/shell/PublishReviewDialog.tsx`
+  - `features/organizer/shell/GameDayControls.tsx`
+  - `features/organizer/shell/CorrectionFlow.tsx`
+  - `tests/organizerShell.test.tsx`
+  - `playwright-tests/organizer-v2.spec.ts`
+  - `components/BoardView.tsx`
+  - `docs/REFACTOR_LOG.md`
+- **Behavior boundary:** `AdminPanel` remains intact as rollback. No package, schema, API, server, env-file, deployment, git, or commit action was performed. `BoardView` still selects `OrganizerShell` only in owner commissioner mode when resolved `organizer_v2` is true; production mutation query overrides remain ignored by the existing feature-flag resolver.
+- **Review correction:** removed the Slice 10 `Math.random` draw and reused the existing `secureShuffleDigits` durable browser-crypto draw path; shell lifecycle input no longer synthesizes participant IDs and fails closed through the existing lifecycle ambiguity blocker when private participant metadata is unavailable; draw/progression/publish are blocked by lifecycle and save blockers; publish rechecks at click, disables while pending/blocked, surfaces errors, and closes only on success; draft board state syncs on prop/revision changes without clobbering dirty local state; decorative manual-authority button was deleted; Open viewer and Reload latest board now require real callbacks from `BoardView`.
+- **Omitted instead of faked:** v2 payout editing, late OPEN-square assignment UI, manual authority mutation UI, milestone correction mutation UI, and final-record mutation UI remain omitted from the shell until their feature-local callback/data seams are extracted from `components/AdminPanel.tsx`. Existing server endpoints observed but not re-wired in this correction: `/api/pools/:id/score/manual`, `/api/pools/:id/milestones/:milestone/correct`, `/api/pools/:id/open-squares`, and `/api/pools/:id` PATCH payout descriptions.
+- **Coverage added/updated:** unit coverage for conflict/reload, lifecycle draw blockers, private-metadata fail-closed behavior, draft sync, publish payload/pending/error/disabled/close-on-success, focus on the publish dialog, and absence of fake manual buttons; browser coverage now requires explicit `VITE_GRIDONE_ORGANIZER_V2=true` process env rather than a query parameter and checks owner shell phone overflow.
+- **Verification:** shell/lifecycle/draft/manual contracts passed **24/24**; full unit suite passed **64 files / 385 tests**; env-enabled owner-shell Chromium Playwright passed **2/2**; production build passed; design audit remained at the exact 75-finding baseline.
+- **Rollback:** revert the listed Slice 10 files to the previous Slice 10 state. No domain state is affected.

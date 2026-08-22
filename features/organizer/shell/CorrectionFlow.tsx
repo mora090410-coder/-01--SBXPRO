@@ -1,0 +1,3 @@
+import React from 'react';
+import type { WinnerResolution } from '../../../types';
+export default function CorrectionFlow({ winnerHistory }: { winnerHistory: WinnerResolution[] }) { return <section role="region" aria-label="Correction flow" className="grid gap-2 border border-newsprint p-4"><h2 className="text-xl font-semibold">Corrections and final record</h2><p>Use an audited public correction for published labels or resolved milestones. Private payment/seller metadata stays private.</p>{winnerHistory.length ? <ul>{winnerHistory.map((w) => <li key={`${w.milestone}-${w.resolvedAt}`}>{w.milestone}: {w.participantName || 'OPEN'}</li>)}</ul> : <p>No resolved milestones yet.</p>}</section>; }
