@@ -220,3 +220,19 @@ Remove `tests/designAudit.test.ts`, `scripts/design-audit.mjs`, the two package 
 - **RED evidence:** `tests/manualScoringPanel.test.tsx` was written before implementation; write-time TypeScript diagnostic reported missing `../features/organizer/game-day/ManualScoringPanel`.
 - **GREEN evidence:** focused manual scoring model/UI/panel suites passed **16/16**; full unit suite passed **61 files / 365 tests**; production build passed; design audit remained at the exact 75-finding baseline.
 - **Rollback:** remove the two new feature files and `tests/manualScoringPanel.test.tsx`, restore the live-scoring JSX and local manual-scoring helpers in `components/AdminPanel.tsx`, and remove this log entry. No domain state is affected.
+
+## 2026-08-22 — Slice 9 organizer lifecycle and draft save models
+
+- **Status:** Complete and verified in feature-local model files under the requested file-surface limit.
+- **Files touched:**
+  - `features/organizer/lifecycle/organizerLifecycle.ts`
+  - `features/organizer/draft/draftSaveModel.ts`
+  - `tests/organizerLifecycle.test.ts`
+  - `tests/draftSaveModel.test.ts`
+  - `docs/REFACTOR_LOG.md`
+- **Behavior boundary:** no UI shell, `AdminPanel`, package, schema, API, feature flag, environment, external-system, deploy, or git state was modified. Legacy `utils/organizerFlow.ts` was inspected and left untouched to preserve existing adapter behavior.
+- **Contract implemented:** exact phases `Create Draft`, `Fill`, `Reconcile`, `Draw`, `Preview`, `Go Live`, `Game Day`, `Final Record`; exact save states `clean`, `dirty`, `saving`, `save_failed`, `conflicted`, `recovered`; duplicate/ambiguous public identity is a hard blocker; unpaid/unknown and seller gaps are advisories; open-square acknowledgement is required; publish fails closed for dirty/saving/save_failed/conflicted saves; Go Live is modeled as one-time; Game Day persists until final durable resolution; malformed board/save input and impossible transitions fail closed; public snapshots expose public labels/OPEN only and omit payment, seller, contact, participant id, and notes.
+- **RED evidence:** both model test files were written before implementation. Write-time TypeScript diagnostics reported missing imports for `../features/organizer/lifecycle/organizerLifecycle` and `../features/organizer/draft/draftSaveModel`.
+- **Review hardening:** malformed revisions and malformed local revisions force `save_failed`; remote acknowledgements/recovery/conflict resolution require monotonic server revisions relative to local work; only a valid-revision `clean` state is publishable; malformed or partial committed axes cannot enter Draw; Preview cannot skip Go Live; public scheduled-game snapshots whitelist and clone public fields instead of copying private/internal metadata.
+- **GREEN evidence:** lifecycle/draft/legacy adapter suites passed **19/19**; full unit suite passed **63 files / 376 tests**; production build passed; design audit remained at the exact 75-finding baseline.
+- **Rollback:** remove the two new feature model files, the two new test files, and this log entry. No domain state is affected.
