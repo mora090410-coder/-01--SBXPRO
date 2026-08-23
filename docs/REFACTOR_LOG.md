@@ -324,3 +324,13 @@ Remove `tests/designAudit.test.ts`, `scripts/design-audit.mjs`, the two package 
 - **Protected files:** existing untracked `.impeccable/`, gap-remediation plan, and marketing documents were not touched or moved.
 - **Verification:** TypeScript/Vite production build passed immediately after the move; full unit suite passed **66 files / 402 tests** after correcting the four test-only literals; design audit remained at the exact 75-finding baseline. Old active source directories and runtime/test import references under `features/` and `components/primitives/` are absent; historical planning/log mentions remain intentionally unchanged.
 - **Rollback:** revert this single mechanical move commit. No domain state is affected.
+
+## 2026-08-22 — Final integration and independent readiness review
+
+- **Status:** Refactor implementation complete and verified for default-off delivery; not a production rollout or full release certification.
+- **Deterministic gates:** unit **66 files / 402 tests**; production build passed; design lint **0 errors / 0 warnings**; design audit stayed at the documented **75-finding baseline**; production dependency audit reported **0 vulnerabilities**; one low-severity dev-only Babel advisory remains.
+- **Browser gates:** default-off/accessibility Chromium **21 passed / 6 explicitly owned skips**; `viewer_v2` **2/2**; `organizer_v2` **2/2**; homepage query denial **1/1**; homepage desktop/phone Chromium plus WebKit **15/15**. Numeric and rendered QA confirmed zero page overflow at required phone/desktop states and intentional local board scrolling only.
+- **Independent correction:** final review found winner-email disclosure before personalized scenarios. A RED document-order regression reproduced the defect; `WinnerEmailDisclosure` now follows `ScenarioDisclosure`. Focused viewer tests **7/7**, full unit **402/402**, build, and viewer Playwright **2/2** passed after correction.
+- **Integration gate:** after OrbStack/Docker was started, `npm run test:integration` passed **9/9 suites** with **56 passed / 1 intentional skip** across 57 PostgreSQL integration tests.
+- **Known limits:** v2 flags remain default-off; no deploy, real-user rollout/contact, production analytics storage, production config/data change, or manual assistive-technology certification occurred. Existing accessibility fixmes and 75 baseline design findings remain documented debt.
+- **Rollback:** disable the relevant v2 flag; legacy FilmLanding, GameDayHorizon, and AdminPanel paths remain available.

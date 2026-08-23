@@ -69,11 +69,14 @@ describe('ViewerShell Slice 6 C1', () => {
     expect(firstViewport).not.toHaveTextContent(/payout|makes me win/i);
   });
 
-  it('puts personalized summary with coordinates and current/next status before winner email', () => {
+  it('puts personalized summary and scenarios before winner email', () => {
     renderShell({ selectedPlayer: 'Carrie Moss' });
 
     const summary = screen.getByRole('region', { name: /Carrie Moss square summary/i });
-    expect(summary.compareDocumentPosition(screen.getByRole('form', { name: /winner email/i }))).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    const scenarios = screen.getByRole('region', { name: /What score changes the next result/i });
+    const winnerEmail = screen.getByRole('form', { name: /winner email/i });
+    expect(summary.compareDocumentPosition(scenarios)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(scenarios.compareDocumentPosition(winnerEmail)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     expect(within(summary).getByText(/Carrie Moss/)).toBeVisible();
     expect(within(summary).getByText('2 squares')).toBeVisible();
     expect(within(summary).getAllByText(/top 4.*side 1/i)).toHaveLength(2);

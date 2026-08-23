@@ -85,12 +85,6 @@ const ViewerShell: React.FC<ViewerShellProps> = ({
               </ul>
             </section>
           )}
-          <WinnerEmailDisclosure
-            shareCode={shareCode}
-            participantId={selectedParticipant?.id}
-            displayName={selectedPlayer}
-            enabled={showNotification}
-          />
           <ScenarioDisclosure
             board={board}
             game={game}
@@ -98,6 +92,12 @@ const ViewerShell: React.FC<ViewerShellProps> = ({
             selectedPlayer={selectedPlayer}
             servicesEnabled={servicesEnabled}
             onScenarioFocus={setFocus}
+          />
+          <WinnerEmailDisclosure
+            shareCode={shareCode}
+            participantId={selectedParticipant?.id}
+            displayName={selectedPlayer}
+            enabled={showNotification}
           />
           <BoardDetailsDisclosure game={game} board={board} winnerHistory={winnerHistory} final={Boolean(isFinal)} />
         </div>
