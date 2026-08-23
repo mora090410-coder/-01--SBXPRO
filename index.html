@@ -93,55 +93,19 @@
     <link rel="icon" type="image/png" href="/icons/gridone-icon-256.png">
     <link rel="apple-touch-icon" href="/icons/gridone-icon-512.png">
     <link rel="manifest" href="/site.webmanifest">
-
-
-    <style>
-        /* Splash Screen Styles */
-        #splash {
-            position: fixed;
-            inset: 0;
-            z-index: 9999;
-            background-color: #0E0F12;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: opacity 0.3s ease;
-        }
-
-        /* Reduced Motion */
-        @media (prefers-reduced-motion: reduce) {
-            #splash {
-                transition: none;
-            }
-        }
-
-        /* Diagonal */
-        .splash-diagonal {
-            width: 8px;
-            height: 120px;
-            background-color: #8F1D2C;
-            transform: rotate(-45deg);
-            border-radius: 0;
-        }
-
-        /* Gold Dot */
-        .splash-dot {
-            position: absolute;
-            top: 48px;
-            right: 48px;
-            width: 8px;
-            height: 8px;
-            background-color: #FFC72C;
-            border-radius: 0;
-        }
-    </style>
 </head>
 
 <body>
-    <div id="splash">
-        <div class="splash-diagonal"></div>
-        <div class="splash-dot"></div>
-    </div>
+    <noscript>
+        <main style="max-width: 52rem; margin: 0 auto; padding: 2rem; line-height: 1.5;">
+            <p>GridOne</p>
+            <h1>Football-squares fundraiser boards</h1>
+            <p>Build the board, share one link, and let GridOne track game day.</p>
+            <p><a href="/create">Create your free board</a> · <a href="/demo">See a live board</a></p>
+            <p>First published board free.</p>
+            <p>GridOne tracks the board. It does not collect square money, hold funds, or pay winners.</p>
+        </main>
+    </noscript>
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
 </body>

@@ -295,3 +295,23 @@ Remove `tests/designAudit.test.ts`, `scripts/design-audit.mjs`, the two package 
 - **Review hardening:** delivery receives a frozen explicit own-key clone plus `AbortSignal`; timeout aborts the delivery contract, clears its timer, and deterministic tests prove late delivery cannot mutate/send after timeout when the injected transport honors cancellation. Validation uses `Reflect.ownKeys`, rejects symbol/unknown/prohibited keys, requires `name` and every required field as own properties, and reconstructs only validated fields before delivery.
 - **GREEN evidence:** focused instrumentation tests passed **7/7**; full unit suite passed **65 files / 396 tests**; production build passed; design audit remained at the exact 75-finding baseline.
 - **Rollback:** remove the two instrumentation files, the instrumentation test file, and this log entry. No domain state is affected.
+
+## 2026-08-22 — Slice 12 A1 product-first homepage
+
+- **Status:** Complete and verified in the constrained default-off surface.
+- **Files touched:**
+  - `features/homepage/HomepageV2.tsx`
+  - `features/homepage/HomepageProofArtifact.tsx`
+  - `tests/homepageV2.test.tsx`
+  - `playwright-tests/homepage-v2.spec.ts`
+  - `App.tsx`
+  - `index.html`
+  - `index.tsx`
+  - `tests/pricingCopyConsistency.test.ts`
+  - `docs/REFACTOR_LOG.md`
+- **Behavior boundary:** root keeps `FilmLanding` by default and selects `HomepageV2` only when resolved `VITE_GRIDONE_HOMEPAGE_V2` is true. Root uses production-mutation route intent so query parameters cannot enable the production homepage. FilmLanding and film CSS remain untouched rollback/optional story surfaces. No package, schema, API, server, env-file, deploy, git, or commit changes.
+- **RED evidence:** `tests/homepageV2.test.tsx` was written first and write-time diagnostics failed because `../features/homepage/HomepageV2` did not exist.
+- **GREEN implementation:** A1 first viewport contains GridOne identity, exact `Football-squares fundraiser boards`, outcome copy, `Create your free board`, `See a live board`, `First published board free`, and the no-money boundary. Product proof defaults to clearly labeled synthetic B2 organizer artifact and switches in place to a C1 viewer proof adapter using existing viewer shell hierarchy with feature-local fixture data. Canonical 2026 pricing is rendered, optional story is native disclosure/static/skippable, and no GSAP/Lenis/film gate/loader/scroll instruction was added.
+- **Review hardening:** `/demo` CTA validity, exact 390×844 and 1280×720 first-viewport geometry, organizer/viewer proof overflow on phone and desktop, static SEO, and no-JavaScript product truth/actions are browser-tested. The global splash loader/dead teardown were removed from the critical path and replaced with a crawlable `<noscript>` product fallback. `HomepageV2` is lazy-isolated into its own 10.62 kB build chunk with a product-truth fallback instead of a loader; viewer proof loads only after its switch.
+- **GREEN evidence:** homepage/pricing/static suites passed **15/15**; full unit suite passed **66 files / 402 tests**; non-env query-denial Playwright passed **1/1**; env-enabled desktop/phone homepage Playwright passed **10/10**; production build passed. Initial audit found 16 framework-white/arbitrary-radius violations in the new homepage; all were replaced with governed `broadcast-white` and surface-radius tokens, returning the audit to the exact 75-finding baseline.
+- **Rollback:** remove the two homepage feature files and two new test files, restore `App.tsx`, `index.html`, `index.tsx`, and `tests/pricingCopyConsistency.test.ts`, and remove this log entry. No domain state is affected.

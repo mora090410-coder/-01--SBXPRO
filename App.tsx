@@ -8,6 +8,7 @@ import RequireAuth from './components/auth/RequireAuth';
 import BoardView from './components/BoardView';
 import FilmLanding from './components/FilmLanding';
 import CreateContest from './pages/CreateContest';
+import { resolveFeatureFlags } from './utils/featureFlags';
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
 import NotFound from './pages/NotFound';
@@ -28,15 +29,34 @@ const BoosterClubFootballSquares = React.lazy(() => import('./pages/BoosterClubF
 const ChurchSchoolFundraiserSquares = React.lazy(() => import('./pages/ChurchSchoolFundraiserSquares').then((module) => ({ default: module.ChurchSchoolFundraiserSquares })));
 const NFLOpeningWeekSquares = React.lazy(() => import('./pages/NFLOpeningWeekSquares').then((module) => ({ default: module.NFLOpeningWeekSquares })));
 const FootballSquaresApp = React.lazy(() => import('./pages/FootballSquaresApp').then((module) => ({ default: module.FootballSquaresApp })));
+const HomepageV2 = React.lazy(() => import('./features/homepage/HomepageV2'));
+
+const HomepageProductFallback = () => (
+  <main className="min-h-[100dvh] bg-ink px-4 py-8 text-broadcast-white">
+    <p className="text-gold">GridOne</p>
+    <h1 className="mt-3 text-4xl font-black">Football-squares fundraiser boards</h1>
+    <p className="mt-4">Build the board, share one link, and let GridOne track game day.</p>
+    <p className="mt-4">First published board free. GridOne does not collect square money, hold funds, or pay winners.</p>
+  </main>
+);
 
 const Root = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user } = useAuth();
   const poolId = searchParams.get('poolId');
+  const featureFlags = resolveFeatureFlags({
+    config: { flags: { homepage_v2: import.meta.env.VITE_GRIDONE_HOMEPAGE_V2 } },
+    query: searchParams,
+    routeIntent: 'production_mutation',
+  });
 
   if (poolId) {
     return <BoardView />;
+  }
+
+  if (featureFlags.flags.homepage_v2) {
+    return <React.Suspense fallback={<HomepageProductFallback />}><HomepageV2 /></React.Suspense>;
   }
 
   return (
