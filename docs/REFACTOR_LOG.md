@@ -280,3 +280,18 @@ Remove `tests/designAudit.test.ts`, `scripts/design-audit.mjs`, the two package 
 - **RED evidence:** focused organizer shell tests were added/updated first for payout save/reload, late OPEN assignment/reload, manual enable/save/auto return, milestone correction expected revision/reason, and read-only Final Record.
 - **GREEN evidence:** focused server-backed organizer contracts passed **35/35**; full unit suite passed **389/389**; env-enabled owner-shell Playwright passed **2/2**; build passed; audit remained at baseline. Phone overflow required shell-level inline-size/paint containment around the intentionally scrollable 640px board; browser verification confirms `document` overflow and `window.scrollX` are zero while `boardScrollWidth > boardClientWidth` remains true. Final review removed the stale optimistic board write after authoritative OPEN-square reload so server state always wins.
 - **Rollback:** remove the three service files, restore the previous Slice 10 shell component stubs, restore `AdminPanel` inline service calls if desired, and revert the organizer shell test changes.
+
+## 2026-08-22 — Slice 11 privacy-minimal instrumentation schema/client
+
+- **Status:** Complete and verified in the approved schema/client/test surface.
+- **Files touched:**
+  - `features/instrumentation/eventSchema.ts`
+  - `features/instrumentation/clientEvents.ts`
+  - `tests/instrumentationSchema.test.ts`
+  - `docs/REFACTOR_LOG.md`
+- **Behavior boundary:** no events endpoint, storage, external analytics, Terms/Privacy, UI wiring, package/schema/env/deploy/git, or commit changes. Client delivery is dependency-injected only.
+- **RED evidence:** `tests/instrumentationSchema.test.ts` was written first. Write-time TypeScript diagnostics failed on missing imports for `../features/instrumentation/eventSchema` and `../features/instrumentation/clientEvents`.
+- **GREEN implementation:** schema permits only the 13 approved coarse event names; rejects unknown events, prohibited fields, unknown fields, missing required fields, and invalid/free-form values; first-ten-board baseline config is targetless, user-data-free, and gated by explicit outreach/analytics approval; client recorder validates before delivery, uses injected async delivery, bounded timeout, deterministic result statuses, and swallows delivery failures.
+- **Review hardening:** delivery receives a frozen explicit own-key clone plus `AbortSignal`; timeout aborts the delivery contract, clears its timer, and deterministic tests prove late delivery cannot mutate/send after timeout when the injected transport honors cancellation. Validation uses `Reflect.ownKeys`, rejects symbol/unknown/prohibited keys, requires `name` and every required field as own properties, and reconstructs only validated fields before delivery.
+- **GREEN evidence:** focused instrumentation tests passed **7/7**; full unit suite passed **65 files / 396 tests**; production build passed; design audit remained at the exact 75-finding baseline.
+- **Rollback:** remove the two instrumentation files, the instrumentation test file, and this log entry. No domain state is affected.
