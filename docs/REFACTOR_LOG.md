@@ -332,5 +332,14 @@ Remove `tests/designAudit.test.ts`, `scripts/design-audit.mjs`, the two package 
 - **Browser gates:** default-off/accessibility Chromium **21 passed / 6 explicitly owned skips**; `viewer_v2` **2/2**; `organizer_v2` **2/2**; homepage query denial **1/1**; homepage desktop/phone Chromium plus WebKit **15/15**. Numeric and rendered QA confirmed zero page overflow at required phone/desktop states and intentional local board scrolling only.
 - **Independent correction:** final review found winner-email disclosure before personalized scenarios. A RED document-order regression reproduced the defect; `WinnerEmailDisclosure` now follows `ScenarioDisclosure`. Focused viewer tests **7/7**, full unit **402/402**, build, and viewer Playwright **2/2** passed after correction.
 - **Integration gate:** after OrbStack/Docker was started, `npm run test:integration` passed **9/9 suites** with **56 passed / 1 intentional skip** across 57 PostgreSQL integration tests.
-- **Known limits:** v2 flags remain default-off; no deploy, real-user rollout/contact, production analytics storage, production config/data change, or manual assistive-technology certification occurred. Existing accessibility fixmes and 75 baseline design findings remain documented debt.
+- **Known limits:** code-level v2 defaults remain off, while the approved production build enables all three through explicit configuration; no production analytics storage or manual assistive-technology certification occurred. Existing accessibility fixmes and 75 baseline design findings remain documented debt.
 - **Rollback:** disable the relevant v2 flag; legacy FilmLanding, GameDayHorizon, and AdminPanel paths remain available.
+
+## 2026-08-23 — Staged production v2 rollout
+
+- **Approval:** Anthony approved sequential rollout through all three v2 surfaces after the default-off production smoke passed.
+- **Stage 1:** `homepage_v2` on, viewer/organizer off — deployment `2b99107b`; production DOM confirmed A1 identity/actions and zero phone page overflow while the viewer stayed legacy.
+- **Stage 2:** homepage + `viewer_v2` on, organizer off — deployment `4d94ac3c`; deployment URL and custom-domain extraction confirmed the C1 score/Find My Squares/scenario/exact-grid hierarchy. Headless custom-domain DOM automation was blocked by Cloudflare challenge/background timing, so it was not treated as a passing browser assertion.
+- **Stage 3:** all three v2 surfaces on — deployment `3eecf9ca`; Cloudflare marked it Production on `main` at commit `456f8ba`. Deployment/custom-domain A1 and C1 content matched; `/create` preserved signed-out authentication safety. Authenticated organizer production testing remains Anthony's real-account smoke check.
+- **Durability:** tracked non-secret `.env.production` now sets the three public Vite rollout flags to `true`; `.env.example` keeps safe `false` examples. An ordinary `npm run build` reproduced the exact stage-3 main asset `index-BBI6uMDR.js`, preventing future Git builds from silently reverting the approved rollout.
+- **Rollback:** set one or more values in `.env.production` to `false`, rebuild, and deploy; legacy components remain in the codebase.
