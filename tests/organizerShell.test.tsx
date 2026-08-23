@@ -1,17 +1,17 @@
 import React from 'react';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import OrganizerShell from '../features/organizer/shell/OrganizerShell';
+import OrganizerShell from '../src/features/organizer/shell/OrganizerShell';
 import type { BoardData, GameState, WinnerResolution } from '../types';
-import { enableManualScoringOnServer, returnAutomaticScoringOnServer, saveManualScoreToServer } from '../features/organizer/services/game-day/manualScoreService';
-import { publishMilestoneCorrectionToServer } from '../features/organizer/services/corrections/milestoneCorrectionService';
+import { enableManualScoringOnServer, returnAutomaticScoringOnServer, saveManualScoreToServer } from '../src/features/organizer/services/game-day/manualScoreService';
+import { publishMilestoneCorrectionToServer } from '../src/features/organizer/services/corrections/milestoneCorrectionService';
 
-vi.mock('../features/organizer/services/game-day/manualScoreService', () => ({
+vi.mock('../src/features/organizer/services/game-day/manualScoreService', () => ({
   enableManualScoringOnServer: vi.fn(async () => ({})),
   saveManualScoreToServer: vi.fn(async () => ({ score: { leftScore: 3, topScore: 7, quarterScores: { Q1: { left: 3, top: 7 }, Q2: { left: 0, top: 0 }, Q3: { left: 0, top: 0 }, Q4: { left: 0, top: 0 }, OT: { left: 0, top: 0 } }, clock: '0:00', period: 1, state: 'in', detail: 'Manual', isOvertime: false } })),
   returnAutomaticScoringOnServer: vi.fn(async () => ({})),
 }));
-vi.mock('../features/organizer/services/corrections/milestoneCorrectionService', () => ({
+vi.mock('../src/features/organizer/services/corrections/milestoneCorrectionService', () => ({
   publishMilestoneCorrectionToServer: vi.fn(async (_poolId, draft) => ({ winnerHistory: [{ milestone: draft.milestone, sideScore: draft.sideScore, topScore: draft.topScore, sideDigit: draft.sideScore % 10, topDigit: draft.topScore % 10, participantName: 'Ava', resolvedAt: '2026-09-13T20:00:00.000Z', resolutionVersion: draft.expectedVersion + 1, corrected: true, correctionReason: draft.reason }] })),
 }));
 

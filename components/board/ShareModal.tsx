@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 // @ts-ignore
 import { QRCodeSVG } from 'qrcode.react';
-import { ActionButton } from '../primitives/ActionButton';
-import { Dialog } from '../primitives/Dialog';
+import { ActionButton } from '../../src/components/primitives/ActionButton';
+import { Dialog } from '../../src/components/primitives/Dialog';
 
 interface ShareModalProps {
     shareUrl: string;

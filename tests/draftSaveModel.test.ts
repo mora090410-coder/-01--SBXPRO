@@ -8,7 +8,7 @@ import {
   resolveDraftConflict,
   startDraftSave,
   type DraftSaveState,
-} from '../features/organizer/draft/draftSaveModel';
+} from '../src/features/organizer/draft/draftSaveModel';
 
 const clean = (revision = 1): DraftSaveState => ({ status: 'clean', revision });
 

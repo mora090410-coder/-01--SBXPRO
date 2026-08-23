@@ -13,8 +13,8 @@ import { SAMPLE_BOARD } from '../constants';
 
 import AdminPanel from './AdminPanel';
 import GameDayHorizon from './GameDayHorizon';
-import ViewerShell from '../features/viewer/shell/ViewerShell';
-import OrganizerShell from '../features/organizer/shell/OrganizerShell';
+import ViewerShell from '../src/features/viewer/shell/ViewerShell';
+import OrganizerShell from '../src/features/organizer/shell/OrganizerShell';
 import ErrorBoundary from './ErrorBoundary';
 import FullScreenLoading from './loading/FullScreenLoading';
 import SyntheticScoreTestBanner from './SyntheticScoreTestBanner';

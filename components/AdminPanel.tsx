@@ -20,7 +20,7 @@ import { createCheckoutSession } from '../services/stripe';
 import { renderBoardPng, shareBoardPng, boardImageFilename } from '../utils/boardImage';
 import { useDialogFocus } from '../hooks/useDialogFocus';
 import { OrganizerDestination } from '../utils/organizerFlow';
-import { ManualScoringPanel } from '../features/organizer/game-day/ManualScoringPanel';
+import { ManualScoringPanel } from '../src/features/organizer/game-day/ManualScoringPanel';
 import {
   EMPTY_MANUAL_SCORES,
   manualPeriodForState,
@@ -28,17 +28,17 @@ import {
   type ManualGameState,
   type ManualQuarterKey,
   type ManualScoreSide,
-} from '../features/organizer/game-day/manualScoringModel';
+} from '../src/features/organizer/game-day/manualScoringModel';
 import {
   enableManualScoringOnServer,
   returnAutomaticScoringOnServer,
   saveManualScoreToServer,
-} from '../features/organizer/services/game-day/manualScoreService';
-import { publishedOpenSquaresAreAssignable } from '../features/organizer/services/game-day/publishedOpenSquares';
-import { publishMilestoneCorrectionToServer } from '../features/organizer/services/corrections/milestoneCorrectionService';
+} from '../src/features/organizer/services/game-day/manualScoreService';
+import { publishedOpenSquaresAreAssignable } from '../src/features/organizer/services/game-day/publishedOpenSquares';
+import { publishMilestoneCorrectionToServer } from '../src/features/organizer/services/corrections/milestoneCorrectionService';
 
-export { manualPeriodForState, seedManualScoreFromSnapshot } from '../features/organizer/game-day/manualScoringModel';
-export { publishedOpenSquaresAreAssignable } from '../features/organizer/services/game-day/publishedOpenSquares';
+export { manualPeriodForState, seedManualScoreFromSnapshot } from '../src/features/organizer/game-day/manualScoringModel';
+export { publishedOpenSquaresAreAssignable } from '../src/features/organizer/services/game-day/publishedOpenSquares';
 
 export const secureShuffleDigits = () => {
   const digits = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];

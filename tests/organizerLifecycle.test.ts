@@ -5,7 +5,7 @@ import {
   evaluateOrganizerLifecycle,
   transitionOrganizerLifecycle,
   type OrganizerLifecyclePhase,
-} from '../features/organizer/lifecycle/organizerLifecycle';
+} from '../src/features/organizer/lifecycle/organizerLifecycle';
 
 const phases: OrganizerLifecyclePhase[] = [
   'Create Draft',

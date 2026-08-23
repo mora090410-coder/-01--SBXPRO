@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { resolveViewerIdentity, restoreViewerIdentitySelection, serializeViewerIdentitySelection } from '../features/viewer/identity/viewerIdentityModel';
+import { resolveViewerIdentity, restoreViewerIdentitySelection, serializeViewerIdentitySelection } from '../src/features/viewer/identity/viewerIdentityModel';
 import type { BoardData } from '../types';
 
 const board = (participants: BoardData['participants']): BoardData => ({

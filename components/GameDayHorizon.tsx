@@ -7,9 +7,9 @@ import {
   WinnerHighlights,
   WinnerResolution,
 } from '../types';
-import { buildResolvedMilestoneRows } from '../features/viewer/milestones/milestoneViewModel';
-import { buildScenarioModel, playersForDigits } from '../features/viewer/scenarios/scenarioModel';
-import { buildViewerScoreModel } from '../features/viewer/score/viewerScoreModel';
+import { buildResolvedMilestoneRows } from '../src/features/viewer/milestones/milestoneViewModel';
+import { buildScenarioModel, playersForDigits } from '../src/features/viewer/scenarios/scenarioModel';
+import { buildViewerScoreModel } from '../src/features/viewer/score/viewerScoreModel';
 import BoardGrid from './BoardGrid';
 import NotificationOptIn from './NotificationOptIn';
 

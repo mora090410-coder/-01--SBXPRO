@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildViewerScoreModel } from '../features/viewer/score/viewerScoreModel';
+import { buildViewerScoreModel } from '../src/features/viewer/score/viewerScoreModel';
 import type { LiveGameData } from '../types';
 
 const live = (overrides: Partial<LiveGameData> = {}): LiveGameData => ({

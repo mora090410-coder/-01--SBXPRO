@@ -1,7 +1,7 @@
 import React from 'react';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import ViewerShell from '../features/viewer/shell/ViewerShell';
+import ViewerShell from '../src/features/viewer/shell/ViewerShell';
 import type { BoardData, GameState, LiveGameData, WinnerResolution } from '../types';
 
 const board: BoardData = {

@@ -315,3 +315,12 @@ Remove `tests/designAudit.test.ts`, `scripts/design-audit.mjs`, the two package 
 - **Review hardening:** `/demo` CTA validity, exact 390×844 and 1280×720 first-viewport geometry, organizer/viewer proof overflow on phone and desktop, static SEO, and no-JavaScript product truth/actions are browser-tested. The global splash loader/dead teardown were removed from the critical path and replaced with a crawlable `<noscript>` product fallback. `HomepageV2` is lazy-isolated into its own 10.62 kB build chunk with a product-truth fallback instead of a loader; viewer proof loads only after its switch.
 - **GREEN evidence:** homepage/pricing/static suites passed **15/15**; full unit suite passed **66 files / 402 tests**; non-env query-denial Playwright passed **1/1**; env-enabled desktop/phone homepage Playwright passed **10/10**; production build passed. Initial audit found 16 framework-white/arbitrary-radius violations in the new homepage; all were replaced with governed `broadcast-white` and surface-radius tokens, returning the audit to the exact 75-finding baseline.
 - **Rollback:** remove the two homepage feature files and two new test files, restore `App.tsx`, `index.html`, `index.tsx`, and `tests/pricingCopyConsistency.test.ts`, and remove this log entry. No domain state is affected.
+
+## 2026-08-22 — Slice 13 mechanical source migration
+
+- **Status:** Complete and verified as a behavior-free path/import migration.
+- **Moves:** `features/` → `src/features/`; `components/primitives/` → `src/components/primitives/` using `git mv`. No route file, API, schema, package, environment, or product behavior changed.
+- **Import codemod:** deterministic resolver processed **231** TypeScript/TSX files and rewrote **109** relative imports from resolved old targets to resolved new targets. Four non-import path literals (`vi.mock` and pricing file reads) were corrected after full tests exposed them.
+- **Protected files:** existing untracked `.impeccable/`, gap-remediation plan, and marketing documents were not touched or moved.
+- **Verification:** TypeScript/Vite production build passed immediately after the move; full unit suite passed **66 files / 402 tests** after correcting the four test-only literals; design audit remained at the exact 75-finding baseline. Old active source directories and runtime/test import references under `features/` and `components/primitives/` are absent; historical planning/log mentions remain intentionally unchanged.
+- **Rollback:** revert this single mechanical move commit. No domain state is affected.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildBoardGridModel } from '../features/viewer/board/boardGridModel';
+import { buildBoardGridModel } from '../src/features/viewer/board/boardGridModel';
 import type { BoardData, GameState, LiveGameData, WinnerResolution } from '../types';
 
 const game: Pick<GameState, 'leftName' | 'leftAbbr' | 'topName' | 'topAbbr'> = {

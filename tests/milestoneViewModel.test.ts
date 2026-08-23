@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildResolvedMilestoneRows } from '../features/viewer/milestones/milestoneViewModel';
+import { buildResolvedMilestoneRows } from '../src/features/viewer/milestones/milestoneViewModel';
 import type { WinnerResolution } from '../types';
 
 const resolution = (overrides: Partial<WinnerResolution>): WinnerResolution => ({

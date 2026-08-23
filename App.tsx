@@ -29,7 +29,7 @@ const BoosterClubFootballSquares = React.lazy(() => import('./pages/BoosterClubF
 const ChurchSchoolFundraiserSquares = React.lazy(() => import('./pages/ChurchSchoolFundraiserSquares').then((module) => ({ default: module.ChurchSchoolFundraiserSquares })));
 const NFLOpeningWeekSquares = React.lazy(() => import('./pages/NFLOpeningWeekSquares').then((module) => ({ default: module.NFLOpeningWeekSquares })));
 const FootballSquaresApp = React.lazy(() => import('./pages/FootballSquaresApp').then((module) => ({ default: module.FootballSquaresApp })));
-const HomepageV2 = React.lazy(() => import('./features/homepage/HomepageV2'));
+const HomepageV2 = React.lazy(() => import('./src/features/homepage/HomepageV2'));
 
 const HomepageProductFallback = () => (
   <main className="min-h-[100dvh] bg-ink px-4 py-8 text-broadcast-white">

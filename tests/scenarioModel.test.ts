@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildScenarioModel } from '../features/viewer/scenarios/scenarioModel';
+import { buildScenarioModel } from '../src/features/viewer/scenarios/scenarioModel';
 import type { BoardData, GameState, LiveGameData } from '../types';
 
 const board = (): BoardData => {

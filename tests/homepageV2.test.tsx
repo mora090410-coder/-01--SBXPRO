@@ -3,7 +3,7 @@ import { fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import App from '../App';
-import HomepageV2 from '../features/homepage/HomepageV2';
+import HomepageV2 from '../src/features/homepage/HomepageV2';
 
 vi.mock('../context/AuthContext', () => ({
   AuthProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,

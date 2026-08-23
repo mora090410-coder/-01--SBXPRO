@@ -4,8 +4,8 @@ import { describe, expect, it } from 'vitest';
 
 const currentPricingCopyFiles = [
   'components/FilmLanding.tsx',
-  'features/homepage/HomepageV2.tsx',
-  'features/homepage/HomepageProofArtifact.tsx',
+  'src/features/homepage/HomepageV2.tsx',
+  'src/features/homepage/HomepageProofArtifact.tsx',
   'pages/Terms.tsx',
   'pages/HowToRunSquares.tsx',
   'pages/RunYourPoolAlternative.tsx',

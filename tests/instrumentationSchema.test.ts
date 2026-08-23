@@ -4,8 +4,8 @@ import {
   GRIDONE_INSTRUMENTATION_EVENT_NAMES,
   validateInstrumentationEvent,
   type GridOneInstrumentationEvent,
-} from '../features/instrumentation/eventSchema';
-import { createClientEventRecorder } from '../features/instrumentation/clientEvents';
+} from '../src/features/instrumentation/eventSchema';
+import { createClientEventRecorder } from '../src/features/instrumentation/clientEvents';
 
 describe('GridOne Slice 11 privacy-minimal instrumentation schema', () => {
   it('permits only the approved coarse event names', () => {

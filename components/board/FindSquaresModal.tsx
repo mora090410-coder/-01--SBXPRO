@@ -1,9 +1,9 @@
 import React, { useMemo, useState } from 'react';
 import { BoardData } from '../../types';
 import { distinctAssignedNames, matchPlayerNames } from '../../utils/playerNameMatching';
-import { ActionButton } from '../primitives/ActionButton';
-import { Dialog } from '../primitives/Dialog';
-import { Field } from '../primitives/Field';
+import { ActionButton } from '../../src/components/primitives/ActionButton';
+import { Dialog } from '../../src/components/primitives/Dialog';
+import { Field } from '../../src/components/primitives/Field';
 
 interface FindSquaresModalProps {
     board: BoardData;

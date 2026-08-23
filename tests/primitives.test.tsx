@@ -1,9 +1,9 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { createRef } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { ActionButton } from '../components/primitives/ActionButton';
-import { Dialog } from '../components/primitives/Dialog';
-import { Field } from '../components/primitives/Field';
+import { ActionButton } from '../src/components/primitives/ActionButton';
+import { Dialog } from '../src/components/primitives/Dialog';
+import { Field } from '../src/components/primitives/Field';
 
 describe('ActionButton', () => {
   it('renders a semantic 44px-capable button with forwarded ref and default button type', () => {

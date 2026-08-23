@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Field } from './primitives/Field';
+import { Field } from '../src/components/primitives/Field';
 
 interface NotificationOptInProps {
   shareCode?: string | null;
