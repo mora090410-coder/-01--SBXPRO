@@ -236,10 +236,10 @@ export default function OrganizerShell({
       onApply(nextGame, draftBoard);
       await onReload?.();
       setPayoutSaveStatus('saved');
-      setActionMessage('Payout descriptions saved. Published viewers will see them on reload.');
+      setActionMessage('Prize notes saved. Families will see them after they refresh the board.');
     } catch (error: any) {
       setPayoutSaveStatus('error');
-      setActionError(error.message || 'Payout descriptions could not be saved.');
+      setActionError(error.message || 'Prize notes could not be saved.');
     }
   };
 
@@ -279,7 +279,7 @@ export default function OrganizerShell({
       });
       await onReload?.();
       setScoreSaveStatus('idle');
-      setActionMessage('Manual scoring authority is on. Enter and publish the organizer score.');
+      setActionMessage('Manual scoring is on. Enter the score, then publish it.');
     } catch (error: any) {
       setScoreSaveStatus('error');
       setActionError(error.message || 'Manual scoring could not be enabled.');
@@ -295,7 +295,7 @@ export default function OrganizerShell({
       setLocalGame((current) => ({ ...current, useManualScores: true, scoreSnapshot: result.score }));
       await onReload?.();
       setScoreSaveStatus('saved');
-      setActionMessage('Manual score is live. Completed-quarter winners were resolved once.');
+      setActionMessage('Manual score is live. Winners for completed quarters were updated once.');
     } catch (error: any) {
       setScoreSaveStatus('error');
       setActionError(error.message || 'Unable to save the score.');
@@ -343,7 +343,7 @@ export default function OrganizerShell({
       setCorrectionDraft(null);
       await onReload?.();
       setScoreSaveStatus('saved');
-      setActionMessage('Correction published. Public audit history updated.');
+      setActionMessage('Correction published. Everyone can now see the updated history.');
     } catch (error: any) {
       setScoreSaveStatus('error');
       setActionError(error.message || 'The correction could not be published.');

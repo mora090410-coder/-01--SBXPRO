@@ -38,7 +38,7 @@ export const ManualScoringPanel = ({
         <p className="oa-slab mb-2 text-cardinal">Ready when the board goes live</p>
         <h5 className="oa-headline !text-2xl">Every published board gets the full game-day experience.</h5>
         <p className="oa-body mt-3 text-sm text-ink/70">
-          Keep building and previewing for free. After you publish, scores, scenarios, winner emails, the QR code, and the viewer link all work together.
+          Keep building and previewing for free. After you publish, the score, winner emails, QR code, and public board link are ready for game day.
         </p>
       </div>
     );
@@ -74,7 +74,7 @@ export const ManualScoringPanel = ({
 
       {!game.useManualScores ? (
         <p className="text-xs text-ink/50 leading-relaxed">
-          Automatic score checks are a beta convenience and always show their source and freshness. Switch to Manual whenever you want the organizer to be authoritative.
+          Automatic score checks show their source and freshness. Switch to Manual any time you want your entered score to be the official board score.
         </p>
       ) : (
         <div className="space-y-4">
@@ -155,7 +155,7 @@ export const ManualScoringPanel = ({
             </div>
           </div>
           <p className="text-[11px] text-ink/50 leading-relaxed">
-            Enter each quarter's points (not running totals). Publishing a settled period confirms its result and queues verified winner notifications.
+            Enter each quarter's points, not running totals. Publishing a completed period confirms its result and prepares winner emails.
           </p>
           <button
             type="button"

@@ -71,7 +71,7 @@ const YourSquaresSummary: React.FC<YourSquaresSummaryProps> = ({ board, game, li
               )}
             </div>
             <p className="oa-body mt-2 text-sm text-broadcast-white/70">
-              {row.matchesCurrent ? 'Current result row.' : row.nextLabels.length ? `Next score: ${row.nextLabels[0]}` : 'Next score: none of the standard outcomes match this square.'}
+              {row.matchesCurrent ? 'This square matches the current result.' : row.nextLabels.length ? `Next score: ${row.nextLabels[0]}` : 'None of the next scores listed here match this square.'}
             </p>
           </li>
         ))}

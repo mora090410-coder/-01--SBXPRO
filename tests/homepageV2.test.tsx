@@ -46,17 +46,17 @@ describe('HomepageV2 Slice12 A1', () => {
     expect(hero).not.toHaveTextContent(/loader|scroll|bet|wager|odds|testimonial|customer|raised \$/i);
   });
 
-  it('shows clearly synthetic B2 organizer proof by default and switches to accepted C1 viewer hierarchy in place', async () => {
+  it('shows a clearly labeled organizer demo and switches to the game-day view in place', async () => {
     renderHomepage();
 
     const proof = screen.getByTestId('homepage-proof-artifact');
-    expect(within(proof).getByText('Demonstration board — synthetic data')).toBeVisible();
-    expect(within(proof).getByRole('heading', { name: /Organizer proof/i })).toBeVisible();
-    expect(within(proof).getByText(/Fill → Reconcile → Draw → Preview → Go Live/i)).toBeVisible();
+    expect(within(proof).getByText('Demo board — sample names and scores')).toBeVisible();
+    expect(within(proof).getByRole('heading', { name: /Set up the board/i })).toBeVisible();
+    expect(within(proof).getByText(/Add names → Check OPEN squares → Draw numbers → Preview → Publish/i)).toBeVisible();
 
-    fireEvent.click(within(proof).getByRole('button', { name: 'Viewer proof' }));
+    fireEvent.click(within(proof).getByRole('button', { name: 'Game day view' }));
 
-    expect(within(proof).getByRole('heading', { name: /Viewer proof/i })).toBeVisible();
+    expect(within(proof).getByRole('heading', { name: /Follow on game day/i })).toBeVisible();
     expect(await within(proof).findByRole('button', { name: 'Find my squares' })).toBeVisible();
     expect(within(proof).getByText(/Your squares · Taylor M\. · 3/i)).toBeVisible();
     expect(within(proof).getByText(/What makes Taylor M\. win next\?/i)).toBeVisible();
@@ -64,7 +64,7 @@ describe('HomepageV2 Slice12 A1', () => {
     expect(within(proof).queryByText(/synthetic total|customers|funds collected/i)).toBeNull();
   });
 
-  it('uses canonical 2026 pricing and optional story disclosure without critical-path effects', () => {
+  it('uses exact 2026 pricing and keeps the game-day explanation collapsed', () => {
     renderHomepage();
 
     expect(screen.getByText('Free')).toBeVisible();
@@ -73,7 +73,7 @@ describe('HomepageV2 Slice12 A1', () => {
     expect(screen.getByText('$9.99 once for up to 5 published boards in the 2026 season')).toBeVisible();
     expect(screen.getByText('Organization')).toBeVisible();
     expect(screen.getByText('$79 per season for up to 50 published boards')).toBeVisible();
-    expect(screen.getByText(/Optional brand story/i).closest('details')).not.toHaveAttribute('open');
+    expect(screen.getByText(/What changes on game day/i).closest('details')).not.toHaveAttribute('open');
   });
 
   it('keeps all interactive controls at least 44px tall', () => {

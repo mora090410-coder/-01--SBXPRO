@@ -124,7 +124,7 @@ const ViewerBoardGrid: React.FC<ViewerBoardGridProps> = ({
         <button type="button" className="oa-slab border border-ink px-3 text-ink" style={controlStyle} onClick={() => setZoom((value) => Math.min(1.5, value + 0.1))}>Zoom in</button>
         <button type="button" className="oa-slab border border-ink px-3 text-ink" style={controlStyle} onClick={fitGrid}>Fit board</button>
         <button type="button" className="oa-slab border border-ink px-3 text-ink" style={controlStyle} onClick={onFindSquares}>Find</button>
-        <button type="button" className="oa-slab border border-ink px-3 text-ink" style={controlStyle} onClick={() => centerState('selected')}>Center selected</button>
+        <button type="button" className="oa-slab border border-ink px-3 text-ink" style={controlStyle} onClick={() => centerState('selected')}>Center selected square</button>
         <output className="oa-data flex min-h-11 min-w-11 items-center justify-center border border-ink px-2 text-ink" aria-label="Current zoom">{Math.round(zoom * 100)}%</output>
         <span className="oa-data text-xs text-ink/60" aria-live="polite">{currentLabel}</span>
       </div>

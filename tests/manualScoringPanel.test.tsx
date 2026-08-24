@@ -41,7 +41,7 @@ describe('ManualScoringPanel', () => {
       />,
     );
 
-    expect(screen.getByText('Automatic score checks are a beta convenience and always show their source and freshness. Switch to Manual whenever you want the organizer to be authoritative.')).toBeVisible();
+    expect(screen.getByText('Automatic score checks show their source and freshness. Switch to Manual any time you want your entered score to be the official board score.')).toBeVisible();
     fireEvent.click(screen.getByRole('button', { name: 'Manual' }));
     expect(onEnableManualScoring).toHaveBeenCalledOnce();
   });
@@ -74,7 +74,7 @@ describe('ManualScoringPanel', () => {
     expect(screen.getByText('Live Scoring')).toBeVisible();
     expect(screen.getByLabelText('Game Status')).toHaveValue('in');
     expect(screen.getByLabelText('Current Period')).toHaveValue('2');
-    expect(screen.getByText("Enter each quarter's points (not running totals). Publishing a settled period confirms its result and queues verified winner notifications.")).toBeVisible();
+    expect(screen.getByText("Enter each quarter's points, not running totals. Publishing a completed period confirms its result and prepares winner emails.")).toBeVisible();
     expect(screen.getByText('29')).toBeVisible();
     expect(screen.getByText('13')).toBeVisible();
 

@@ -26,9 +26,9 @@ export default function AssignmentWorkspace({
 }) {
   const assignDisabled = !published || !canAssignOpenSquares || selectedOpenSquare === null || !assignmentLabel.trim() || pending;
   return (
-    <section role="region" aria-label="Assignment workspace" className="grid min-w-0 max-w-full gap-4">
+    <section role="region" aria-label="Fill the board" className="grid min-w-0 max-w-full gap-4">
       <h2 className="text-2xl font-semibold">Fill the board</h2>
-      <p className="text-ink/70">Dominant artifact: assignment board for {game.title || 'this board'}.</p>
+      <p className="text-ink/70">Add the names you sold squares to for {game.title || 'this board'}.</p>
       {published && (
         <div className="grid gap-2 border border-newsprint p-3">
           <h3 className="text-lg font-semibold">Late OPEN-square assignment</h3>

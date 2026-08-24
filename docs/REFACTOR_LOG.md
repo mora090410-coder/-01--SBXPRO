@@ -343,3 +343,12 @@ Remove `tests/designAudit.test.ts`, `scripts/design-audit.mjs`, the two package 
 - **Stage 3:** all three v2 surfaces on — deployment `3eecf9ca`; Cloudflare marked it Production on `main` at commit `456f8ba`. Deployment/custom-domain A1 and C1 content matched; `/create` preserved signed-out authentication safety. Authenticated organizer production testing remains Anthony's real-account smoke check.
 - **Durability:** tracked non-secret `.env.production` now sets the three public Vite rollout flags to `true`; `.env.example` keeps safe `false` examples. An ordinary `npm run build` reproduced the exact stage-3 main asset `index-BBI6uMDR.js`, preventing future Git builds from silently reverting the approved rollout.
 - **Rollback:** set one or more values in `.env.production` to `false`, rebuild, and deploy; legacy components remain in the codebase.
+
+## 2026-08-23 — Production copy cleanup
+
+- **Reason:** Anthony found implementation language exposed on the live homepage, including `Optional brand story` and copy about animation runtime/choreography. Roman completed a read-only production-copy audit; Anton reconciled it against product trust contracts.
+- **Scope:** rewrote user-visible and screen-reader copy across the A1 homepage/demo, C1 viewer scenarios/email/grid controls, and B2 organizer fill/draw/preview/status/reconcile/game-day/scoring/correction surfaces. Internal labels such as `B2`, `C1`, `proof`, `artifact`, `workspace`, `canonical`, raw blocker enums, revision metadata, and payout-oriented field labels no longer appear to customers.
+- **Preserved truth:** exact 2026 pricing, no-money custody/collection/payment boundary, demo/sample disclosure, score source/freshness, OPEN-square semantics, correction visibility, and notification gating remain unchanged.
+- **RED:** new `tests/productionCopy.test.ts` failed on the exposed implementation phrases before source edits.
+- **GREEN:** production-copy/component suites passed **39/39**; full unit passed **67 files / 404 tests**; PostgreSQL integration passed **9 suites / 56 passed / 1 skip**; homepage query denial **1/1**, homepage Chromium/phone/WebKit **15/15**, viewer **2/2**, organizer **2/2**; build and design lint passed; design audit remained at the documented 75-finding baseline.
+- **Rollback:** revert this copy-only commit. No schema, API, pricing, permission, payment, score-authority, or data behavior changed.

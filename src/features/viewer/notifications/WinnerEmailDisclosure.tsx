@@ -15,7 +15,7 @@ const WinnerEmailDisclosure: React.FC<WinnerEmailDisclosureProps> = ({ shareCode
     <section className="border-t border-broadcast-white/20 py-5" aria-labelledby="winner-email-title">
       <details open>
         <summary id="winner-email-title" className="oa-slab min-h-11 cursor-pointer text-broadcast-white" style={{ minHeight: 44 }}>
-          Winner email disclosure
+          Get winner emails
         </summary>
         <div className="mt-3" role="form" aria-label="winner email">
           <NotificationOptIn shareCode={shareCode} participantId={participantId} displayName={displayName} />

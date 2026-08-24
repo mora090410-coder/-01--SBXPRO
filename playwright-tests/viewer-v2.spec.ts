@@ -79,7 +79,7 @@ test.describe('viewer_v2 shell', () => {
     await expect(grid).toBeVisible();
     await expect(grid.getByText('Top team')).toBeVisible();
     await expect(grid.getByText('Side team')).toBeVisible();
-    for (const name of [/Zoom out/i, /Center current result/i, /Zoom in/i, /Fit board/i, /Find/i, /Center selected/i]) {
+    for (const name of [/Zoom out/i, /Center current result/i, /Zoom in/i, /Fit board/i, /Find/i, /Center selected square/i]) {
       const box = await boardInstrument.getByRole('button', { name, exact: true }).boundingBox();
       expect(box?.height).toBeGreaterThanOrEqual(44);
       expect(box?.width).toBeGreaterThanOrEqual(44);

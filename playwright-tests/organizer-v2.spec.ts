@@ -90,8 +90,8 @@ test.describe('organizer_v2 Slice 10 shell', () => {
     await page.goto(`/boards/${boardId}`);
     const shell = page.locator('[data-feature-flag="organizer_v2"]');
     await expect(shell).toBeVisible();
-    await expect(page.getByRole('banner', { name: /organizer task header/i })).toBeVisible();
-    await expect(page.getByRole('button', { name: /Preview draw/i })).toBeVisible();
+    await expect(page.getByRole('banner', { name: /board summary/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Preview number draw/i })).toBeVisible();
     const overflow = await page.evaluate(() => {
       const width = document.documentElement.clientWidth;
       const offenders = Array.from(document.body.querySelectorAll<HTMLElement>('*'))

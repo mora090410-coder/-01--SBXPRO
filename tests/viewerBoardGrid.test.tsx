@@ -111,7 +111,7 @@ describe('ViewerBoardGrid Slice 7', () => {
 
   it('renders zoom/find/center controls as 44px targets', () => {
     const { container } = renderGrid();
-    for (const name of [/Zoom out/i, /Center current result/i, /Zoom in/i, /Fit board/i, /Find/i, /Center selected/i]) {
+    for (const name of [/Zoom out/i, /Center current result/i, /Zoom in/i, /Fit board/i, /Find/i, /Center selected square/i]) {
       expect(screen.getByRole('button', { name })).toHaveStyle({ minHeight: '44px', minWidth: '44px' });
     }
     expect(screen.getByRole('status', { name: 'Current zoom' })).toHaveTextContent('100%');
@@ -123,7 +123,7 @@ describe('ViewerBoardGrid Slice 7', () => {
       scrollTo: { value: scrollTo, configurable: true },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Center current result' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Center selected' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Center selected square' }));
     expect(scrollTo).toHaveBeenCalledTimes(2);
   });
 

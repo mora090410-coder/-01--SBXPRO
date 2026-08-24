@@ -39,7 +39,7 @@ const ScenarioDisclosure: React.FC<ScenarioDisclosureProps> = ({ board, game, li
       onClick={() => onScenarioFocus({ left: scenario.left, top: scenario.top })}
     >
       <span className="oa-slab block">{scenario.team} {scenario.label} +{scenario.points}</span>
-      <span className="oa-body text-sm text-broadcast-white/70">digits {scenario.top}/{scenario.left} · {scenario.names.length ? scenario.names.join(', ') : 'Unassigned'}</span>
+      <span className="oa-body text-sm text-broadcast-white/70">digits {scenario.top}/{scenario.left} · {scenario.names.length ? scenario.names.join(', ') : 'OPEN'}</span>
     </button>
   );
 
@@ -48,15 +48,15 @@ const ScenarioDisclosure: React.FC<ScenarioDisclosureProps> = ({ board, game, li
       <h2 id="viewer-scenarios-title" className="oa-headline text-2xl text-broadcast-white">What score changes the next result?</h2>
       {model.status === 'last-known' && <p className="oa-body mt-2 text-sm text-gold">Using last-known score until scoring reconnects.</p>}
       {selectedPlayer && selected.length > 0 && (
-        <div className="mt-4 grid gap-2" aria-label="Matching next-score outcomes">
+        <div className="mt-4 grid gap-2" aria-label="Next scores that match your squares">
           {selected.map(renderButton)}
         </div>
       )}
       {selectedPlayer && selected.length === 0 && (
-        <p className="oa-body mt-3 text-broadcast-white/70">No standard next-score outcome currently matches the selected squares.</p>
+        <p className="oa-body mt-3 text-broadcast-white/70">None of the next scores listed here match your squares right now.</p>
       )}
       <details className="mt-4 border border-broadcast-white/20 p-3">
-        <summary className="oa-slab min-h-11 cursor-pointer text-broadcast-white" style={{ minHeight: 44 }}>All next-score outcomes</summary>
+        <summary className="oa-slab min-h-11 cursor-pointer text-broadcast-white" style={{ minHeight: 44 }}>All possible next scores</summary>
         <div className="mt-3 grid gap-2">{secondary.map(renderButton)}</div>
       </details>
       <p className="oa-body mt-3 text-xs text-broadcast-white/60">{model.disclaimer}</p>

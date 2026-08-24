@@ -98,9 +98,9 @@ describe('ViewerShell Slice 6 C1', () => {
 
   it('collapses unselected live outcomes and exposes all outcomes as secondary details', async () => {
     renderShell({ selectedPlayer: '' });
-    const disclosure = screen.getByText(/All next-score outcomes/i).closest('details');
+    const disclosure = screen.getByText(/All possible next scores/i).closest('details');
     expect(disclosure).not.toHaveAttribute('open');
-    fireEvent.click(screen.getByText(/All next-score outcomes/i));
+    fireEvent.click(screen.getByText(/All possible next scores/i));
     expect(disclosure).toHaveAttribute('open');
     expect(screen.getAllByText(/Safety \+2/)).toHaveLength(2);
   });
