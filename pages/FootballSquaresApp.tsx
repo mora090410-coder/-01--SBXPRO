@@ -51,10 +51,11 @@ export const FootballSquaresApp: React.FC = () => {
           </ul>
 
           <ArticleCTA
+            title="Build a fundraiser board"
             links={[
-              { to: '/articles/how-football-squares-work', label: 'How Football Squares Work', primary: true },
+              { to: '/create', label: 'Create your free board', primary: true },
+              { to: '/articles/how-football-squares-work', label: 'How Football Squares Work' },
               { to: '/articles/run-your-pool-alternative', label: 'RunYourPool Alternative' },
-              { to: '/create', label: 'Build your board' },
             ]}
           />
         </article>

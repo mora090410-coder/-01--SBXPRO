@@ -325,6 +325,15 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
             {/* Demo mode never loads a pool, so loadingPool stays true there */}
             {(demoMode || !loadingPool) && !isCommissionerMode && (
                 <div className="flex-1 flex flex-col relative z-50 w-full max-w-[1440px] mx-auto min-h-0">
+                    {demoMode && (
+                        <aside className="mx-4 mt-4 flex flex-wrap items-center justify-between gap-3 border border-gold bg-gold/10 p-3" aria-label="Demo board notice">
+                            <p><strong>Demo board — sample names and synthetic score.</strong> This is a sample board. Ready to run yours?</p>
+                            <div className="flex flex-wrap gap-2">
+                                <button type="button" className="oa-btn oa-btn-primary" onClick={() => navigate('/create')}>Create your free board</button>
+                                <button type="button" className="oa-btn" onClick={() => navigate('/')}>How GridOne works</button>
+                            </div>
+                        </aside>
+                    )}
                     <div className="flex-shrink-0 z-50 p-4 md:py-6">
                         <BoardHeader
                             game={game}

@@ -14,9 +14,10 @@ const RequireAuth: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
     if (!user) {
         const returnTo = `${location.pathname}${location.search}${location.hash}`;
+        const mode = location.pathname === '/create' ? 'mode=signup&' : '';
         return (
             <Navigate
-                to={`/login?returnTo=${encodeURIComponent(returnTo)}`}
+                to={`/login?${mode}returnTo=${encodeURIComponent(returnTo)}`}
                 state={{ from: location }}
                 replace
             />

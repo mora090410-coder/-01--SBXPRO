@@ -13,7 +13,11 @@ const NotFound: React.FC = () => (
     <p className="gdh-kicker">404 · Off the board</p>
     <h1>This link does not point to a page.</h1>
     <p>Check the address, ask the organizer for a fresh board link, or return to GridOne.</p>
-    <Link className="oa-btn oa-btn-primary" to="/">Return to GridOne</Link>
+    <div className="flex flex-wrap justify-center gap-3">
+      <Link className="oa-btn oa-btn-primary" to="/">Return to GridOne</Link>
+      <Link className="oa-btn" to="/create">Create a new board</Link>
+      <Link className="oa-btn" to="/demo">See the demo board</Link>
+    </div>
   </main>
 );
 

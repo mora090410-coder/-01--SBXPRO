@@ -22,7 +22,7 @@ describe('launch polling decision', () => {
     const comparison = source('pages/RunYourPoolAlternative.tsx');
 
     expect(horizon).toContain('Score updates about every minute');
-    expect(comparison).toContain('Updates about every minute on every device');
+    expect(comparison).toContain('Updates about every minute with source and freshness shown');
     expect(comparison).not.toContain('Updates instantly on every device');
     expect(comparison).not.toContain('The Real-Time Scenario Engine');
   });

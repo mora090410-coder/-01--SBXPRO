@@ -70,7 +70,7 @@ describe('customer flow regressions', () => {
             </MemoryRouter>,
         );
 
-        expect(screen.getByText('/login?returnTo=%2Fcreate%3FscoreTest%3D1')).toBeInTheDocument();
+        expect(screen.getByText('/login?mode=signup&returnTo=%2Fcreate%3FscoreTest%3D1')).toBeInTheDocument();
     });
 
     it('counts and highlights Ann without matching Anna', () => {

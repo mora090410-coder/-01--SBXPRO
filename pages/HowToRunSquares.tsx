@@ -32,7 +32,7 @@ export const HowToRunSquares: React.FC = () => {
                             { '@type': 'HowToStep', name: 'Build the board', text: 'Create your football squares board, upload a board photo if needed, and clean up names before sharing.' },
                             { '@type': 'HowToStep', name: 'Publish and share', text: 'Publish the board and send one live link to your friends, family, or coworkers.' },
                             { '@type': 'HowToStep', name: 'Draw the numbers', text: 'Randomize the numbers only after all squares are claimed.' },
-                            { '@type': 'HowToStep', name: 'Watch and win', text: 'Track winners by matching the last digit of each team score at the end of each quarter and final.' },
+                            { '@type': 'HowToStep', name: 'Follow results', text: 'Track results by matching the last digit of each team score at the end of each quarter and final.' },
                         ],
                     },
                 ]}
@@ -59,7 +59,7 @@ export const HowToRunSquares: React.FC = () => {
                         A Super Bowl squares board (often called a 'grid' or 'pool') is a 10x10 grid. It creates 100 individual squares. One team is assigned to the Columns (e.g., Kansas City), and the other team is assigned to the Rows (e.g., Philadelphia).
                     </p>
                     <p className="text-ink/80 leading-relaxed mb-6">
-                        The columns and rows are then assigned random numbers from 0 to 9. The goal? To own the square that intersects with the final digit of both teams' scores at the end of each quarter.
+                        The columns and rows are then assigned random numbers from 0 to 9. The matching square is the winner for that scoring milestone under the organizer's published rules.
                     </p>
 
                     <div className="my-12 rounded-surface bg-newsprint p-8 ring-1 ring-white/10">
@@ -78,7 +78,7 @@ export const HowToRunSquares: React.FC = () => {
                                 <div className="flex-none flex h-10 w-10 items-center justify-center rounded-control bg-cardinal font-bold text-broadcast-white">2</div>
                                 <div>
                                     <h4 className="text-lg font-semibold text-ink">Unlock and share</h4>
-                                    <p className="mt-2 text-sm text-ink/70">Once the board is ready, publish it and send the viewer link to your friends, family, or coworkers. Your first published board is free. Game Day is $9.99 for up to 5 boards this season, and Organization is $79 for up to 50.</p>
+                                    <p className="mt-2 text-sm text-ink/70">Once the board is ready, publish it and send the viewer link to your friends, family, or coworkers. Your first published board is free. Game Day is $9.99 once for up to 5 published boards in the 2026 season. Organization is $79 per season for up to 50 published boards.</p>
                                 </div>
                             </div>
 
@@ -86,7 +86,7 @@ export const HowToRunSquares: React.FC = () => {
                                 <div className="flex-none flex h-10 w-10 items-center justify-center rounded-control bg-cardinal font-bold text-broadcast-white">3</div>
                                 <div>
                                     <h4 className="text-lg font-semibold text-ink">Draw the numbers</h4>
-                                    <p className="mt-2 text-sm text-ink/70">This is crucial: <em>Wait until all squares are claimed before drawing numbers</em>. Draw numbers 0-9 randomly for the top rows, and 0-9 randomly for the side columns. Doing this online prevents cheating accusations.</p>
+                                    <p className="mt-2 text-sm text-ink/70">Wait until all squares are claimed before drawing numbers. Draw 0-9 randomly for the top and side. Doing this online keeps the draw clearer for everyone following the board.</p>
                                 </div>
                             </div>
 

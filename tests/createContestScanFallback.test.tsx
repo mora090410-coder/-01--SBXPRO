@@ -85,7 +85,7 @@ describe('CreateContest paper recovery fallback', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Image processed, but grid scan failed: The grid could not be read reliably.',
     );
-    const blankBoardButton = screen.getByRole('button', { name: 'Create blank 10×10 board' });
+    const blankBoardButton = screen.getByRole('button', { name: 'Start blank 10×10 board' });
     expect(blankBoardButton).toBeEnabled();
 
     fireEvent.click(blankBoardButton);

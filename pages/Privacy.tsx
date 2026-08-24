@@ -23,6 +23,7 @@ const Privacy: React.FC = () => {
 
         <h1 className="text-3xl font-semibold tracking-tight mb-2">Privacy Policy</h1>
         <p className="text-sm text-ink/50 mb-8">Last updated: July 28, 2026</p>
+        <p className="mb-8 border border-newsprint bg-newsprint p-4 text-ink/75">GridOne is built around organizer-controlled boards and read-only viewer links. We collect what is needed to run the board, authenticate organizers, process plan payments, deliver verified emails, and protect the service.</p>
 
         <div className="prose prose-sm max-w-none space-y-6 text-ink/75 leading-relaxed">
           <section>

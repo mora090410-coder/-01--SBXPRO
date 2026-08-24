@@ -42,7 +42,7 @@ export const YouthSportsFootballSquaresFundraiser: React.FC = () => {
       <main className="mx-auto w-full max-w-4xl px-5 py-24">
         <div className="mb-8 inline-flex items-center gap-2 rounded-control bg-newsprint px-3 py-1 text-xs text-gold ring-1 ring-gold/20">Youth sports fundraiser</div>
         <h1 className="oa-chyron text-4xl font-semibold tracking-tight md:text-5xl text-ink mb-6">Youth sports football squares fundraiser guide</h1>
-        <p className="text-xl text-ink/70 mb-12 leading-relaxed">This is probably the cleanest early GTM lane for GridOne. Parent organizers already know the format, and they hate messy execution.</p>
+        <p className="text-xl text-ink/70 mb-12 leading-relaxed">Youth-sports fundraisers are a strong fit for GridOne because parent organizers already know the format and need a cleaner way to run it.</p>
 
         <article className="prose prose-lg max-w-none">
           <h2 className="oa-headline text-2xl font-semibold text-ink mt-12 mb-6">Why this use case fits</h2>
@@ -71,10 +71,11 @@ export const YouthSportsFootballSquaresFundraiser: React.FC = () => {
           <ArticleFAQ faqs={faqs} />
 
           <ArticleCTA
+            title="Build a fundraiser board"
             links={[
-              { to: '/articles/football-squares-fundraiser', label: 'Football Squares Fundraiser Ideas', primary: true },
+              { to: '/create', label: 'Create your free board', primary: true },
+              { to: '/articles/football-squares-fundraiser', label: 'Football Squares Fundraiser Ideas' },
               { to: '/articles/how-to-run-super-bowl-squares', label: 'How to Run Super Bowl Squares' },
-              { to: '/create', label: 'Build your board' },
             ]}
           />
         </article>

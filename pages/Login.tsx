@@ -26,6 +26,7 @@ const Login: React.FC = () => {
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
     const isAdoptDraft = searchParams.get('mode') === 'adopt-draft';
+    const createIntent = safeReturnTo(searchParams.get('returnTo'))?.startsWith('/create') === true;
 
     // If already logged in, redirect to dashboard or return URL
     React.useEffect(() => {
@@ -144,7 +145,7 @@ const Login: React.FC = () => {
                         {isSignUp ? 'Create your organizer account' : (isAdoptDraft ? 'Sign in to save your draft' : 'Welcome back')}
                     </h1>
                     <p className="text-sm text-ink/60 mt-2">
-                        {isSignUp ? 'Build your board, edit it freely, and publish when it is ready.' : 'Sign in to manage your GridOne boards and share links.'}
+                        {isSignUp && createIntent ? 'Start the board now. Your first published board is free, and viewers will not need an account.' : isSignUp ? 'Build your board, edit it freely, and publish when it is ready.' : 'Sign in to manage your GridOne boards and share links.'}
                     </p>
                 </div>
 
@@ -242,7 +243,7 @@ const Login: React.FC = () => {
                         disabled={loading}
                         className="oa-btn oa-btn-cardinal w-full mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        {loading ? 'Processing...' : (isSignUp ? 'Create Account' : (isAdoptDraft ? 'Sign In & Save Draft' : 'Sign In'))}
+                        {loading ? 'Processing...' : (isSignUp && createIntent ? 'Create account and start board' : isSignUp ? 'Create organizer account' : (isAdoptDraft ? 'Sign In & Save Draft' : 'Sign In'))}
                     </button>
                 </form>
 
@@ -256,13 +257,13 @@ const Login: React.FC = () => {
                         }}
                         className="text-xs text-ink/60 hover:text-ink transition-colors"
                     >
-                        {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
+                        {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Create an organizer account"}
                     </button>
                 </div>
 
                 <div className="mt-8 border-t border-newsprint pt-6 text-center">
                     <a href="/" className="text-xs text-ink/50 hover:text-ink/60 transition-colors">
-                        &larr; Back to Guest View
+                        ← Back to GridOne
                     </a>
                 </div>
             </div>

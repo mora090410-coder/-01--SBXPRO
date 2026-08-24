@@ -149,6 +149,7 @@ const Paid: React.FC = () => {
             <p>{message}</p>
             {state === 'checking' && <span className="oa-data">Secure verification in progress</span>}
             {state === 'ready' && contestId && <Link className="oa-btn oa-btn-primary" to={`/boards/${contestId}`}>Open organizer view</Link>}
+            {state === 'ready' && !contestId && <Link className="oa-btn oa-btn-primary" to="/dashboard">Return to dashboard</Link>}
             {state === 'signin' && <Link className="oa-btn oa-btn-primary" to={loginUrl}>Sign in to continue</Link>}
             {(state === 'processing' || state === 'duplicate' || state === 'payment_review' || state === 'inactive' || state === 'payment_failed' || state === 'delayed' || state === 'error') && (
                 <div className="flex flex-wrap justify-center gap-3">

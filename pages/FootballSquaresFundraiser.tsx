@@ -100,11 +100,12 @@ export const FootballSquaresFundraiser: React.FC = () => {
           <ArticleFAQ faqs={faqs} />
 
           <ArticleCTA
+            title="Build a fundraiser board"
             links={[
-              { to: '/articles/youth-sports-football-squares-fundraiser', label: 'Youth Sports Fundraiser Guide', primary: true },
+              { to: '/create', label: 'Create your free board', primary: true },
+              { to: '/articles/youth-sports-football-squares-fundraiser', label: 'Youth Sports Fundraiser Guide' },
               { to: '/articles/how-to-run-super-bowl-squares', label: 'How to Run Super Bowl Squares' },
               { to: '/articles/office-super-bowl-squares', label: 'Office Squares Ideas' },
-              { to: '/create', label: 'Build your board' },
             ]}
           />
         </article>

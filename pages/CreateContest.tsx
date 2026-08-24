@@ -226,7 +226,7 @@ const CreateContest: React.FC = () => {
                             <div>
                                 <p className="oa-slab text-cardinal mb-2">01 · Name</p>
                                 <h1 className="oa-headline !text-3xl mb-2">Name your board</h1>
-                                <p className="oa-body text-ink/60">This is the title your group will see after you publish.</p>
+                                <p className="oa-body text-ink/60">Use the name your parents, supporters, or group will recognize.</p>
                             </div>
 
                             <div className="space-y-4">
@@ -239,7 +239,7 @@ const CreateContest: React.FC = () => {
                                         value={game.title}
                                         onChange={(e) => setGame(prev => ({ ...prev, title: e.target.value }))}
                                         className="w-full oa-input"
-                                        placeholder="e.g. Super Bowl LIX Party"
+                                        placeholder="e.g. Lincoln Softball Booster Board"
                                         autoFocus
                                     />
                                 </div>
@@ -299,7 +299,7 @@ const CreateContest: React.FC = () => {
                             <div>
                                 <p className="oa-slab text-cardinal mb-2">03 · Fill</p>
                                 <h1 className="oa-headline !text-3xl mb-2">Start your 100 squares</h1>
-                                <p className="oa-body text-ink/60">The native GridOne board is the fastest, most reliable starting point. You will assign purchaser names in the organizer view.</p>
+                                <p className="oa-body text-ink/60">Start with a blank board, then add names in the organizer view. You can build and edit before publishing. Your first published board is free.</p>
                             </div>
 
                             <button
@@ -307,7 +307,7 @@ const CreateContest: React.FC = () => {
                                 onClick={() => handlePublish(EMPTY_BOARD)}
                                 className="w-full oa-btn oa-btn-primary !py-5"
                             >
-                                Create blank 10×10 board
+                                Start blank 10×10 board
                             </button>
 
                             <div className="border-t border-newsprint pt-6">

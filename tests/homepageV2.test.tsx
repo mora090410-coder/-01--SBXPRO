@@ -38,11 +38,11 @@ describe('HomepageV2 Slice12 A1', () => {
 
     const hero = screen.getByTestId('homepage-v2-first-viewport');
     expect(within(hero).getByRole('heading', { name: /Football-squares fundraiser boards/i })).toBeVisible();
-    expect(within(hero).getByText(/Build the board, share one link, and let GridOne track game day/i)).toBeVisible();
+    expect(within(hero).getByText(/For youth-sports teams, booster clubs, schools, and community organizers/i)).toBeVisible();
     expect(within(hero).getByRole('link', { name: 'Create your free board' })).toHaveAttribute('href', '/create');
     expect(within(hero).getByRole('link', { name: 'See a live board' })).toHaveAttribute('href', '/demo');
     expect(within(hero).getByText('First published board free')).toBeVisible();
-    expect(within(hero).getByText('GridOne tracks the board. It does not collect square money, hold funds, or pay winners.')).toBeVisible();
+    expect(within(hero).getByText('GridOne tracks the board. It does not collect square money, hold funds, adjudicate off-platform payment, or pay winners.')).toBeVisible();
     expect(hero).not.toHaveTextContent(/loader|scroll|bet|wager|odds|testimonial|customer|raised \$/i);
   });
 
@@ -72,7 +72,7 @@ describe('HomepageV2 Slice12 A1', () => {
     expect(screen.getByText('Game Day')).toBeVisible();
     expect(screen.getByText('$9.99 once for up to 5 published boards in the 2026 season')).toBeVisible();
     expect(screen.getByText('Organization')).toBeVisible();
-    expect(screen.getByText('$79 per season for up to 50 published boards')).toBeVisible();
+    expect(screen.getByText('$79 per season for up to 50 published boards, organization naming, shared dashboard, and one organization receipt')).toBeVisible();
     expect(screen.getByText(/What changes on game day/i).closest('details')).not.toHaveAttribute('open');
   });
 

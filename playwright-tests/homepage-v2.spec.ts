@@ -14,20 +14,20 @@ test.describe('HomepageV2 Slice12 A1 browser surface', () => {
     const hero = page.getByTestId('homepage-v2-first-viewport');
     await expect(hero).toBeVisible();
     await expect(hero.getByRole('heading', { name: /Football-squares fundraiser boards/i })).toBeVisible();
-    await expect(hero.getByText(/Build the board, share one link, and let GridOne track game day/i)).toBeVisible();
+    await expect(hero.getByText(/For youth-sports teams, booster clubs, schools, and community organizers/i)).toBeVisible();
     await expect(hero.getByRole('link', { name: 'Create your free board' })).toBeVisible();
     await expect(hero.getByRole('link', { name: 'See a live board' })).toBeVisible();
     await expect(hero.getByText('First published board free')).toBeVisible();
-    await expect(hero.getByText(/does not collect square money, hold funds, or pay winners/i)).toBeVisible();
+    await expect(hero.getByText(/does not collect square money, hold funds, adjudicate off-platform payment, or pay winners/i)).toBeVisible();
     await expect(hero.getByText('Demo board — sample names and scores')).toBeVisible();
 
     for (const locator of [
       hero.getByRole('heading', { name: /Football-squares fundraiser boards/i }),
-      hero.getByText(/Build the board, share one link, and let GridOne track game day/i),
+      hero.getByText(/For youth-sports teams, booster clubs, schools, and community organizers/i),
       hero.getByRole('link', { name: 'Create your free board' }),
       hero.getByRole('link', { name: 'See a live board' }),
       hero.getByText('First published board free'),
-      hero.getByText(/does not collect square money, hold funds, or pay winners/i),
+      hero.getByText(/does not collect square money, hold funds, adjudicate off-platform payment, or pay winners/i),
       hero.getByText('Demo board — sample names and scores'),
     ]) {
       const box = await locator.boundingBox();
@@ -62,11 +62,11 @@ test.describe('HomepageV2 Slice12 A1 browser surface', () => {
     const hero = page.getByTestId('homepage-v2-first-viewport');
     const required: Array<[string, Locator]> = [
       ['heading', hero.getByRole('heading', { name: /Football-squares fundraiser boards/i })],
-      ['outcome', hero.getByText(/Build the board, share one link, and let GridOne track game day/i)],
+      ['outcome', hero.getByText(/For youth-sports teams, booster clubs, schools, and community organizers/i)],
       ['create', hero.getByRole('link', { name: 'Create your free board' })],
       ['demo', hero.getByRole('link', { name: 'See a live board' })],
       ['free', hero.getByText('First published board free')],
-      ['boundary', hero.getByText(/does not collect square money, hold funds, or pay winners/i)],
+      ['boundary', hero.getByText(/does not collect square money, hold funds, adjudicate off-platform payment, or pay winners/i)],
       ['demo', hero.getByText('Demo board — sample names and scores')],
     ];
     for (const [label, locator] of required) {
@@ -88,11 +88,24 @@ test.describe('HomepageV2 Slice12 A1 browser surface', () => {
     expect(overflow).toBe(0);
   });
 
+  test('answers objections and repeats the create-board decision at the end', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.getByRole('heading', { name: 'Know what happens before you publish.' })).toBeVisible();
+    await expect(page.getByText('Do viewers need an account?')).toBeVisible();
+    await expect(page.getByText('Does GridOne collect square money?')).toBeVisible();
+    const close = page.getByRole('heading', { name: 'Ready to build the board?' }).locator('..');
+    await expect(close.getByRole('link', { name: 'Create your free board' })).toHaveAttribute('href', '/create');
+    await expect(close.getByRole('link', { name: 'See the live board demo' })).toHaveAttribute('href', '/demo');
+  });
+
   test('live-board CTA reaches the existing demo route', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('link', { name: 'See a live board' }).click();
     await expect(page).toHaveURL(/\/demo$/);
     await expect(page.getByTestId('viewer-first-viewport').getByRole('heading', { name: /Demo: Super Bowl LIX/i })).toBeVisible();
+    await expect(page.getByText(/This is a sample board\. Ready to run yours\?/i)).toBeVisible();
+    await page.getByRole('button', { name: 'Create your free board' }).click();
+    await expect(page).toHaveURL(/\/login\?mode=signup&returnTo=%2Fcreate/);
   });
 
   test('no-JavaScript fallback preserves product truth and actions', async ({ browser }) => {
@@ -102,7 +115,7 @@ test.describe('HomepageV2 Slice12 A1 browser surface', () => {
     await expect(page.getByRole('heading', { name: 'Football-squares fundraiser boards' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Create your free board' })).toHaveAttribute('href', '/create');
     await expect(page.getByRole('link', { name: 'See a live board' })).toHaveAttribute('href', '/demo');
-    await expect(page.getByText(/does not collect square money, hold funds, or pay winners/i)).toBeVisible();
+    await expect(page.getByText(/does not collect square money, hold funds, adjudicate off-platform payment, or pay winners/i)).toBeVisible();
     await context.close();
   });
 });
