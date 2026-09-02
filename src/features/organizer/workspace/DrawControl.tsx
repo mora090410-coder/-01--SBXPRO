@@ -3,6 +3,8 @@ import { Glass, CapsuleButton, CapsuleTag } from '../../../design/primitives';
 
 export interface DrawControlProps {
   openCount: number;
+  /** The organizer has asked to draw (or to replace an existing draft draw). */
+  requested?: boolean;
   acknowledged: boolean;
   drawn: boolean;
   preview: boolean;
@@ -19,9 +21,14 @@ export interface DrawControlProps {
 /**
  * Glass panel rendered by the workspace only when relevant: the open-square
  * acknowledgement, the preview-numbers review, or the drawn-draft summary.
+ *
+ * The acknowledgement is checked first and independently of the drawn/preview
+ * state: a replacement draw on a board with open squares has to be able to ask
+ * the question again, or the organizer dead-ends with no way to answer it.
  */
 export default function DrawControl({
   openCount,
+  requested = true,
   acknowledged,
   drawn,
   preview,
@@ -33,6 +40,22 @@ export default function DrawControl({
   onReplace,
   onCancelPreview,
 }: DrawControlProps) {
+  if (requested && openCount > 0 && !acknowledged) {
+    const heading = `${openCount} squares are open. Draw anyway?`;
+    return (
+      <Glass role="group" aria-label={heading} className="flex flex-col gap-3">
+        <h2 className="font-display text-[20px] leading-[1.1] text-fg">{heading}</h2>
+        <p className="font-ui text-[14px] text-fg-2">
+          Open squares stay marked OPEN on the shared board. You can still assign them before kickoff.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <CapsuleButton variant="quiet" onClick={onKeepAssigning} disabled={disabled}>Keep assigning</CapsuleButton>
+          <CapsuleButton variant="primary" onClick={onAcknowledge} disabled={disabled}>{`Draw with ${openCount} OPEN`}</CapsuleButton>
+        </div>
+      </Glass>
+    );
+  }
+
   if (preview) {
     return (
       <Glass className="flex flex-col gap-3">
@@ -51,22 +74,6 @@ export default function DrawControl({
         <span className="font-mono text-[14px] text-fg">Numbers set</span>
         <CapsuleTag tone="gold">Drawn</CapsuleTag>
         <CapsuleButton variant="ghost" onClick={onReplace} disabled={disabled}>Replace draft draw</CapsuleButton>
-      </Glass>
-    );
-  }
-
-  if (openCount > 0 && !acknowledged) {
-    const heading = `${openCount} squares are open. Draw anyway?`;
-    return (
-      <Glass role="group" aria-label={heading} className="flex flex-col gap-3">
-        <h2 className="font-display text-[20px] leading-[1.1] text-fg">{heading}</h2>
-        <p className="font-ui text-[14px] text-fg-2">
-          Open squares stay marked OPEN on the shared board. You can still assign them before kickoff.
-        </p>
-        <div className="flex flex-wrap gap-2">
-          <CapsuleButton variant="quiet" onClick={onKeepAssigning} disabled={disabled}>Keep assigning</CapsuleButton>
-          <CapsuleButton variant="primary" onClick={onAcknowledge} disabled={disabled}>{`Draw with ${openCount} OPEN`}</CapsuleButton>
-        </div>
       </Glass>
     );
   }

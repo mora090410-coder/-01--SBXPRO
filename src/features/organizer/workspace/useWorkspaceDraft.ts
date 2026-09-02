@@ -19,7 +19,8 @@ export interface UseWorkspaceDraft {
   setGame: (updater: (game: GameState) => GameState) => void;
   setBoard: (updater: (board: BoardData) => BoardData) => void;
   saveState: DraftSaveState;
-  flush: () => Promise<void>;
+  /** Resolves with the save state left behind by the flush, so callers can gate on it. */
+  flush: () => Promise<DraftSaveState>;
   retry: () => Promise<void>;
   reloadLatest: () => Promise<void>;
 }
@@ -181,7 +182,7 @@ export function useWorkspaceDraft({
     commitLocal(latestData.current.game, next);
   }, [commitLocal]);
 
-  const flush = useCallback(async () => {
+  const flush = useCallback(async (): Promise<DraftSaveState> => {
     clearTimer();
     if (saveStateRef.current.status === 'dirty') {
       await runSave();
@@ -195,6 +196,10 @@ export function useWorkspaceDraft({
       clearTimer();
       await runSave();
     }
+    // The ref is written synchronously by updateSaveState, so it is the real
+    // post-flush state -- React's committed `saveState` can still be a render
+    // behind when an awaited caller reads it.
+    return saveStateRef.current;
   }, [clearTimer, runSave]);
 
   const retry = useCallback(async () => {

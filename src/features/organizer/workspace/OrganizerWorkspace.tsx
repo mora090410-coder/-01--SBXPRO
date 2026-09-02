@@ -2,7 +2,7 @@ import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { Base, Eyebrow, Glass } from '../../../design/primitives';
 import type { BoardData, EntryMeta, GameState, PayoutDescriptions, ScheduledGame } from '../../../../types';
 import type { OrganizerShellProps } from '../shell/OrganizerShell';
-import { evaluateOrganizerLifecycle } from '../lifecycle/organizerLifecycle';
+import { evaluateOrganizerLifecycle, isExactAxis } from '../lifecycle/organizerLifecycle';
 import { compressImage } from '../../../../utils/image';
 import { parseBoardImage } from '../../../../services/boardImportService';
 import { renderBoardPng, shareBoardPng, boardImageFilename } from '../../../../utils/boardImage';
@@ -37,10 +37,13 @@ type PublishedBoard = Extract<PublishResult, { published: true }>;
 
 const PUBLISH_BLOCKED = 'Publish blocked. Reload or save the latest clean draft before publishing.';
 const GAME_DAY_PLACEHOLDER = 'Game-day controls arrive in stage 5b.';
+const UNTITLED_WORKSPACE = 'Untitled board workspace';
+const SQUARE_META_FAILED = 'Square details were not saved. The name is on the board; try saving the details again.';
+const CLEAR_META_FAILED = 'The private notes were not cleared. Try again.';
+const PAYOUT_FAILED = 'Prize notes were not saved. Try again.';
 
-const exactAxis = (axis: (number | null)[]) => axis.length === 10
-  && new Set(axis).size === 10
-  && axis.every((digit) => Number.isInteger(digit));
+/** The draw gate ignores the acknowledgement: DrawControl asks that question inline. */
+const ACKNOWLEDGEMENT_BLOCKER = 'open_square_acknowledgement_required';
 
 const openCountOf = (board: BoardData) => board.squares.filter((names) => !names.length).length;
 
@@ -49,7 +52,7 @@ const blockerNote: Record<string, string> = {
   missing_board_identity: 'Add a board name before publishing.',
   missing_scheduled_game: 'Choose the scheduled game before publishing.',
   invalid_board_shape: 'This board could not be checked. Reload and try again.',
-  duplicate_or_ambiguous_public_identity: 'Make each name unique so families can find the right squares.',
+  duplicate_or_ambiguous_public_identity: 'Make each public name unique so families can find the right squares.',
   open_square_acknowledgement_required: 'Confirm that the remaining open squares should stay open.',
   invalid_committed_axes: 'Draw one complete set of numbers before publishing.',
   dynamic_axes_not_supported: 'This older board uses changing number sets and cannot be published in this version.',
@@ -60,19 +63,49 @@ const blockerNote: Record<string, string> = {
   save_recovered: 'Review and save the recovered draft before publishing.',
 };
 
-/** Lifecycle cells carry the real private notes so the checklist can speak to payment and seller gaps. */
-const lifecycleCells = (board: BoardData, entryMeta: Record<number, EntryMeta>) => board.squares.map((names, index) => {
-  const label = names[0]?.trim();
-  if (!label) return null;
-  const participant = board.participants?.find((item) => item.displayName === label || item.publicLabel === label);
-  const meta = entryMeta[index];
-  return {
-    publicLabel: label,
-    participantId: participant?.id,
-    paidStatus: meta?.paid_status ?? 'unknown',
-    sellerLabel: meta?.seller_label ?? undefined,
-  };
-});
+/**
+ * Collapse a display label to the identity a viewer would search by, so one
+ * person holding several squares reads as one participant.
+ */
+const normalizedIdentity = (label: string) => label
+  .trim()
+  .toLowerCase()
+  .normalize('NFKD')
+  .replace(/[\u0300-\u036f]/g, '');
+
+/**
+ * Lifecycle cells carry the real private notes so the checklist can speak to
+ * payment and seller gaps, and a durable participant id for every assigned
+ * cell. Drafts routinely have no `participants` array yet, so an id is
+ * synthesized from the normalized label: same person -> one id, different
+ * people -> different ids. Two *different* labels that collapse to the same
+ * identity (`Jose` / `Jose\u0301`) cannot be told apart, so their id is dropped and
+ * the lifecycle reports them as ambiguous.
+ */
+const lifecycleCells = (board: BoardData, entryMeta: Record<number, EntryMeta>) => {
+  const labelsById = new Map<string, Set<string>>();
+  const cells = board.squares.map((names, index) => {
+    const label = names[0]?.trim();
+    if (!label) return null;
+    const participant = board.participants?.find((item) => item.displayName === label || item.publicLabel === label);
+    const participantId = participant?.id ?? `label:${normalizedIdentity(label)}`;
+    const byId = labelsById.get(participantId) ?? new Set<string>();
+    byId.add(label.toLocaleLowerCase());
+    labelsById.set(participantId, byId);
+    const meta = entryMeta[index];
+    return {
+      publicLabel: label,
+      participantId,
+      paidStatus: meta?.paid_status ?? 'unknown',
+      sellerLabel: meta?.seller_label ?? undefined,
+    };
+  });
+  return cells.map((cell) => (
+    cell && (labelsById.get(cell.participantId)?.size ?? 0) > 1
+      ? { ...cell, participantId: undefined }
+      : cell
+  ));
+};
 
 /**
  * The organizer workspace for a board that has not been published yet.
@@ -93,19 +126,14 @@ export default function OrganizerWorkspace({
   onApply,
   onPublish,
   onSavePayoutDescriptions,
-  onAssignOpenSquares,
   onReload,
   onOpenViewer,
   onLogout,
   isPublished,
-  shareCode,
   renderPreview,
 }: OrganizerWorkspaceProps) {
-  // `onAssignOpenSquares` stays on the props so BoardView can keep one call
-  // site; stage 5b's game-day surface is what actually routes late fills.
-  void onAssignOpenSquares;
-  void shareCode;
-
+  // `onAssignOpenSquares` and `shareCode` stay on the props type so BoardView
+  // keeps one call site; stage 5b's game-day surface is what reads them.
   const { game, board, setGame, setBoard, saveState, flush, retry, reloadLatest } = useWorkspaceDraft({
     game: gameProp,
     board: boardProp,
@@ -115,11 +143,6 @@ export default function OrganizerWorkspace({
     onApply,
     onReload,
   });
-
-  // Mirrors the committed save state so async handlers see the value after an
-  // awaited flush instead of the one captured when the click started.
-  const saveStateRef = useRef(saveState);
-  saveStateRef.current = saveState;
 
   const [drawRequested, setDrawRequested] = useState(false);
   const [drawPreview, setDrawPreview] = useState<{ top: number[]; left: number[] } | null>(null);
@@ -138,6 +161,9 @@ export default function OrganizerWorkspace({
   const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
   const [note, setNote] = useState<string | null>(null);
+  // Failures get their own live region so a blocker note never hides them and
+  // a stale failure never outlives the next successful action.
+  const [alert, setAlert] = useState<string | null>(null);
 
   const openCount = openCountOf(board);
   const assignedCount = 100 - openCount;
@@ -146,7 +172,7 @@ export default function OrganizerWorkspace({
     0,
   );
   const unpaidCount = assignedCount - paidCount;
-  const axesCommitted = exactAxis(board.topAxis) && exactAxis(board.leftAxis);
+  const axesCommitted = isExactAxis(board.topAxis) && isExactAxis(board.leftAxis);
   const conflicted = saveState.status === 'conflicted';
 
   const model = useMemo(() => evaluateOrganizerLifecycle({
@@ -159,15 +185,20 @@ export default function OrganizerWorkspace({
       topAxis: board.topAxis,
       sideAxis: board.leftAxis,
       isDynamic: board.isDynamic,
-      // The open-square opt-in is asked for inline by DrawControl right before
-      // the draw, so it is never a gate on entering the draw itself.
-      openSquaresAcknowledged: true,
+      // Report the honest state; the draw gate below is what excuses it,
+      // because DrawControl asks the question inline right before the draw.
+      openSquaresAcknowledged: board.allowOpenSquares === true || openCount === 0,
       publishedAt: isPublished ? 'server-published' : null,
     },
     save: saveState,
   }), [activePoolId, board, entryMeta, game, isPublished, saveState]);
 
   const shareUrl = published ? `${window.location.origin}${published.viewerUrl}` : '';
+
+  // Everything except the acknowledgement, which the draw itself collects.
+  const canEnterDraw = !conflicted
+    && model.hardBlockers.every((blocker) => blocker === ACKNOWLEDGEMENT_BLOCKER);
+  const publishBlocked = model.hardBlockers.some((blocker) => !String(blocker).startsWith('save_'));
 
   const startPreview = useCallback(() => {
     setDrawPreview({ top: secureShuffleDigits(), left: secureShuffleDigits() });
@@ -176,6 +207,7 @@ export default function OrganizerWorkspace({
   const requestDraw = () => {
     setDrawRequested(true);
     setNote(null);
+    setAlert(null);
     if (openCount > 0 && board.allowOpenSquares !== true) return;
     startPreview();
   };
@@ -205,16 +237,14 @@ export default function OrganizerWorkspace({
     setDrawRequested(false);
   };
 
-  const replaceDraw = () => {
-    setDrawRequested(true);
-    startPreview();
-  };
+  // A replacement draw runs the same gate, so a board that still has open
+  // squares gets the acknowledgement question instead of a silent redraw.
+  const replaceDraw = requestDraw;
 
+  // Deliberately does not wrap: past the last open square there is nowhere
+  // forward to go, so the sheet closes instead of looping to the top.
   const nextOpenAfter = (squares: string[][], index: number) => {
     for (let cursor = index + 1; cursor < squares.length; cursor += 1) {
-      if (!squares[cursor]?.length) return cursor;
-    }
-    for (let cursor = 0; cursor < index; cursor += 1) {
       if (!squares[cursor]?.length) return cursor;
     }
     return null;
@@ -235,8 +265,10 @@ export default function OrganizerWorkspace({
     try {
       await saveEntryMeta(activePoolId, meta);
       onEntryMetaChange(meta);
-    } catch (error: any) {
-      setNote(error?.message || 'The private note could not be saved.');
+      setNote(null);
+      setAlert(null);
+    } catch {
+      setAlert(SQUARE_META_FAILED);
     }
   };
 
@@ -259,14 +291,16 @@ export default function OrganizerWorkspace({
     if (!activePoolId) return;
     try {
       await clearEntryMeta(activePoolId);
-    } catch (error: any) {
-      setNote(error?.message || 'The private notes could not be cleared.');
+      setAlert(null);
+    } catch {
+      setAlert(CLEAR_META_FAILED);
     }
   };
 
   const importPhoto = async (file: File) => {
     setImporting(true);
     setNote(null);
+    setAlert(null);
     try {
       const raw = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
@@ -279,7 +313,7 @@ export default function OrganizerWorkspace({
       setBoard((current) => ({ ...current, squares: scanned.squares }));
       setNote('Names read from the photo. Check every square before you draw.');
     } catch (error: any) {
-      setNote(error?.message || 'The photo could not be read.');
+      setAlert(error?.message || 'The photo could not be read.');
     } finally {
       setImporting(false);
     }
@@ -288,6 +322,7 @@ export default function OrganizerWorkspace({
   const exportBoard = async (mode: 'owners' | 'sellers') => {
     setExporting(true);
     setNote(null);
+    setAlert(null);
     try {
       const sellersByIndex: Record<number, string | null | undefined> = {};
       Object.entries(entryMeta).forEach(([index, meta]) => {
@@ -307,7 +342,7 @@ export default function OrganizerWorkspace({
       );
       if (outcome === 'downloaded') setNote('Board image saved to your downloads.');
     } catch (error: any) {
-      setNote(error?.message || 'The board image could not be created.');
+      setAlert(error?.message || 'The board image could not be created.');
     } finally {
       setExporting(false);
     }
@@ -325,14 +360,17 @@ export default function OrganizerWorkspace({
       const saved = await onSavePayoutDescriptions(game.payoutDescriptions || {});
       setGame((current) => ({ ...current, payoutDescriptions: saved }));
       setPayoutStatus('saved');
-    } catch (error: any) {
+      setNote(null);
+      setAlert(null);
+    } catch {
       setPayoutStatus('error');
-      setNote(error?.message || 'Prize notes could not be saved.');
+      setAlert(PAYOUT_FAILED);
     }
   };
 
   const openPreview = async () => {
     setPublishError(null);
+    setAlert(null);
     await flush();
     setPreviewOpen(true);
   };
@@ -342,8 +380,10 @@ export default function OrganizerWorkspace({
     setPublishError(null);
     setPublishPending(true);
     try {
-      await flush();
-      if (saveStateRef.current.status !== 'clean') {
+      // Gate on the state the flush actually left behind, not the one this
+      // render captured before the save ran.
+      const flushed = await flush();
+      if (flushed.status !== 'clean') {
         setPublishError(PUBLISH_BLOCKED);
         return;
       }
@@ -359,9 +399,13 @@ export default function OrganizerWorkspace({
       setPublished(result);
       setPublishOpen(false);
       setPublishedOpen(true);
-      await onReload?.();
+      setAlert(null);
+      // The reload is deferred: it flips this board to published and swaps the
+      // surface underneath, which would tear the success sheet off the screen.
     } catch (error: any) {
-      setPublishError(error?.message || 'The board could not be published.');
+      const message = error?.message || 'The board could not be published.';
+      setPublishError(message);
+      setAlert(message);
     } finally {
       setPublishPending(false);
     }
@@ -399,11 +443,22 @@ export default function OrganizerWorkspace({
       ? { label: 'Fill the board', onClick: scrollToBoard }
       : axesCommitted
         ? { label: 'Preview', onClick: () => void openPreview() }
-        : { label: 'Draw numbers', onClick: requestDraw, disabled: !model.canEnterDraw || conflicted };
+        : { label: 'Draw numbers', onClick: requestDraw, disabled: !canEnterDraw };
 
   const secondary = axesCommitted && !published && !isPublished
     ? [{ label: 'Replace draft draw', onClick: replaceDraw, disabled: conflicted }]
     : undefined;
+
+  const leavePublishedSheet = () => {
+    setPublishedOpen(false);
+    void onReload?.();
+  };
+
+  const mainLabel = game.title?.trim() ? `${game.title} workspace` : UNTITLED_WORKSPACE;
+
+  const alertRegion = alert ? (
+    <p role="alert" className="mt-4 font-ui text-[15px] text-tone-cardinal">{alert}</p>
+  ) : null;
 
   const header = (
     <WorkspaceHeader
@@ -418,11 +473,71 @@ export default function OrganizerWorkspace({
     />
   );
 
+  // The sheets live outside the published/unpublished branch: publishing flips
+  // `isPublished` under our feet, and the success sheet has to survive it.
+  const sheets = (
+    <>
+      <SquareSheet
+        open={selectedSquare !== null}
+        index={selectedSquare}
+        name={selectedSquare === null ? '' : board.squares[selectedSquare]?.[0] ?? ''}
+        meta={selectedSquare === null ? undefined : entryMeta[selectedSquare]}
+        isPublished={false}
+        hasNextOpen={openCount > 0}
+        onSave={(index, name, meta, advance) => void saveSquare(index, name, meta, advance)}
+        onClose={() => setSelectedSquare(null)}
+      />
+
+      <PreviewSheet
+        open={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+        canPublish={axesCommitted && !conflicted}
+        onReviewPublish={() => {
+          setPreviewOpen(false);
+          setPublishOpen(true);
+        }}
+      >
+        {renderPreview ? renderPreview() : <p className="font-ui text-[15px] text-fg-2">Private preview — sharing is off</p>}
+      </PreviewSheet>
+
+      <PublishSheet
+        open={publishOpen}
+        onClose={() => setPublishOpen(false)}
+        game={game}
+        board={board}
+        allowance={billing}
+        pending={publishPending}
+        error={publishError}
+        disabled={!axesCommitted || conflicted || publishPending || publishBlocked}
+        onPublish={() => void publish()}
+      />
+
+      <UpgradeSheet
+        open={upgradeTier !== null}
+        tier={upgradeTier ?? 'gameday'}
+        error={upgradeError}
+        organizationName={organizationName}
+        onOrganizationNameChange={setOrganizationName}
+        onClose={() => setUpgradeTier(null)}
+        onCheckout={() => void checkout()}
+      />
+
+      <PublishedSheet
+        open={publishedOpen && published !== null}
+        shareUrl={shareUrl}
+        onClose={leavePublishedSheet}
+        onOpenViewer={() => onOpenViewer?.()}
+        onEnterGameDay={leavePublishedSheet}
+      />
+    </>
+  );
+
   if (isPublished) {
     return (
       <Base kind="cream">
-        <main aria-label={`${game.title} workspace`} className="mx-auto max-w-7xl px-4 pt-6 pb-24 lg:pt-8">
+        <main aria-label={mainLabel} className="mx-auto max-w-7xl px-4 pt-6 pb-24 lg:pt-8">
           {header}
+          {alertRegion}
           <section aria-label="Game day" className="mt-8">
             <Glass padding="lg" className="flex flex-col gap-2">
               <Eyebrow>Game day</Eyebrow>
@@ -430,6 +545,7 @@ export default function OrganizerWorkspace({
             </Glass>
           </section>
         </main>
+        {sheets}
       </Base>
     );
   }
@@ -445,13 +561,15 @@ export default function OrganizerWorkspace({
         secondary={secondary}
         note={islandNote}
       />
-      <main aria-label={`${game.title} workspace`} className="mx-auto max-w-7xl px-4 pt-6 pb-24 lg:pt-8">
+      <main aria-label={mainLabel} className="mx-auto max-w-7xl px-4 pt-6 pb-24 lg:pt-8">
         {header}
+        {alertRegion}
         <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
           <section id="workspace-board" aria-label="Board" className="flex flex-col gap-4">
             {(drawRequested || drawPreview || axesCommitted) && (
               <DrawControl
                 openCount={openCount}
+                requested={drawRequested}
                 acknowledged={board.allowOpenSquares === true}
                 drawn={axesCommitted}
                 preview={Boolean(drawPreview)}
@@ -503,59 +621,7 @@ export default function OrganizerWorkspace({
           </aside>
         </div>
       </main>
-
-      <SquareSheet
-        open={selectedSquare !== null}
-        index={selectedSquare}
-        name={selectedSquare === null ? '' : board.squares[selectedSquare]?.[0] ?? ''}
-        meta={selectedSquare === null ? undefined : entryMeta[selectedSquare]}
-        isPublished={false}
-        hasNextOpen={openCount > 0}
-        onSave={(index, name, meta, advance) => void saveSquare(index, name, meta, advance)}
-        onClose={() => setSelectedSquare(null)}
-      />
-
-      <PreviewSheet
-        open={previewOpen}
-        onClose={() => setPreviewOpen(false)}
-        canPublish={axesCommitted && !conflicted}
-        onReviewPublish={() => {
-          setPreviewOpen(false);
-          setPublishOpen(true);
-        }}
-      >
-        {renderPreview ? renderPreview() : <p className="font-ui text-[15px] text-fg-2">Private preview — sharing is off</p>}
-      </PreviewSheet>
-
-      <PublishSheet
-        open={publishOpen}
-        onClose={() => setPublishOpen(false)}
-        game={game}
-        board={board}
-        allowance={billing}
-        pending={publishPending}
-        error={publishError}
-        disabled={!axesCommitted || conflicted}
-        onPublish={() => void publish()}
-      />
-
-      <UpgradeSheet
-        open={upgradeTier !== null}
-        tier={upgradeTier ?? 'gameday'}
-        error={upgradeError}
-        organizationName={organizationName}
-        onOrganizationNameChange={setOrganizationName}
-        onClose={() => setUpgradeTier(null)}
-        onCheckout={() => void checkout()}
-      />
-
-      <PublishedSheet
-        open={publishedOpen && published !== null}
-        shareUrl={shareUrl}
-        onClose={() => setPublishedOpen(false)}
-        onOpenViewer={() => onOpenViewer?.()}
-        onEnterGameDay={() => setPublishedOpen(false)}
-      />
+      {sheets}
     </Base>
   );
 }

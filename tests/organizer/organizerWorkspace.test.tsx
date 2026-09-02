@@ -301,7 +301,9 @@ describe('OrganizerWorkspace publish', () => {
     expect(global.fetch).toHaveBeenCalledWith('/api/pools/pool-1/publish', expect.objectContaining({ method: 'POST' }));
     expect(await screen.findByRole('heading', { name: 'Published' })).toBeInTheDocument();
     expect(screen.getByText(`${window.location.origin}/b/abc123`)).toBeInTheDocument();
-    await waitFor(() => expect(onReload).toHaveBeenCalled());
+    // The reload is deferred until the organizer leaves the published sheet, so the
+    // success surface cannot be torn out from under them by a re-render.
+    expect(onReload).not.toHaveBeenCalled();
   });
 
   it('opens the plan sheet when the account is out of published boards', async () => {
@@ -319,6 +321,141 @@ describe('OrganizerWorkspace publish', () => {
 
     expect(await screen.findByRole('heading', { name: 'Choose a plan' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Continue to \$9\.99 checkout/ })).toBeInTheDocument();
+  });
+
+  it('keeps the published sheet on screen through a reload that flips isPublished', async () => {
+    (global.fetch as any).mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ published: true, shareCode: 'abc123', viewerUrl: '/b/abc123', revision: 4, tier: 'gameday', used: 2, allowance: 5 }),
+    });
+    const onReload = vi.fn(async () => {});
+    const view = renderWorkspace({ board: drawnBoard(100), onReload });
+    onReload.mockImplementation(async () => {
+      view.rerender(<OrganizerWorkspace {...view.props} isPublished />);
+    });
+
+    await openPublishSheet();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Publish viewer link' }));
+    });
+
+    expect(await screen.findByRole('heading', { name: 'Published' })).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Copy link' }).length).toBeGreaterThan(0);
+    expect(onReload).not.toHaveBeenCalled();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Enter game-day controls' }));
+    });
+
+    expect(onReload).toHaveBeenCalled();
+    expect(await screen.findByText('Game-day controls arrive in stage 5b.')).toBeInTheDocument();
+  });
+
+  it('publishes once the flush started by the click settles clean', async () => {
+    (global.fetch as any).mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ published: true, shareCode: 'abc123', viewerUrl: '/b/abc123', revision: 4, tier: 'gameday', used: 2, allowance: 5 }),
+    });
+    let releaseSave: (() => void) | null = null;
+    const onPublish = vi.fn(() => new Promise<string>((resolve) => { releaseSave = () => resolve('pool-1'); }));
+    renderWorkspace({ board: drawnBoard(100), onPublish: onPublish as any });
+
+    await openPublishSheet();
+    fireEvent.change(screen.getByLabelText('Board name'), { target: { value: 'Renamed Board' } });
+    fireEvent.blur(screen.getByLabelText('Board name'));
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Publish viewer link' }));
+    });
+    expect(onPublish).toHaveBeenCalledTimes(1);
+    expect(global.fetch).not.toHaveBeenCalled();
+
+    await act(async () => { releaseSave?.(); });
+
+    await waitFor(() => expect(global.fetch).toHaveBeenCalledWith('/api/pools/pool-1/publish', expect.objectContaining({ method: 'POST' })));
+    expect(screen.queryByText('Publish blocked. Reload or save the latest clean draft before publishing.')).not.toBeInTheDocument();
+  });
+
+  it('disables the publish button while a non-save hard blocker remains', async () => {
+    renderWorkspace({
+      board: drawnBoard(100),
+      game: { ...game, gameExternalId: undefined, kickoffAt: undefined },
+    });
+
+    await openPublishSheet();
+
+    expect(screen.getByRole('button', { name: 'Publish viewer link' })).toBeDisabled();
+  });
+});
+
+describe('OrganizerWorkspace acknowledgement gate', () => {
+  it('routes Replace draft draw through the open-square acknowledgement', async () => {
+    const board: BoardData = {
+      ...boardWithAssignments(40),
+      topAxis: [3, 1, 4, 0, 5, 9, 2, 6, 8, 7],
+      leftAxis: [7, 8, 6, 2, 9, 5, 0, 4, 1, 3],
+    };
+    const { onApply } = renderWorkspace({ board });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Replace draft draw' }));
+    expect(screen.getByRole('group', { name: '60 squares are open. Draw anyway?' })).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Draw with 60 OPEN' }));
+    });
+
+    expect(lastBoard(onApply).allowOpenSquares).toBe(true);
+    expect(screen.getByRole('button', { name: 'Use these numbers' })).toBeInTheDocument();
+  });
+});
+
+describe('OrganizerWorkspace error alerts', () => {
+  it('keeps the new name on the board and reports the failed detail save', async () => {
+    (saveEntryMeta as any).mockRejectedValueOnce(new Error('network down'));
+    renderWorkspace();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Square 1, unassigned' }));
+    fireEvent.change(screen.getByLabelText('Name on the board'), { target: { value: 'Dana P.' } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    });
+
+    expect(screen.getByRole('button', { name: 'Square 1, assigned to Dana P.' })).toBeInTheDocument();
+    expect(await screen.findByRole('alert')).toHaveTextContent('Square details were not saved');
+  });
+});
+
+describe('OrganizerWorkspace draft participant identities', () => {
+  const withoutParticipants = (squares: string[][]): BoardData => ({
+    topAxis: Array(10).fill(null),
+    leftAxis: Array(10).fill(null),
+    squares,
+  });
+
+  it('treats unique names on a board with no participants array as unambiguous', () => {
+    renderWorkspace({
+      board: withoutParticipants(Array.from({ length: 100 }, (_, index) => (index < 3 ? [NAMES[index]] : []))),
+    });
+    expandIsland();
+
+    expect(screen.getByRole('button', { name: 'Draw numbers' })).toBeEnabled();
+    expect(screen.queryByText(/Make each public name unique/)).not.toBeInTheDocument();
+  });
+
+  it('reports two labels that normalize to the same identity as ambiguous', () => {
+    renderWorkspace({
+      board: withoutParticipants(Array.from({ length: 100 }, (_, index) => {
+        if (index === 0) return ['Jose'];
+        if (index === 1) return ['Jos\u00e9'];
+        return [] as string[];
+      })),
+    });
+    expandIsland();
+
+    expect(screen.getByRole('button', { name: 'Draw numbers' })).toBeDisabled();
+    expect(screen.getAllByText(/Make each public name unique/).length).toBeGreaterThan(0);
   });
 });
 

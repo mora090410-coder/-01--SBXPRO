@@ -113,7 +113,7 @@ describe('useWorkspaceDraft', () => {
     });
     const { result } = renderHook(() => useWorkspaceDraft({ game, board, revision: 1, isPublished: false, onSave, debounceMs: 800 }));
     act(() => result.current.setGame((g) => ({ ...g, title: 'first' })));
-    let flushPromise!: Promise<void>;
+    let flushPromise!: ReturnType<typeof result.current.flush>;
     act(() => { flushPromise = result.current.flush(); });
     expect(onSave).toHaveBeenCalledTimes(1);
     act(() => result.current.setGame((g) => ({ ...g, title: 'second' })));
@@ -140,5 +140,23 @@ describe('useWorkspaceDraft', () => {
     expect(result.current.saveState.status).toBe('clean');
     expect(result.current.saveState.revision).toBe(2);
     vi.useRealTimers();
+  });
+  it('flush resolves with the save state that results from the flush', async () => {
+    const onSave = vi.fn(async (_data: { game: GameState; board: BoardData }) => {});
+    const { result } = renderHook(() => useWorkspaceDraft({ game, board, revision: 1, isPublished: false, onSave, debounceMs: 800 }));
+    act(() => result.current.setGame((g) => ({ ...g, title: 'flushed' })));
+    let settled!: Awaited<ReturnType<typeof result.current.flush>>;
+    await act(async () => { settled = await result.current.flush(); });
+    expect(settled.status).toBe('clean');
+    expect(onSave).toHaveBeenCalledTimes(1);
+  });
+
+  it('flush resolves with save_failed when the save is rejected', async () => {
+    const onSave = vi.fn(async () => { throw new Error('The board could not be saved.'); });
+    const { result } = renderHook(() => useWorkspaceDraft({ game, board, revision: 1, isPublished: false, onSave, debounceMs: 800 }));
+    act(() => result.current.setGame((g) => ({ ...g, title: 'flushed' })));
+    let settled!: Awaited<ReturnType<typeof result.current.flush>>;
+    await act(async () => { settled = await result.current.flush(); });
+    expect(settled.status).toBe('save_failed');
   });
 });

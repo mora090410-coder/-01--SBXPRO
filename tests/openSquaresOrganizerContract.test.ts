@@ -16,13 +16,12 @@ describe('open-square organizer UI contract', () => {
     expect(drawControlSource).not.toContain('window.confirm');
   });
 
-  (workspaceExists ? it : it.skip)('persists the open-square opt-in with the committed draw', () => {
-    // enabled in Task 7
+  it('persists the open-square opt-in with the committed draw', () => {
     expect(workspaceSource).toContain('allowOpenSquares: true');
   });
 
-  (workspaceExists ? it : it.skip)('keeps published occupied cells immutable and sends late fills through the dedicated callback', () => {
-    // enabled in Task 7
+  it.skip('keeps published occupied cells immutable and sends late fills through the dedicated callback', () => {
+    // enabled in stage 5b
     expect(workspaceSource).toContain('onAssignOpenSquares');
   });
 
