@@ -8,7 +8,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../services/supabase';
-import { ScheduledGame, WinnerHighlights } from '../types';
+import { WinnerHighlights } from '../types';
 import { SAMPLE_BOARD } from '../constants';
 
 import ViewerShell from '../src/features/viewer/shell/ViewerShell';
@@ -104,11 +104,14 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
     const { handlePublish } = useBoardActions({
         game, board, activePoolId, updatePool, publishPool
     });
-    const { entryMetaByIndex, setEntryMetaByIndex } = useContestEntries(activePoolId);
-    const [billing, setBilling] = useState<BillingSummary | null>(null);
 
     // 4. Derived State
     const isCommissionerMode = Boolean(isOwner && !isPreviewMode);
+
+    // Owner-only data never loads on a public viewer route.
+    const ownerDataPoolId = isCommissionerMode ? activePoolId : null;
+    const { entryMetaByIndex, setEntryMetaByIndex } = useContestEntries(ownerDataPoolId);
+    const [billing, setBilling] = useState<BillingSummary | null>(null);
 
     // 5. Effects
     useEffect(() => {
@@ -156,26 +159,31 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
     }, [forceAdmin, loadPoolData, routeBoardId, urlPoolId]);
 
     useEffect(() => {
-        if (!activePoolId) {
-            setBilling(null);
-            return;
-        }
         let cancelled = false;
+        setBilling(null);
+        // The plan summary is an organizer-only fact; public viewers never ask for it.
+        if (!ownerDataPoolId) return;
         void supabase.auth.getSession().then(async ({ data }) => {
             const token = data.session?.access_token;
-            if (!token) return;
+            if (!token) {
+                if (!cancelled) setBilling(null);
+                return;
+            }
             const response = await fetch('/api/billing/status', {
                 headers: { Authorization: `Bearer ${token}` },
                 cache: 'no-store',
             });
-            if (!response.ok) return;
+            if (!response.ok) {
+                if (!cancelled) setBilling(null);
+                return;
+            }
             const result = await response.json() as BillingSummary;
             if (!cancelled) setBilling(result);
         }).catch(() => {
             // The board stays usable when the neutral plan summary is unavailable.
         });
         return () => { cancelled = true; };
-    }, [activePoolId]);
+    }, [ownerDataPoolId]);
 
     useEffect(() => {
         if (urlPoolId) return;
@@ -238,21 +246,6 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
         localStorage.removeItem('gridone_preview_mode');
         setBoard(SAMPLE_BOARD);
         navigate('/');
-    };
-
-    const handleScheduledGameChange = (scheduledGame: ScheduledGame) => {
-        setGame(prev => ({
-            ...prev,
-            gameExternalId: scheduledGame.id,
-            kickoffAt: scheduledGame.kickoffAt,
-            // ESPN's away team is the board's left axis; home is the top axis.
-            leftAbbr: scheduledGame.awayTeam.abbr,
-            leftName: scheduledGame.awayTeam.name,
-            topAbbr: scheduledGame.homeTeam.abbr,
-            topName: scheduledGame.homeTeam.name,
-            // Legacy read compatibility only. The provider kickoff remains canonical.
-            dates: scheduledGame.kickoffAt.slice(0, 10),
-        }));
     };
 
     const highlights = useMemo<WinnerHighlights>(() => calculateWinnerHighlights(liveData), [liveData]);
@@ -357,7 +350,6 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                         ...current,
                         [meta.cell_index]: meta,
                     }))}
-                    onScheduledGameChange={handleScheduledGameChange}
                     billing={billing}
                     onCheckout={(tier, organizationName) => {
                         if (!activePoolId) throw new Error('Save this board before upgrading.');

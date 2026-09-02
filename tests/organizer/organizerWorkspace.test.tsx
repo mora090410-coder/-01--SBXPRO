@@ -35,6 +35,25 @@ vi.mock('../../src/features/organizer/services/corrections/milestoneCorrectionSe
   publishMilestoneCorrectionToServer: vi.fn(async () => ({ winnerHistory: [] })),
 }));
 
+vi.mock('../../components/ScheduledGamePicker', () => ({
+  default: ({ onChange }: { onChange: (game: any) => void }) => (
+    <button
+      type="button"
+      onClick={() => onChange({
+        id: '401000001',
+        kickoffAt: '2026-09-10T00:20:00.000Z',
+        state: 'pre',
+        season: 2026,
+        week: 1,
+        awayTeam: { abbr: 'DAL', name: 'Dallas Cowboys' },
+        homeTeam: { abbr: 'WAS', name: 'Washington Commanders' },
+      })}
+    >
+      Select test game
+    </button>
+  ),
+}));
+
 vi.mock('../../src/features/organizer/workspace/renamePublishedSquare', () => ({
   renamePublishedSquare: vi.fn(async () => undefined),
 }));
@@ -169,6 +188,42 @@ describe('OrganizerWorkspace island', () => {
     expandIsland();
     expect(screen.getByRole('button', { name: 'Preview' })).toBeInTheDocument();
     expect(screen.getByRole('img', { name: 'Numbers drawn' })).toBeInTheDocument();
+  });
+});
+
+
+describe('OrganizerWorkspace game change', () => {
+  it('folds the picked game into the draft and autosaves the new matchup', async () => {
+    vi.useFakeTimers();
+    try {
+      const onPublish = vi.fn(async (_data: { game: GameState; board: BoardData }) => 'pool-1');
+      renderWorkspace({ board: boardWithAssignments(3), onPublish: onPublish as any });
+
+      fireEvent.click(screen.getByRole('button', { name: 'Change game' }));
+      act(() => {
+        fireEvent.click(screen.getByRole('button', { name: 'Select test game' }));
+      });
+
+      expect(screen.getByText('DAL at WAS', { exact: false })).toBeInTheDocument();
+      expect(screen.getByText('Unsaved changes')).toBeInTheDocument();
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(900);
+      });
+
+      expect(onPublish).toHaveBeenCalledTimes(1);
+      expect(onPublish.mock.calls[0]![0].game).toMatchObject({
+        leftAbbr: 'DAL',
+        topAbbr: 'WAS',
+        gameExternalId: '401000001',
+        kickoffAt: '2026-09-10T00:20:00.000Z',
+        dates: '2026-09-10',
+        useManualScores: false,
+        scoreSnapshot: null,
+      });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 

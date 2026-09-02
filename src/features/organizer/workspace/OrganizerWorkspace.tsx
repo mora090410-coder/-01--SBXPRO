@@ -7,7 +7,6 @@ import type {
   LiveGameData,
   NotificationDeliveryIssue,
   PayoutDescriptions,
-  ScheduledGame,
   WinnerResolution,
 } from '../../../../types';
 import { evaluateOrganizerLifecycle, isExactAxis } from '../lifecycle/organizerLifecycle';
@@ -15,6 +14,7 @@ import { compressImage } from '../../../../utils/image';
 import { parseBoardImage } from '../../../../services/boardImportService';
 import { renderBoardPng, shareBoardPng, boardImageFilename } from '../../../../utils/boardImage';
 import { useWorkspaceDraft } from './useWorkspaceDraft';
+import { applyScheduledGame } from './applyScheduledGame';
 import { saveEntryMeta, clearEntryMeta } from './entryMetaService';
 import { secureShuffleDigits } from './secureDraw';
 import { publishBoard, type PublishResult } from './publishBoard';
@@ -74,7 +74,6 @@ export interface OrganizerWorkspaceProps {
   revision: number;
   entryMeta: Record<number, EntryMeta>;
   onEntryMetaChange: (meta: EntryMeta) => void;
-  onScheduledGameChange?: (game: ScheduledGame) => void;
   billing?: { tier: string; used: number; allowance: number } | null;
   onCheckout?: (tier: 'gameday' | 'org', organizationName?: string) => Promise<void>;
 }
@@ -172,7 +171,6 @@ export default function OrganizerWorkspace({
   revision,
   entryMeta,
   onEntryMetaChange,
-  onScheduledGameChange,
   billing,
   onCheckout,
   onApply,
@@ -710,7 +708,7 @@ export default function OrganizerWorkspace({
       saveState={saveState}
       isPublished={isPublished}
       onTitleChange={(title) => setGame((current) => ({ ...current, title }))}
-      onGameChange={onScheduledGameChange}
+      onGameChange={(scheduled) => setGame((current) => applyScheduledGame(current, scheduled))}
       onRetry={() => void retry()}
       onReload={() => void reloadLatest()}
       onLogout={onLogout}
