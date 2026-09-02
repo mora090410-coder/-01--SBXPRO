@@ -50,7 +50,6 @@ const slugify = (name: string) => name.toLowerCase().replace(/[^a-z0-9]+/g, '-')
  */
 const OPEN_INDEXES = new Set([1, 5, 9, 11, 18, 22, 29, 33, 38, 50, 57, 63, 71, 76, 84, 91, 97]);
 
-let nameCursor = 0;
 
 export const demoBoard: BoardData = {
   topAxis: [4, 1, 8, 6, 2, 9, 0, 5, 7, 3],
@@ -67,8 +66,7 @@ export const demoBoard: BoardData = {
     if ([0, 27, 64].includes(index)) return ['Taylor M.'];
     if ([12, 45, 88].includes(index)) return ['Ava R.'];
     if (OPEN_INDEXES.has(index)) return ['OPEN'];
-    const name = NAME_ROTATION[nameCursor % NAME_ROTATION.length]!;
-    nameCursor += 1;
+    const name = NAME_ROTATION[(index * 7) % NAME_ROTATION.length]!;
     return [name];
   }),
 };

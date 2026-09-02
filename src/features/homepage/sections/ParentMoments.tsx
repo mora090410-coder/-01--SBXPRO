@@ -52,7 +52,7 @@ const moments = [
   },
   {
     heading: 'What score wins next?',
-    body: 'A short list of scores that would put you on the winning square this quarter. Arithmetic, not odds or predictions.',
+    body: 'A short list of scores that would put you on the winning square this game. Arithmetic, not odds or predictions.',
     artifact: (
       <Glass padding="lg" className="flex flex-col gap-3">
         <Eyebrow>Scores that put {demoWinnerNow} on a winning square</Eyebrow>
