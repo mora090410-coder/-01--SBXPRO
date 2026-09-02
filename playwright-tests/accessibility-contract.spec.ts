@@ -234,16 +234,16 @@ test.describe('Slice 2 signed-out accessibility contract automation', () => {
   });
 
   test('homepage exposes a semantic level-one product heading', async ({ page }) => {
-    test.fixme(true, 'Owner: Slice 12 A1 homepage. Expected: root route has exactly one product H1 naming GridOne and the football-squares fundraiser board promise. Remove when homepage_v2 replaces FilmLanding for this contract.');
     await page.goto('/');
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
   });
 
   test('representative public controls have visible focus and 44 by 44 geometry', async ({ page }) => {
     await page.goto('/');
     for (const control of [
-      page.getByRole('button', { name: 'Build your board — free' }),
-      page.getByRole('link', { name: 'See a live board' }),
+      page.getByRole('link', { name: 'Create your free board' }).first(),
+      page.getByRole('link', { name: 'See a live board' }).first(),
     ]) {
       await expectTouchTarget(control);
       await control.focus();
@@ -256,9 +256,8 @@ test.describe('Slice 2 signed-out accessibility contract automation', () => {
   });
 
   test('homepage sign-in control meets the 44 by 44 target contract', async ({ page }) => {
-    test.fixme(true, 'Owner: Slice 12 A1 homepage. Expected: signed-out header Sign in is a semantic control with a minimum 44 by 44 CSS-pixel hit target. Remove when homepage_v2 replaces FilmLanding header.');
     await page.goto('/');
-    await expectTouchTarget(page.getByRole('button', { name: 'Sign in' }).first());
+    await expectTouchTarget(page.getByRole('link', { name: 'Sign in' }).first());
   });
 
   test('organizer Fill route exposes an empty or partial assignment grid without credentials beyond mocked owner auth', async ({ page }) => {
@@ -474,8 +473,8 @@ test.describe('Slice 2 signed-out accessibility contract automation', () => {
   test('reduced-motion keeps public content and state reachable', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto('/');
-    await expect(page.getByRole('heading', { level: 2, name: 'The board watches the game' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Build your board — free' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 2, name: 'Scores update themselves.' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Create your free board' }).first()).toBeVisible();
     await page.goto('/demo');
     await expect(page.getByRole('button', { name: /Find my squares/i })).toBeVisible();
   });
