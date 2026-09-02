@@ -39,7 +39,7 @@ export default function ReconcileCard({ model, unpaidCount, highlightOpen, onTog
         type="button"
         aria-pressed={highlightOpen}
         onClick={onToggleHighlightOpen}
-        className="text-left font-ui text-[15px] text-fg"
+        className="min-h-11 w-full rounded-control px-2 text-left font-ui text-[15px] text-fg hover:bg-panel-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action"
       >
         {`${model.assignedCount} filled · ${model.openCount} open · ${unpaidCount} unpaid`}
       </button>
