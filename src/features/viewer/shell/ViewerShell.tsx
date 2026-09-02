@@ -76,7 +76,7 @@ const ViewerShell: React.FC<ViewerShellProps> = ({
               </ul>
             </Glass>
           )}
-          {isFinal && <FinalRecord winnerHistory={winnerHistory} />}
+          {isFinal && <FinalRecord winnerHistory={winnerHistory} game={game} />}
           <ScenarioDisclosure board={board} game={game} live={live} selectedPlayer={selectedPlayer} servicesEnabled={servicesEnabled} onScenarioFocus={setFocus} />
           <WinnerEmailDisclosure shareCode={shareCode} participantId={selectedParticipant?.id} displayName={selectedPlayer} enabled={showNotification} />
         </div>

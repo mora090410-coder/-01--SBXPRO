@@ -19,7 +19,6 @@ import FullScreenLoading from './loading/FullScreenLoading';
 import SyntheticScoreTestBanner from './SyntheticScoreTestBanner';
 
 // Board sub-components
-import BoardHeader from './board/BoardHeader';
 import ShareModal from './board/ShareModal';
 import FindSquaresModal from './board/FindSquaresModal';
 import { calculateWinnerHighlights } from '../utils/winnerLogic';
@@ -92,7 +91,7 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
     const [showShareModal, setShowShareModal] = useState(false);
     const [showFindSquaresModal, setShowFindSquaresModal] = useState(false);
 
-    const [adminStartTab, setAdminStartTab] = useState<'overview' | 'edit'>('overview');
+    const [adminStartTab] = useState<'overview' | 'edit'>('overview');
     const [isPreviewMode, setIsPreviewMode] = useState(() => localStorage.getItem('gridone_preview_mode') === 'true');
 
     const publicSelectionShareCode = routeShareCode || (!requiresAuthForRoute ? shareCode : null);
@@ -221,11 +220,6 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
     }, [playerSelection, selectionScope, selectionStorageKey]);
 
     // 6. Helpers
-    const handleTogglePreview = (enabled: boolean) => {
-        setIsPreviewMode(enabled);
-        localStorage.setItem('gridone_preview_mode', String(enabled));
-    };
-
     const handleLogout = async () => {
         await supabase.auth.signOut();
         setActivePoolId(null);
@@ -309,21 +303,6 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                                 <CapsuleButton variant="quiet" onClick={() => navigate('/')}>How GridOne works</CapsuleButton>
                             </div>
                         </aside>
-                    )}
-                    {isOwner && !isPreviewMode && (
-                        <div className="flex-shrink-0 z-50 p-4 md:py-6">
-                            <BoardHeader
-                                game={game}
-                                isOwner={!!isOwner}
-                                activePoolId={activePoolId}
-                                isActivated={isActivated}
-                                isSynced={isSynced}
-                                isPreviewMode={isPreviewMode}
-                                onTogglePreview={handleTogglePreview}
-                                onAdminStartTab={setAdminStartTab}
-                                onShareClick={() => setShowShareModal(true)}
-                            />
-                        </div>
                     )}
                     {renderMainContent()}
                 </div>
