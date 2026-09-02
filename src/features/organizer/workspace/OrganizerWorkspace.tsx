@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Base, Eyebrow, Glass } from '../../../design/primitives';
 import type { BoardData, EntryMeta, GameState, PayoutDescriptions, ScheduledGame } from '../../../../types';
 import type { OrganizerShellProps } from '../shell/OrganizerShell';
@@ -196,8 +196,9 @@ export default function OrganizerWorkspace({
   const shareUrl = published ? `${window.location.origin}${published.viewerUrl}` : '';
 
   // Everything except the acknowledgement, which the draw itself collects.
+  const DRAW_TOLERATED = new Set<string>([ACKNOWLEDGEMENT_BLOCKER, 'save_dirty', 'save_saving']);
   const canEnterDraw = !conflicted
-    && model.hardBlockers.every((blocker) => blocker === ACKNOWLEDGEMENT_BLOCKER);
+    && model.hardBlockers.every((blocker) => DRAW_TOLERATED.has(blocker));
   const publishBlocked = model.hardBlockers.some((blocker) => !String(blocker).startsWith('save_'));
 
   const startPreview = useCallback(() => {
@@ -507,7 +508,7 @@ export default function OrganizerWorkspace({
         board={board}
         allowance={billing}
         pending={publishPending}
-        error={publishError}
+        error={publishError ?? (publishBlocked && firstBlocker ? (blockerNote[firstBlocker] || 'Review this board before publishing.') : null)}
         disabled={!axesCommitted || conflicted || publishPending || publishBlocked}
         onPublish={() => void publish()}
       />
