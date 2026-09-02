@@ -1,4 +1,5 @@
 import React from 'react';
+import { Glass } from '../../src/design/primitives';
 
 export type FAQItem = {
   question: string;
@@ -18,13 +19,13 @@ export const faqPageSchema = (faqs: FAQItem[]) => ({
 
 export const ArticleFAQ: React.FC<{ faqs: FAQItem[] }> = ({ faqs }) => (
   <>
-    <h2 className="text-2xl font-semibold text-white mt-12 mb-6">Frequently asked questions</h2>
-    <div className="space-y-4">
+    <h2 className="font-display text-[28px] leading-[1.1] text-fg mt-12 mb-4">Frequently asked questions</h2>
+    <div className="flex flex-col gap-4">
       {faqs.map((faq) => (
-        <div key={faq.question} className="rounded-surface bg-newsprint p-6 ring-1 ring-ink/10">
-          <h3 className="text-lg font-semibold text-white mb-3">{faq.question}</h3>
-          <p className="text-white/80 leading-relaxed">{faq.answer}</p>
-        </div>
+        <Glass key={faq.question} padding="lg">
+          <h3 className="font-ui text-[19px] font-semibold text-fg mb-3">{faq.question}</h3>
+          <p className="font-ui text-[17px] leading-[1.6] text-fg-2">{faq.answer}</p>
+        </Glass>
       ))}
     </div>
   </>

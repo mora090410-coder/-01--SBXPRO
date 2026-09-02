@@ -1,5 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { Eyebrow, Glass } from '../../src/design/primitives';
+import { primaryLink, quietLink } from '../../src/features/homepage/sections/cta';
 
 type LinkItem = {
   to: string;
@@ -14,21 +16,15 @@ type Props = {
 
 export const ArticleCTA: React.FC<Props> = ({ title = 'Related guides', links }) => {
   return (
-    <div className="mt-16 bg-broadcast-white ring-[3px] ring-inset ring-ink p-8">
-      <h2 className="oa-headline !text-2xl text-ink">{title}</h2>
-      <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+    <Glass padding="lg" role="group" aria-label={title} className="mt-16 flex flex-col gap-6">
+      <Eyebrow>{title}</Eyebrow>
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
         {links.map((link) => (
-          <Link
-            key={link.to}
-            to={link.to}
-            className={link.primary
-              ? 'oa-btn oa-btn-cardinal text-center'
-              : 'oa-btn bg-broadcast-white text-ink ring-1 ring-inset ring-ink hover:bg-newsprint text-center'}
-          >
+          <Link key={link.to} to={link.to} className={link.primary ? primaryLink : quietLink}>
             {link.label}
           </Link>
         ))}
       </div>
-    </div>
+    </Glass>
   );
 };

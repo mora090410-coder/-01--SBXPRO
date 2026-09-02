@@ -3,15 +3,13 @@ import { Link } from 'react-router-dom';
 import { Eyebrow, Spotlight } from '../../../design/primitives';
 import { HeroViewerCard } from '../artifacts/HeroViewerCard';
 import { MONEY_BOUNDARY } from '../pricing';
-import { ghostLink, primaryLink, quietLink } from './cta';
+import { SiteHeader } from '../../site/SiteHeader';
+import { primaryLink, quietLink } from './cta';
 
 export function Hero() {
   return (
     <section data-testid="homepage-first-viewport" className="relative overflow-hidden px-6 pt-6 pb-16 md:px-12 md:pt-8 md:pb-24">
-      <header className="flex items-center justify-between h-11">
-        <span className="font-display text-[22px] text-fg">GridOne</span>
-        <Link to="/login?mode=signin" className={ghostLink}>Sign in</Link>
-      </header>
+      <SiteHeader />
 
       <div className="relative mt-10 grid gap-12 md:mt-16 md:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] md:items-center">
         <div className="flex flex-col gap-6 max-w-[560px]">
