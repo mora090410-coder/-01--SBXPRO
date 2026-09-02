@@ -565,8 +565,8 @@ export default function OrganizerWorkspace({
       <main aria-label={mainLabel} className="mx-auto max-w-7xl px-4 pt-6 pb-24 lg:pt-8">
         {header}
         {alertRegion}
-        <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
-          <section id="workspace-board" aria-label="Board" className="flex flex-col gap-4">
+        <div className="mt-8 grid min-w-0 gap-8 lg:grid-cols-[minmax(0,1fr)_360px] [&>*]:min-w-0">
+          <section id="workspace-board" aria-label="Board" className="flex min-w-0 max-w-full flex-col gap-4">
             {(drawRequested || drawPreview || axesCommitted) && (
               <DrawControl
                 openCount={openCount}

@@ -94,7 +94,7 @@ export default function WorkspaceHeader({
 
   return (
     <header className="flex flex-col gap-3">
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex min-w-0 flex-wrap items-start justify-between gap-4 [&>*:first-child]:min-w-0 [&>*:first-child]:flex-1">
         <div className="flex-1 min-w-0">
           <Eyebrow>{isPublished ? 'Published board' : 'Organizer'}</Eyebrow>
           <input

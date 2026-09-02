@@ -75,7 +75,7 @@ export default function BoardEditor({
           placeholder="Paste one name per line"
         />
       )}
-      <div data-testid="contained-board-overflow" className="overflow-auto rounded-card border border-hairline">
+      <div data-testid="contained-board-overflow" className="w-full min-w-0 max-w-full overflow-auto overscroll-contain rounded-card border border-hairline" style={{ contain: 'inline-size' }}>
         <div className="min-w-[640px]">
           <Glass padding="md">
             <div

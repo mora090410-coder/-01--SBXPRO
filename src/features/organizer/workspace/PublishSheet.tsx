@@ -22,6 +22,14 @@ const TIER_LABEL: Record<string, string> = {
 
 const tierLabel = (tier: string) => TIER_LABEL[tier] ?? `${tier.charAt(0).toUpperCase()}${tier.slice(1)}`;
 
+const formatKickoff = (game: GameState): string => {
+  if (game.kickoffAt) {
+    const parsed = new Date(game.kickoffAt);
+    if (!Number.isNaN(parsed.getTime())) return parsed.toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+  }
+  return game.dates || 'Kickoff not set';
+};
+
 /** Confirmation summary shown before a board's viewer link goes live. */
 export default function PublishSheet({ open, onClose, game, board, allowance, pending, error, disabled, onPublish }: PublishSheetProps) {
   const assigned = board.squares.filter((s) => s.length).length;
@@ -40,7 +48,7 @@ export default function PublishSheet({ open, onClose, game, board, allowance, pe
           <dt className="text-fg-3">Matchup</dt>
           <dd>{game.leftAbbr} at {game.topAbbr}</dd>
           <dt className="text-fg-3">Kickoff</dt>
-          <dd>{game.dates}</dd>
+          <dd>{formatKickoff(game)}</dd>
           <dt className="text-fg-3">Squares</dt>
           <dd>{assigned} assigned · {open_} OPEN</dd>
           <dt className="text-fg-3">Top axis</dt>
