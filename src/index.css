@@ -1,4 +1,35 @@
 @import "tailwindcss";
+@import "./design/tokens.css";
+
+/* Broadcast Glass semantic utilities. Values resolve per data-base at runtime. */
+@theme inline {
+  --color-ground: var(--g-ground);
+  --color-panel: var(--g-panel);
+  --color-panel-hover: var(--g-panel-hover);
+  --color-hairline: var(--g-hairline);
+  --color-fg: var(--g-text);
+  --color-fg-2: var(--g-text-2);
+  --color-fg-3: var(--g-text-3);
+  --color-action: var(--g-action);
+  --color-action-hover: var(--g-action-hover);
+  --color-action-text: var(--g-action-text);
+  --color-cardinal: var(--g-cardinal);
+  --color-cardinal-deep: var(--g-cardinal-deep);
+  --color-gold: var(--g-gold);
+  --color-gold-deep: var(--g-gold-deep);
+  --color-live: var(--g-live);
+  --color-ink: var(--g-ink);
+  --color-chyron: var(--g-chyron);
+  --color-broadcast-white: var(--g-white);
+  --color-newsprint: var(--g-newsprint);
+  --font-display: var(--g-font-display);
+  --font-ui: var(--g-font-ui);
+  --font-mono: var(--g-font-mono);
+  --radius-control: var(--g-radius-control);
+  --radius-card: var(--g-radius-card);
+  --radius-capsule: var(--g-radius-capsule);
+  --radius-cell: var(--g-radius-cell);
+}
 
 @theme {
     /* Core design tokens */
@@ -42,19 +73,10 @@
 
     /* App aliases so current styling stays visually stable */
     --color-background: var(--gridone-color-background);
-    --color-cardinal: var(--gridone-color-brand-primary);
     --color-cardinal-subtle: var(--gridone-color-brand-primary-subtle);
     --color-cardinal-hover: var(--gridone-color-brand-primary-hover);
-    --color-gold: var(--gridone-color-brand-accent);
     --color-gold-dim: var(--gridone-color-brand-accent-dim);
     --color-gold-glow: var(--gridone-color-brand-accent-glow);
-    --color-live: var(--gridone-color-live);
-    --color-broadcast-white: var(--gridone-color-broadcast-white);
-    --color-newsprint: var(--gridone-color-newsprint);
-    --color-ink: var(--gridone-color-ink);
-    --color-chyron: var(--gridone-color-chyron);
-    --color-cardinal-deep: var(--gridone-color-brand-primary-deep);
-    --color-gold-deep: var(--gridone-color-brand-accent-deep);
     --font-condensed: var(--gridone-font-condensed);
     --font-data: var(--gridone-font-data);
     --color-surface: var(--gridone-color-surface);
@@ -66,7 +88,6 @@
     --font-sans: var(--gridone-font-sans);
     --spacing-18: var(--gridone-spacing-18);
     --spacing-22: var(--gridone-spacing-22);
-    --radius-control: var(--gridone-radius-control);
     --radius-surface: var(--gridone-radius-surface);
     --radius-grid: var(--gridone-radius-grid);
 }
