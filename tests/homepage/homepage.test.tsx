@@ -67,6 +67,7 @@ describe('Homepage', () => {
     renderPage();
     expect(screen.getByRole('main')).toBeInTheDocument();
     expect(screen.getByRole('contentinfo')).toBeInTheDocument();
+    expect(screen.getByRole('main')).not.toContainElement(screen.getByRole('contentinfo'));
     expect(screen.getAllByText('+').length).toBe(4);
   });
 });

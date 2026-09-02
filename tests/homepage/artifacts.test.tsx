@@ -58,6 +58,11 @@ describe('ParentMoments next scores', () => {
     for (const row of rows) {
       const [, left, top] = row.match(/KC (\d+) · PHI (\d+)/) ?? [];
       expect(demoWinnerSquares).toContainEqual({ left: Number(left) % 10, top: Number(top) % 10 });
+      expect(Number(left) === demoLive.leftScore && Number(top) === demoLive.topScore).toBe(false);
+      const leftDelta = Number(left) - demoLive.leftScore;
+      const topDelta = Number(top) - demoLive.topScore;
+      expect(leftDelta === 0 || leftDelta >= 2).toBe(true);
+      expect(topDelta === 0 || topDelta >= 2).toBe(true);
     }
     expect(demoLive.period).toBe(3);
   });

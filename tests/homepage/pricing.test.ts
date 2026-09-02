@@ -24,5 +24,7 @@ describe('demo data', () => {
     expect(demoBoard.squares[row * 10 + col]).toEqual([demoWinnerNow]);
     expect(demoWinnerSquares).toContainEqual({ left: leftDigit, top: topDigit });
     expect(demoWinnerSquares.length).toBe(3);
+    expect(demoBoard.squares.filter((s) => s[0] === 'OPEN').length).toBe(17);
+    expect(demoBoard.squares.every((s) => s.length === 1)).toBe(true);
   });
 });

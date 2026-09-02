@@ -5,16 +5,23 @@ import { demoGame, demoLive, demoWinnerNow, demoWinnerSquares } from '../demoDat
 
 const winning = { left: demoLive.leftScore % 10, top: demoLive.topScore % 10 };
 
-const nextWithDigit = (current: number, digit: number) => {
-  let n = current;
-  while (n % 10 !== digit) n += 1;
-  return n;
+/** A score delta is reachable if it is 0 or any sum of 2, 3, 6, 7, 8 — i.e. 0 or at least 2. */
+const reachable = (delta: number) => delta === 0 || delta >= 2;
+
+/** Smallest score pair at or after the current score that lands on the given digits, is reachable for both teams, and is not the current score. */
+const nextScoreFor = (pair: { left: number; top: number }) => {
+  for (let left = demoLive.leftScore; left < demoLive.leftScore + 40; left += 1) {
+    if (left % 10 !== pair.left || !reachable(left - demoLive.leftScore)) continue;
+    for (let top = demoLive.topScore; top < demoLive.topScore + 40; top += 1) {
+      if (top % 10 !== pair.top || !reachable(top - demoLive.topScore)) continue;
+      if (left === demoLive.leftScore && top === demoLive.topScore) continue;
+      return { left, top };
+    }
+  }
+  return null;
 };
 
-const nextScores = demoWinnerSquares.map((s) => ({
-  left: nextWithDigit(demoLive.leftScore, s.left),
-  top: nextWithDigit(demoLive.topScore, s.top),
-}));
+const nextScores = demoWinnerSquares.map(nextScoreFor).filter((s): s is { left: number; top: number } => s !== null);
 
 const moments = [
   {

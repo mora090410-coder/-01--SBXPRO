@@ -36,6 +36,22 @@ export const demoLive: DemoLiveGameData = {
   freshness: 'fresh',
 };
 
+/** Rotation of realistic short names filling every non-reserved, non-open square on the demo board. */
+const NAME_ROTATION = [
+  'J. Rivera', 'M. Chen', 'Dana P.', 'S. Okafor', 'Lena K.', 'R. Patel', 'Chris B.', 'A. Nguyen', 'Maya T.', 'D. Walsh',
+  'Priya S.', 'T. Brooks', 'E. Castillo', 'Sam L.', 'K. Ibrahim', 'Jo H.', 'N. Foster', 'Bea O.', 'L. Moreau', 'G. Sato',
+];
+
+const slugify = (name: string) => name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+
+/**
+ * Exactly 17 open squares, including 1, 11, 22, and 33 (so the hero's 4x4 slice at rows 0-3 / cols 0-3
+ * shows OPEN cells) and 9 and 71 (from the original data), spread across the rest of the board.
+ */
+const OPEN_INDEXES = new Set([1, 5, 9, 11, 18, 22, 29, 33, 38, 50, 57, 63, 71, 76, 84, 91, 97]);
+
+let nameCursor = 0;
+
 export const demoBoard: BoardData = {
   topAxis: [4, 1, 8, 6, 2, 9, 0, 5, 7, 3],
   leftAxis: [7, 2, 5, 0, 9, 4, 1, 8, 3, 6],
@@ -45,12 +61,15 @@ export const demoBoard: BoardData = {
     { id: 'taylor-m', displayName: 'Taylor M.', publicLabel: 'Taylor M.' },
     { id: 'ava-r', displayName: 'Ava R.', publicLabel: 'Ava R.' },
     { id: 'open', displayName: 'OPEN', publicLabel: 'OPEN' },
+    ...NAME_ROTATION.map((name) => ({ id: slugify(name), displayName: name, publicLabel: name })),
   ],
   squares: Array.from({ length: 100 }, (_, index) => {
     if ([0, 27, 64].includes(index)) return ['Taylor M.'];
     if ([12, 45, 88].includes(index)) return ['Ava R.'];
-    if ([9, 71].includes(index)) return ['OPEN'];
-    return index % 5 === 0 ? ['Booster'] : [];
+    if (OPEN_INDEXES.has(index)) return ['OPEN'];
+    const name = NAME_ROTATION[nameCursor % NAME_ROTATION.length]!;
+    nameCursor += 1;
+    return [name];
   }),
 };
 
