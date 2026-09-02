@@ -1,5 +1,7 @@
 import type { BoardData, GameState, LiveGameData } from '../../../types';
 
+type DemoLiveGameData = LiveGameData & { retrievedAt: string };
+
 export const demoGame: GameState = {
   title: 'Lincoln Softball Booster Board',
   meta: 'Chiefs at Eagles · Jan 18, 2026',
@@ -13,7 +15,7 @@ export const demoGame: GameState = {
   lockMeta: true,
 };
 
-export const demoLive: LiveGameData = {
+export const demoLive: DemoLiveGameData = {
   leftScore: 17,
   topScore: 14,
   quarterScores: {

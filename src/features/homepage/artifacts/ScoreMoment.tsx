@@ -2,7 +2,7 @@ import React from 'react';
 import { CapsuleTag, Eyebrow, Glass, Numeral } from '../../../design/primitives';
 import { demoGame, demoLive } from '../demoData';
 
-const time = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York' }).format(new Date(demoLive.retrievedAt ?? Date.now()));
+const time = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York' }).format(new Date(demoLive.retrievedAt));
 
 /** Full-width live score instrument. The differentiator, shown as the product shows it. */
 export function ScoreMoment() {

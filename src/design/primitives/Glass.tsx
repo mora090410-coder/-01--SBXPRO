@@ -4,7 +4,7 @@ type Padding = 'none' | 'md' | 'lg';
 const PAD: Record<Padding, string> = { none: '', md: 'p-5', lg: 'p-7' };
 
 export interface GlassProps extends React.HTMLAttributes<HTMLElement> {
-  as?: 'div' | 'section' | 'article';
+  as?: 'div' | 'section' | 'article' | 'figure';
   padding?: Padding;
 }
 

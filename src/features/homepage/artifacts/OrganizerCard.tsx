@@ -5,7 +5,7 @@ import { demoGame } from '../demoData';
 
 const rings = [
   { value: 0.83, label: '83 percent filled', caption: '83%' },
-  { value: 0.5, label: '50 percent paid', caption: '50%', tone: 'gold' as const },
+  { value: 0.93, label: '93 percent paid', caption: '93%', tone: 'gold' as const },
   { value: 1, label: 'Numbers drawn', caption: 'Drawn', tone: 'gold' as const },
 ];
 
@@ -13,7 +13,7 @@ const rings = [
 export function OrganizerCard({ className = '' }: { className?: string }) {
   return (
     <div data-base="cream" className={`bg-ground text-fg font-ui rounded-card p-4 ${className}`.trim()}>
-      <Glass as={'figure' as unknown as 'article'} aria-label="Sample organizer workspace" padding="lg" className="flex flex-col gap-5">
+      <Glass as="figure" aria-label="Sample organizer workspace" padding="lg" className="flex flex-col gap-5">
         <div className="flex items-baseline justify-between gap-4">
           <h3 className="font-display text-[28px] leading-none text-fg">{demoGame.title}</h3>
           <span className="font-mono text-[12px] text-fg-3">Saved</span>
