@@ -1,6 +1,7 @@
 import React from 'react';
 import type { BoardData, GameState, LiveGameData } from '../../../../types';
 import { buildScenarioModel, playersForDigits, quarterForLive } from '../scenarios/scenarioModel';
+import { CapsuleButton, Eyebrow, Glass } from '../../../design/primitives';
 
 interface SquareRow {
   index: number;
@@ -40,39 +41,43 @@ const YourSquaresSummary: React.FC<YourSquaresSummaryProps> = ({ board, game, li
   const rows = selectedRows(board, game, live, selectedPlayer);
   const currentQuarter = quarterForLive(live);
   const currentNames = live ? playersForDigits(board, live.topScore % 10, live.leftScore % 10, currentQuarter) : [];
-  const currentStatus = currentNames.includes(selectedPlayer)
-    ? 'Current result matches now.'
-    : 'Current result: none of the selected squares match now.';
+  const winsNow = currentNames.includes(selectedPlayer);
+  const topLabel = game.topAbbr || 'Top';
+  const leftLabel = game.leftAbbr || 'Side';
 
   return (
-    <section className="border-t border-broadcast-white/20 py-5" role="region" aria-label={`${selectedPlayer} square summary`}>
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="oa-slab text-xs uppercase tracking-[0.18em] text-gold">Selected name</p>
-          <h2 className="oa-headline text-2xl text-broadcast-white">{selectedPlayer}</h2>
-        </div>
-        <strong className="oa-data text-broadcast-white">{rows.length} {rows.length === 1 ? 'square' : 'squares'}</strong>
+    <section className="flex flex-col gap-4" role="region" aria-label={`${selectedPlayer} square summary`}>
+      <div className="flex items-baseline justify-between gap-3">
+        <Eyebrow>Your squares · {selectedPlayer}</Eyebrow>
+        <span className="font-mono tabular-nums text-[15px] text-fg">{rows.length} {rows.length === 1 ? 'square' : 'squares'}</span>
       </div>
-      <p className="oa-body mt-3 text-sm text-broadcast-white">{currentStatus}</p>
-      <ul className="mt-4 grid gap-3">
+      <ul className="flex flex-wrap gap-2" aria-label="Your squares">
         {rows.map((row) => (
-          <li key={row.index} className="border border-broadcast-white/20 bg-ink/30 p-3">
-            <div className="flex items-center justify-between gap-3">
-              <span className="oa-data text-broadcast-white">{game.topAbbr || 'Top'} column {row.top} × {game.leftAbbr || 'Side'} row {row.left}</span>
+          <li key={row.index} className={`inline-flex items-center h-9 px-3 rounded-capsule border font-mono tabular-nums text-[14px] ${row.matchesCurrent ? 'border-gold text-gold' : 'border-hairline text-fg'}`}>
+            {topLabel} {row.top} · {leftLabel} {row.left}
+          </li>
+        ))}
+      </ul>
+      <p className={`font-ui text-[17px] font-medium ${winsNow ? 'text-gold' : 'text-fg-2'}`}>
+        {winsNow ? 'Current result matches now.' : 'Current result: none of the selected squares match now.'}
+      </p>
+      <ul className="flex flex-col gap-2">
+        {rows.map((row) => (
+          <li key={`row-${row.index}`}>
+            <Glass padding="md" className="flex items-center justify-between gap-3">
+              <div className="flex flex-col gap-1 min-w-0">
+                <span className="font-mono tabular-nums text-[15px] text-fg">{topLabel} column {row.top} × {leftLabel} row {row.left}</span>
+                <span className="font-ui text-[14px] text-fg-2">
+                  {row.matchesCurrent ? 'This square matches the current result.' : row.nextLabels.length ? `Next score: ${row.nextLabels[0]}` : 'None of the next scores listed here match this square.'}
+                </span>
+              </div>
               {row.top !== null && row.left !== null && (
-                <button
-                  type="button"
-                  className="oa-slab min-h-11 border border-broadcast-white/30 px-3 text-broadcast-white"
-                  style={{ minHeight: 44 }}
-                  onClick={() => onViewSquare({ top: row.top as number, left: row.left as number })}
-                >
-                  View on board top {row.top} side {row.left}
-                </button>
+                <CapsuleButton variant="quiet" onClick={() => onViewSquare({ top: row.top as number, left: row.left as number })}>
+                  <span aria-hidden="true">View on board</span>
+                  <span className="sr-only">View on board top {row.top} side {row.left}</span>
+                </CapsuleButton>
               )}
-            </div>
-            <p className="oa-body mt-2 text-sm text-broadcast-white/70">
-              {row.matchesCurrent ? 'This square matches the current result.' : row.nextLabels.length ? `Next score: ${row.nextLabels[0]}` : 'None of the next scores listed here match this square.'}
-            </p>
+            </Glass>
           </li>
         ))}
       </ul>

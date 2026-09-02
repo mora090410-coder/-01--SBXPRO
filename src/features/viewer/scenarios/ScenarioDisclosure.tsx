@@ -19,10 +19,10 @@ const lastKnownCopy = (checkedAt: string | null): string => {
 };
 
 const ScenarioDisclosure: React.FC<ScenarioDisclosureProps> = ({ board, game, live, selectedPlayer, servicesEnabled, onScenarioFocus }) => {
-  if (!servicesEnabled) return <p className="oa-body text-broadcast-white/70">Publish this board to show live scenarios.</p>;
+  if (!servicesEnabled) return <p className="font-ui text-[15px] text-fg-2">Publish this board to show live scenarios.</p>;
   const model = buildScenarioModel({ board, game, live });
   if (model.status === 'final') return null;
-  if (!live || live.state === 'pre') return <p className="oa-body text-broadcast-white/70">Scenarios appear after kickoff.</p>;
+  if (!live || live.state === 'pre') return <p className="font-ui text-[15px] text-fg-2">Scenarios appear after kickoff.</p>;
 
   const selected = selectedPlayer
     ? model.scenarios.filter((scenario) => scenario.names.includes(selectedPlayer))
@@ -35,37 +35,40 @@ const ScenarioDisclosure: React.FC<ScenarioDisclosureProps> = ({ board, game, li
     <button
       type="button"
       key={`${scenario.team}-${scenario.points}-${scenario.top}-${scenario.left}`}
-      className="w-full min-h-11 border border-broadcast-white/20 bg-ink/30 px-3 py-2 text-left text-broadcast-white"
-      style={{ minHeight: 44 }}
+      className="w-full min-h-11 rounded-control px-3 py-2 text-left bg-panel border border-hairline hover:bg-panel-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action transition-[background-color] duration-[var(--g-dur-state)] ease-[var(--g-ease-state)]"
       onFocus={() => onScenarioFocus({ left: scenario.left, top: scenario.top })}
       onBlur={() => onScenarioFocus(null)}
       onMouseEnter={() => onScenarioFocus({ left: scenario.left, top: scenario.top })}
       onMouseLeave={() => onScenarioFocus(null)}
       onClick={() => onScenarioFocus({ left: scenario.left, top: scenario.top })}
     >
-      <span className="oa-slab block">{scenario.team} {scenario.label} +{scenario.points}</span>
-      <span className="oa-body text-sm text-broadcast-white/70">{game.topAbbr || 'Top'} column {scenario.top} × {game.leftAbbr || 'Side'} row {scenario.left} · winner: {scenario.names.length ? scenario.names.join(', ') : 'OPEN'}</span>
+      <span className="block font-mono tabular-nums text-[15px] text-fg">{scenario.team} {scenario.label} +{scenario.points}</span>
+      <span className="block font-ui text-[14px] text-fg-2">{game.topAbbr || 'Top'} column {scenario.top} × {game.leftAbbr || 'Side'} row {scenario.left} · winner: {scenario.names.length ? scenario.names.join(', ') : 'OPEN'}</span>
     </button>
   );
 
   return (
-    <section className="border-t border-broadcast-white/20 py-5" aria-labelledby="viewer-scenarios-title">
-      <h2 id="viewer-scenarios-title" className="oa-headline text-2xl text-broadcast-white">What score changes the next result?</h2>
-      <p className="oa-body mt-2 text-sm text-broadcast-white/70">Read each result across the top team’s columns, then down the side team’s rows.</p>
-      {model.status === 'last-known' && <p className="oa-body mt-2 text-sm text-gold">{lastKnownCopy(model.lastKnownCheckedAt)}</p>}
+    <section className="flex flex-col gap-3" role="region" aria-labelledby="viewer-scenarios-title">
+      <h2 id="viewer-scenarios-title" className="font-display text-[26px] leading-[1.1] text-fg">What score changes the next result?</h2>
+      <p className="font-ui text-[14px] text-fg-3">Read each result across the top team’s columns, then down the side team’s rows.</p>
+      {model.status === 'last-known' && <p className="font-ui text-[14px] text-gold">{lastKnownCopy(model.lastKnownCheckedAt)}</p>}
       {selectedPlayer && selected.length > 0 && (
-        <div className="mt-4 grid gap-2" aria-label="Next scores that match your squares">
+        <div className="flex flex-col gap-2" aria-label="Next scores that match your squares">
           {selected.map(renderButton)}
         </div>
       )}
       {selectedPlayer && selected.length === 0 && (
-        <p className="oa-body mt-3 text-broadcast-white/70">None of the next scores listed here match your squares right now.</p>
+        <p className="font-ui text-[15px] text-fg-2">None of the next scores listed here match your squares right now.</p>
       )}
-      <details className="mt-4 border border-broadcast-white/20 p-3">
-        <summary className="oa-slab min-h-11 cursor-pointer text-broadcast-white" style={{ minHeight: 44 }}>All possible next scores</summary>
-        <div className="mt-3 grid gap-2">{secondary.map(renderButton)}</div>
+      <details className="group rounded-card border border-hairline p-3">
+        <summary className="min-h-11 flex items-center justify-between cursor-pointer list-none [&::-webkit-details-marker]:hidden font-ui text-[15px] text-fg">
+          <span>All possible next scores</span>
+          <span aria-hidden="true" className="font-mono text-fg-3 group-open:hidden">+</span>
+          <span aria-hidden="true" className="font-mono text-fg-3 hidden group-open:inline">−</span>
+        </summary>
+        <div className="mt-3 flex flex-col gap-2">{secondary.map(renderButton)}</div>
       </details>
-      <p className="oa-body mt-3 text-xs text-broadcast-white/60">{model.disclaimer}</p>
+      <p className="font-mono text-[12px] text-fg-3">{model.disclaimer}</p>
     </section>
   );
 };

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Field } from '../src/components/primitives/Field';
+import { CapsuleButton, CapsuleInput } from '../src/design/primitives';
 
 interface NotificationOptInProps {
   shareCode?: string | null;
@@ -34,31 +34,26 @@ const NotificationOptIn: React.FC<NotificationOptInProps> = ({ shareCode, partic
   };
 
   return (
-    <form className="gdh-notify" onSubmit={submit}>
-      <div>
-        <strong>Quarter-winner email for {displayName}</strong>
-        <span>One verified email for Q1, halftime, Q3, and Final wins. GridOne does not handle payouts.</span>
+    <form className="flex flex-col gap-3" onSubmit={submit}>
+      <div className="flex flex-col gap-1">
+        <p className="font-ui text-[15px] font-medium text-fg">Quarter-winner email for {displayName}</p>
+        <p className="font-ui text-[14px] text-fg-2">One verified email for Q1, halftime, Q3, and Final wins. GridOne does not handle payouts.</p>
       </div>
       {status !== 'sent' && (
-        <div className="gdh-notify-controls">
-          <Field
-            id="viewer-notification-email"
-            label="Email address"
-            labelClassName="sr-only"
-            containerClassName="contents"
-            type="email"
-            autoComplete="email"
-            required
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            placeholder="you@example.com"
-          />
-          <button type="submit" disabled={status === 'sending'}>
-            {status === 'sending' ? 'Sending…' : 'Verify email'}
-          </button>
-        </div>
+        <CapsuleInput
+          id="viewer-notification-email"
+          label="Email address"
+          hideLabel
+          type="email"
+          autoComplete="email"
+          required
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          placeholder="you@example.com"
+          trailing={<CapsuleButton type="submit" disabled={status === 'sending'}>{status === 'sending' ? 'Sending…' : 'Verify email'}</CapsuleButton>}
+        />
       )}
-      {message && <p role="status" className={status === 'error' ? 'is-error' : ''}>{message}</p>}
+      {message && <p role="status" className={`font-ui text-[14px] ${status === 'error' ? 'text-cardinal' : 'text-fg-2'}`}>{message}</p>}
     </form>
   );
 };
