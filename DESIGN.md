@@ -141,6 +141,22 @@ Score freshness is information, not decoration: viewer updates arrive about ever
 7. Copy is short, specific, occasionally dry. Banned: seamless, effortless, unlock, supercharge, elevate, powerful, robust.
 8. No purple, no multi-color gradients, no corner glows, no uniform radius on every element.
 
+## Accessibility
+
+- Text contrast meets WCAG AA at rendered size on both bases; glass panels are checked against their real blurred backdrop, not a flat swatch.
+- Every tap target is at least 44×44px. Grid cells are the precision exception and expose a full accessible label.
+- Everything works with keyboard alone: island, sheet, capsule inputs, board navigation. Escape closes the topmost layer and returns focus.
+- Live score changes and phase changes are announced through a polite live region; nothing critical is conveyed by color, motion, or hover alone.
+- Reduced motion is honored everywhere (see Motion).
+
+## Absolute bans
+
+- No invented payout, customer, fundraising, or guarantee claims. GridOne never collects square money, holds a pot, or pays winners, and every surface that mentions money says so.
+- One vocabulary: board, square, organizer, viewer, participant. Never pool, contest, player, or guest in product copy.
+- Score source and retrieved time are never hidden while a score is shown.
+- No hover-only meaning. No color-only state.
+- No tiny full-name cells as the primary phone board; the personal summary and Find My Squares come first.
+
 ## Deliberate exceptions
 
 - The island renders dark on the cream base; it is a broadcast object.
