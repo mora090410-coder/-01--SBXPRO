@@ -31,6 +31,11 @@
 
   /* Glass */
   --g-blur: 20px;
+
+  /* Tone fallbacks for tags rendered outside a Base; each base overrides. */
+  --g-tone-gold: var(--g-gold);
+  --g-tone-live: var(--g-live);
+  --g-tone-cardinal: var(--g-cardinal);
 }
 
 /* Dark base: viewer and homepage. Gold is the only action color. */

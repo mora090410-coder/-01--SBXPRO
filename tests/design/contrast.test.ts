@@ -5,7 +5,7 @@ const css = readFileSync('src/design/tokens.css', 'utf8');
 
 /** Pull `--name: value;` out of a specific `selector { ... }` block. */
 function block(selector: string): string {
-  const re = new RegExp(`${selector}\\s*\\{([^}]*)\\}`, 'm');
+  const re = new RegExp(`^${selector}\\s*\\{([^}]*)\\}`, "m");
   const match = css.match(re);
   if (!match) throw new Error(`Could not find block for ${selector}`);
   return match[1];

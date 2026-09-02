@@ -126,7 +126,7 @@ State ease 200ms `cubic-bezier(0.2, 0, 0, 1)`. Soft spring ~450ms, no overshoot,
 
 ## The Island
 
-Capsule hugging the top edge on phone, bottom-right on desktop. Collapsed: rings or score. Expanded on tap or hover: full state and exactly one primary action. Always dark. Keyboard operable; Escape collapses. The island's outer <section> is the single named landmark (present even when collapsed); the expanded content is an unnamed region referenced by aria-controls.
+Capsule hugging the top edge on phone, bottom-right on desktop. Collapsed: rings or score. Expanded on tap or hover: full state and exactly one primary action. Always dark. Keyboard operable; Escape collapses. The island's outer `<section>` is the single named landmark (present even when collapsed); the expanded content is an unnamed region referenced by aria-controls.
 
 Score freshness is information, not decoration: viewer updates arrive about every minute, and the island's expanded state always shows the source and the retrieved time. Never imply realtime delivery.
 
