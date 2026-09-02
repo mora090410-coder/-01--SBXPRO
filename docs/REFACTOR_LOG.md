@@ -389,3 +389,11 @@ Remove `tests/designAudit.test.ts`, `scripts/design-audit.mjs`, the two package 
 - **Deferred to stage 6:** replace the primitive-built hero and organizer artifacts with renders of the redesigned viewer and organizer; give the board fragment per-cell accessibility once the real grid is used.
 - **Evidence:** unit suite 81 files / 444 tests, strict TypeScript, production build (dist 1.3 MB, down from 15 MB), design lint 0 errors, Playwright homepage / feature-flags-off / accessibility-contract on Chromium, desktop and 375px screenshots reviewed (no overflow, focus ring visible, one spotlight).
 - **Rollback:** revert this stage's commits; restores the flagged pair of landings and the film assets.
+
+## 2026-09-02 — Broadcast Glass stage 4: phone viewer
+
+- **Scope:** `ViewerShell` and every viewer component in `src/features/viewer/` rebuilt on the Broadcast Glass primitives: pinned score island (`shell/ViewerIsland.tsx`), glass score instrument with accessible numerals, Find My Squares as a capsule entry plus a `Sheet`, personal summary with digit chips and a gold wins-now line, scenario rows, capsule winner-email form, final record promoted above the grid at Final, payouts and board rules below the grid, restyled grid with `Fit`. `BoardView` renders the new shell unconditionally; `viewer_v2`, `GameDayHorizon`, `BoardGrid`, `PlayerFilter`, and `BoardHeader` are deleted. `ViewerShellProps` unchanged except an optional `onShare`.
+- **Not touched:** `*Model.ts` files, name matching, identity persistence, hooks, services, functions, workers, schema, notification API.
+- **Fixed along the way:** Sheet returns focus to its trigger and focuses its first content control; corrected results show reason and time; payout descriptions restored for viewers (a gap the flagged viewer already had); side-axis header no longer stretched grid rows; island never wraps.
+- **Evidence:** unit suite green, strict TypeScript, production build, design lint 0 errors; Playwright viewer / feature-flags-off / accessibility-contract / smoke green on Chromium; user-workflows green except the organizer NFL-event test that needs `wrangler pages dev`; browser-checked at 375px and desktop (island, sheet flow, personal view, grid, no overflow).
+- **Rollback:** revert this stage's commits.
