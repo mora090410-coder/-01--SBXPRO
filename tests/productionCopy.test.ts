@@ -42,6 +42,7 @@ const liveCopyFiles = [
   'src/features/organizer/workspace/gameday/DeliveryIssuesCard.tsx',
   'src/features/organizer/workspace/gameday/FinalRecordCard.tsx',
   'src/features/organizer/game-day/ManualScoringPanel.tsx',
+  'pages/Dashboard.tsx',
 ] as const;
 
 const corpus = liveCopyFiles

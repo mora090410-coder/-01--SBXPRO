@@ -1,0 +1,181 @@
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import Dashboard from '../pages/Dashboard';
+
+const mocks = vi.hoisted(() => {
+  const auth = {
+    user: { id: 'owner-1' } as { id: string } | null,
+    loading: false,
+    signOut: vi.fn(),
+  };
+  return {
+    auth,
+    migrateGuestBoard: vi.fn(),
+    getSession: vi.fn(async () => ({ data: { session: null as { access_token: string } | null } })),
+    from: vi.fn(),
+    deleteEq: vi.fn(async () => ({ error: null })),
+  };
+});
+
+vi.mock('../context/AuthContext', () => ({
+  useAuth: () => mocks.auth,
+}));
+
+vi.mock('../hooks/usePoolData', () => ({
+  default: () => ({ migrateGuestBoard: mocks.migrateGuestBoard }),
+}));
+
+vi.mock('../services/supabase', () => ({
+  supabase: {
+    auth: { getSession: mocks.getSession },
+    from: mocks.from,
+  },
+}));
+
+const drawnAxis = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+const boardWithSquares = (names: string[]) => {
+  const squares = Array.from({ length: 10 }, () => Array.from({ length: 10 }, () => ''));
+  names.forEach((name, index) => {
+    squares[Math.floor(index / 10)][index % 10] = name;
+  });
+  return { leftAxis: drawnAxis, topAxis: drawnAxis, squares };
+};
+
+const rows = [
+  {
+    id: 'board-1',
+    title: 'Chiefs Fundraiser',
+    created_at: '2026-01-02T00:00:00.000Z',
+    settings: { leftAbbr: 'KC', topAbbr: 'BUF' },
+    board_data: boardWithSquares(['Ann', 'Ben', 'Cara']),
+    published_at: null,
+    board_activations: [{ id: 'activation-1' }],
+  },
+  {
+    id: 'board-2',
+    title: 'Booster Draft',
+    created_at: '2026-01-01T00:00:00.000Z',
+    settings: { leftAbbr: 'SF', topAbbr: 'PHI' },
+    board_data: null,
+    published_at: null,
+    board_activations: [],
+  },
+];
+
+const contestQuery = (data: unknown[]) => {
+  const query: Record<string, any> = {};
+  query.select = vi.fn(() => query);
+  query.eq = vi.fn(() => query);
+  query.order = vi.fn(async () => ({ data, error: null }));
+  query.delete = vi.fn(() => ({ eq: mocks.deleteEq }));
+  return query;
+};
+
+const useContests = (data: unknown[]) => {
+  mocks.from.mockImplementation(() => contestQuery(data));
+};
+
+const renderDashboard = () => render(
+  <MemoryRouter initialEntries={['/dashboard']}>
+    <Dashboard />
+  </MemoryRouter>,
+);
+
+beforeEach(() => {
+  localStorage.clear();
+  mocks.auth.user = { id: 'owner-1' };
+  mocks.auth.loading = false;
+  mocks.auth.signOut.mockReset();
+  mocks.migrateGuestBoard.mockReset();
+  mocks.getSession.mockReset();
+  mocks.getSession.mockResolvedValue({ data: { session: null } });
+  mocks.from.mockReset();
+  mocks.deleteEq.mockReset();
+  mocks.deleteEq.mockResolvedValue({ error: null });
+  vi.stubGlobal('fetch', vi.fn(async () => ({ ok: false, json: async () => ({}) })));
+  useContests([]);
+});
+
+describe('organizer dashboard', () => {
+  it('renders a row per board with its matchup and a link to the board', async () => {
+    useContests(rows);
+    renderDashboard();
+
+    expect(await screen.findByRole('link', { name: 'Chiefs Fundraiser' }))
+      .toHaveAttribute('href', '/boards/board-1');
+    expect(screen.getByRole('link', { name: 'Booster Draft' }))
+      .toHaveAttribute('href', '/boards/board-2');
+    expect(screen.getByText('KC at BUF')).toBeInTheDocument();
+    expect(screen.getByText('SF at PHI')).toBeInTheDocument();
+    expect(screen.getByRole('main', { name: 'Your boards' })).toBeInTheDocument();
+    expect(screen.getByRole('list')).toBeInTheDocument();
+  });
+
+  it('selects the board fields the rings and status need', async () => {
+    useContests(rows);
+    renderDashboard();
+
+    await screen.findByRole('link', { name: 'Chiefs Fundraiser' });
+    const query = mocks.from.mock.results[0].value;
+    expect(query.select).toHaveBeenCalledWith(
+      'id, title, created_at, settings, board_data, published_at, board_activations(id)',
+    );
+  });
+
+  it('tags an activated board Published and an untouched board Draft', async () => {
+    useContests(rows);
+    renderDashboard();
+
+    expect(await screen.findByText('Published')).toBeInTheDocument();
+    expect(screen.getByText('Draft')).toBeInTheDocument();
+  });
+
+  it('shows fill and draw rings, treating a missing board_data as empty', async () => {
+    useContests(rows);
+    renderDashboard();
+
+    expect(await screen.findByLabelText('3 of 100 squares filled on Chiefs Fundraiser')).toBeInTheDocument();
+    expect(screen.getByLabelText('Numbers drawn on Chiefs Fundraiser')).toBeInTheDocument();
+    expect(screen.getByLabelText('0 of 100 squares filled on Booster Draft')).toBeInTheDocument();
+    expect(screen.getByLabelText('Numbers not drawn on Booster Draft')).toBeInTheDocument();
+  });
+
+  it('deletes a board only after a second confirming press', async () => {
+    useContests(rows);
+    renderDashboard();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Delete Chiefs Fundraiser' }));
+    expect(mocks.deleteEq).not.toHaveBeenCalled();
+
+    const confirm = await screen.findByRole('button', { name: 'Confirm deletion of Chiefs Fundraiser' });
+    expect(confirm).toHaveTextContent('Confirm?');
+
+    fireEvent.click(confirm);
+    await waitFor(() => expect(mocks.deleteEq).toHaveBeenCalledWith('id', 'board-1'));
+    await waitFor(() => expect(screen.queryByRole('link', { name: 'Chiefs Fundraiser' })).not.toBeInTheDocument());
+  });
+
+  it('offers the empty state with a way to start a board', async () => {
+    useContests([]);
+    renderDashboard();
+
+    expect(await screen.findByText('No boards yet.')).toBeInTheDocument();
+    const links = screen.getAllByRole('link', { name: 'New board' });
+    expect(links.length).toBeGreaterThan(0);
+    links.forEach((link) => expect(link).toHaveAttribute('href', '/create'));
+  });
+
+  it('states the published allowance and plan once billing resolves', async () => {
+    mocks.getSession.mockResolvedValue({ data: { session: { access_token: 'token-1' } } });
+    vi.stubGlobal('fetch', vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ tier: 'gameday', allowance: 5, used: 2 }),
+    })));
+    useContests(rows);
+    renderDashboard();
+
+    expect(await screen.findByText('2 of 5 published · Game Day')).toBeInTheDocument();
+  });
+});
