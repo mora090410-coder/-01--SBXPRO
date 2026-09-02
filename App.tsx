@@ -90,9 +90,7 @@ const App: React.FC = () => {
                 path="/create"
                 element={
                   <RequireAuth>
-                    <Layout>
-                      <CreateContest />
-                    </Layout>
+                    <CreateContest />
                   </RequireAuth>
                 }
               />

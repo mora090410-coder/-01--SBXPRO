@@ -1,21 +1,21 @@
-
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { compressImage } from '../utils/image';
 import { parseBoardImage } from '../services/boardImportService';
 import { GameState, BoardData, ScheduledGame } from '../types';
 import { INITIAL_GAME, EMPTY_BOARD } from '../hooks/usePoolData';
 import ScheduledGamePicker from '../components/ScheduledGamePicker';
+import { Base, CapsuleButton, Eyebrow, Glass, CapsuleInput } from '../src/design/primitives';
+
+const CAPSULE_LINK = 'inline-flex items-center justify-center gap-2 rounded-capsule bg-panel border border-hairline px-5 h-11 font-ui text-[15px] font-semibold leading-none text-fg transition-colors hover:bg-panel-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action focus-visible:ring-offset-2 focus-visible:ring-offset-ground active:scale-[0.98]';
 
 const CreateContest: React.FC = () => {
-    const { user, session } = useAuth();
+    const { user, session, signOut } = useAuth();
     const navigate = useNavigate();
     const requestedScoreTestMode = new URLSearchParams(window.location.search).get('scoreTest') === '1';
     const [scoreTestMode, setScoreTestMode] = useState(false);
 
-    // Wizard State
-    const [step, setStep] = useState(1);
     const [game, setGame] = useState<GameState>(() => ({
         ...INITIAL_GAME,
         gameExternalId: undefined,
@@ -28,12 +28,12 @@ const CreateContest: React.FC = () => {
     }));
     const [board, setBoard] = useState<BoardData>(EMPTY_BOARD);
     const [isLoading, setIsLoading] = useState(false);
+    const [isScanning, setIsScanning] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [successPoolId, setSuccessPoolId] = useState<string | null>(null);
     const [scanSuccess, setScanSuccess] = useState(false);
     const fileRef = useRef<HTMLInputElement>(null);
 
-    // Restore wizard draft if user was redirected away from /create for auth
+    // Restore the draft if the user was redirected away from /create for auth.
     useEffect(() => {
         const savedGame = sessionStorage.getItem('gridone_draft_game');
         const savedBoard = sessionStorage.getItem('gridone_draft_board');
@@ -86,7 +86,7 @@ const CreateContest: React.FC = () => {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        setIsLoading(true);
+        setIsScanning(true);
         setError(null);
         setScanSuccess(false);
 
@@ -97,7 +97,6 @@ const CreateContest: React.FC = () => {
                 const compressed = await compressImage(rawBase64);
                 setGame(p => ({ ...p, coverImage: compressed }));
 
-                // Scan with Gemini
                 const scannedBoard = await parseBoardImage(compressed);
                 setBoard(scannedBoard);
                 setScanSuccess(true);
@@ -106,17 +105,17 @@ const CreateContest: React.FC = () => {
                 setError("Image processed, but grid scan failed: " + (err.message || "Invalid format"));
                 setScanSuccess(false);
             } finally {
-                setIsLoading(false);
+                setIsScanning(false);
             }
         };
         reader.onerror = () => {
             setError("Failed to read file.");
-            setIsLoading(false);
+            setIsScanning(false);
         };
         reader.readAsDataURL(file);
     };
 
-    const handlePublish = async (manualBoard?: BoardData) => {
+    const createBoard = async (manualBoard?: BoardData) => {
         const finalBoard = manualBoard || board;
         const leagueTitle = game.title?.trim();
 
@@ -125,14 +124,13 @@ const CreateContest: React.FC = () => {
                 sessionStorage.setItem('gridone_draft_game', JSON.stringify(game));
                 sessionStorage.setItem('gridone_draft_board', JSON.stringify(finalBoard));
             } catch {
-                // sessionStorage unavailable — user will lose draft state on redirect
+                // sessionStorage unavailable — the draft is lost on redirect
             }
             const returnTo = encodeURIComponent(requestedScoreTestMode ? '/create?scoreTest=1' : '/create');
             navigate(`/login?mode=signup&returnTo=${returnTo}`);
             return;
         }
 
-        // Proceed with Supabase Insert
         setIsLoading(true);
         setError(null);
 
@@ -158,7 +156,7 @@ const CreateContest: React.FC = () => {
             if (!response.ok) throw new Error(data.message || data.error || 'Failed to create contest.');
             if (!data.poolId) throw new Error("No data returned from create flow.");
 
-            setSuccessPoolId(data.poolId);
+            navigate(`/boards/${data.poolId}`);
         } catch (err: any) {
             console.error("Publish Error:", err);
             setError(err.message || "Failed to create contest.");
@@ -167,210 +165,93 @@ const CreateContest: React.FC = () => {
         }
     };
 
-    if (successPoolId) {
-        return (
-            <div className="oa-root min-h-screen bg-broadcast-white text-ink flex flex-col items-center justify-center p-6 text-center">
-                <div className="w-20 h-20 bg-gold border border-ink flex items-center justify-center mb-6">
-                    <svg className="w-10 h-10 text-ink" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
-                </div>
-                <p className="oa-slab text-cardinal mb-2">Fill phase started</p>
-                <h1 className="oa-headline !text-4xl mb-3">Your board is ready to fill.</h1>
-                <p className="oa-body text-ink/65 mb-8 max-w-md">Review the matchup, assign all 100 squares, then run the number draw before publishing.</p>
-                <div className="flex flex-wrap justify-center gap-4">
-                    <button onClick={() => navigate('/dashboard')} className="oa-btn oa-btn-ghost">
-                        Back to Dashboard
-                    </button>
-                    <button onClick={() => navigate(`/boards/${successPoolId}`)} className="oa-btn oa-btn-primary">
-                        Start assigning
-                    </button>
-                </div>
-            </div>
-        );
-    }
+    const canCreate = Boolean(game.title?.trim()) && Boolean(game.gameExternalId);
 
     return (
-        <div className="oa-root min-h-screen bg-broadcast-white text-ink p-5 md:p-8">
-            <div className="max-w-2xl mx-auto pt-10">
+        <Base kind="cream">
+            <main aria-label="New board" className="mx-auto flex w-full max-w-2xl flex-col gap-8 px-5 py-10 md:px-8 md:py-14">
 
-                {/* Header */}
-                <div className="flex items-center justify-between mb-8">
-                    <button onClick={() => navigate(-1)} className="oa-slab min-h-11 text-ink/60 hover:text-ink flex items-center gap-2">
-                        &larr; Back
-                    </button>
-                    <div className="flex gap-2">
-                        {[1, 2, 3].map(s => (
-                            <div key={s} className={`h-1 w-12 ${step >= s ? 'bg-cardinal' : 'bg-newsprint'}`} aria-label={`Step ${s}${step === s ? ', current' : ''}`}></div>
-                        ))}
-                    </div>
+                <header className="flex items-center justify-between gap-4">
+                    <Link to="/dashboard" className={CAPSULE_LINK}>Your boards</Link>
+                    <CapsuleButton variant="ghost" onClick={() => void signOut?.()}>Log out</CapsuleButton>
+                </header>
+
+                {error && (
+                    <Glass role="alert" className="flex flex-wrap items-center justify-between gap-3 font-ui text-[15px] text-tone-cardinal">
+                        <span className="min-w-0">{error}</span>
+                        {error.includes('overloaded') && (
+                            <CapsuleButton variant="quiet" onClick={() => void createBoard()}>Retry</CapsuleButton>
+                        )}
+                    </Glass>
+                )}
+
+                <div className="flex flex-col gap-3">
+                    <Eyebrow>New board</Eyebrow>
+                    <h1 className="font-display text-[40px] leading-[1] tracking-[-0.01em] text-fg md:text-[52px]">Name your board</h1>
                 </div>
 
-                <div className="border border-ink bg-broadcast-white p-6 md:p-9">
+                <CapsuleInput
+                    id="board-name"
+                    label="Board name"
+                    type="text"
+                    maxLength={100}
+                    value={game.title}
+                    onChange={(e) => setGame(prev => ({ ...prev, title: e.target.value }))}
+                    placeholder="Lincoln Softball Booster Board"
+                    autoFocus
+                />
 
-                    {error && (
-                        <div className="mb-6 bg-cardinal-subtle border border-cardinal p-4 text-cardinal text-sm font-medium flex items-center gap-3" role="alert">
-                            <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                            <span className="flex-1">{error}</span>
-                            {error.includes('overloaded') && (
-                                <button
-                                    onClick={() => handlePublish()} // Retry the same action
-                                    className="oa-btn oa-btn-ghost"
-                                >
-                                    Retry
-                                </button>
-                            )}
-                        </div>
+                <section aria-labelledby="pick-the-game" className="flex flex-col gap-4">
+                    <h2 id="pick-the-game" className="font-display text-[26px] leading-[1.05] text-fg">Pick the game</h2>
+
+                    {scoreTestMode && (
+                        <Glass role="status" className="flex flex-col gap-1">
+                            <p className="font-ui text-[15px] font-semibold text-fg">Completed-game score test</p>
+                            <p className="font-ui text-[14px] text-fg-2">This test mode shows only the five most recent final games.</p>
+                        </Glass>
                     )}
 
-                    {step === 1 && (
-                        <div className="space-y-6">
-                            <div>
-                                <p className="oa-slab text-cardinal mb-2">01 · Name</p>
-                                <h1 className="oa-headline !text-3xl mb-2">Name your board</h1>
-                                <p className="oa-body text-ink/60">Use the name your parents, supporters, or group will recognize.</p>
-                            </div>
+                    <ScheduledGamePicker
+                        value={game.gameExternalId || null}
+                        onChange={handleGameChange}
+                        scope={scoreTestMode ? 'completed' : 'upcoming'}
+                        limit={scoreTestMode ? 5 : undefined}
+                        accessToken={scoreTestMode ? session?.access_token : undefined}
+                    />
+                </section>
 
-                            <div className="space-y-4">
-                                <div className="space-y-1">
-                                    <label htmlFor="board-name" className="oa-slab text-ink/60">Board name</label>
-                                    <input
-                                        id="board-name"
-                                        type="text"
-                                        maxLength={100}
-                                        value={game.title}
-                                        onChange={(e) => setGame(prev => ({ ...prev, title: e.target.value }))}
-                                        className="w-full oa-input"
-                                        placeholder="e.g. Lincoln Softball Booster Board"
-                                        autoFocus
-                                    />
-                                </div>
-                                <p className="oa-body text-sm text-ink/60">Your GridOne account is the only organizer key. There is no separate board passcode to lose or share.</p>
-                            </div>
+                <CapsuleButton
+                    variant="primary"
+                    size="lg"
+                    className="w-full"
+                    disabled={!canCreate || isLoading}
+                    onClick={() => void createBoard()}
+                >
+                    {isLoading ? 'Creating board…' : 'Create board'}
+                </CapsuleButton>
 
-                            <div className="pt-4">
-                                <button
-                                    disabled={!game.title.trim()}
-                                    onClick={() => setStep(2)}
-                                    className="w-full oa-btn oa-btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    Continue
-                                </button>
-                            </div>
-                        </div>
+                <section aria-labelledby="paper-import" className="flex flex-col gap-3 border-t border-hairline pt-6">
+                    <h2 id="paper-import" className="font-ui text-[17px] font-semibold text-fg">Import a paper board photo</h2>
+                    <p className="font-ui text-[14px] text-fg-2">Already started on paper? Add a photo and the names are read into the board. You review every square before publishing.</p>
+                    <label htmlFor="board-photo" className="font-ui text-[14px] text-fg-2">Board photo (JPG, PNG, or WebP)</label>
+                    <input
+                        id="board-photo"
+                        type="file"
+                        ref={fileRef}
+                        accept=".jpg,.jpeg,.png,.webp"
+                        onChange={handleFileUpload}
+                        disabled={isScanning || isLoading}
+                        className="min-h-11 w-full rounded-control border border-hairline bg-panel px-4 py-3 font-ui text-[15px] text-fg file:mr-4 file:h-9 file:rounded-capsule file:border-0 file:bg-action file:px-4 file:font-ui file:text-[14px] file:font-semibold file:text-action-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action focus-visible:ring-offset-2 focus-visible:ring-offset-ground"
+                    />
+                    {isScanning && (
+                        <p role="status" className="font-ui text-[14px] text-fg-2">Reading the board photo…</p>
                     )}
-
-                    {step === 2 && (
-                        <div className="space-y-6">
-                            <div>
-                                <p className="oa-slab text-cardinal mb-2">02 · Matchup</p>
-                                <h1 className="oa-headline !text-3xl mb-2">Pick the game</h1>
-                                <p className="oa-body text-ink/60">Choose one scheduled NFL game. The teams and kickoff stay linked so live scoring follows the right event.</p>
-                            </div>
-
-                            {scoreTestMode && (
-                                <div className="border border-gold bg-gold/20 p-4" role="status">
-                                    <p className="oa-slab text-ink mb-1">Completed-game score test</p>
-                                    <p className="oa-body text-sm text-ink/65">This hidden test mode shows only the five most recent final games.</p>
-                                </div>
-                            )}
-
-                            <ScheduledGamePicker
-                                value={game.gameExternalId || null}
-                                onChange={handleGameChange}
-                                scope={scoreTestMode ? 'completed' : 'upcoming'}
-                                limit={scoreTestMode ? 5 : undefined}
-                                accessToken={scoreTestMode ? session?.access_token : undefined}
-                            />
-
-                            <div className="pt-4 flex gap-4">
-                                <button onClick={() => setStep(1)} className="oa-btn oa-btn-ghost flex-1">Back</button>
-                                <button
-                                    disabled={!game.gameExternalId}
-                                    onClick={() => setStep(3)}
-                                    className="oa-btn oa-btn-primary flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    Continue
-                                </button>
-                            </div>
-                        </div>
+                    {scanSuccess && !isScanning && (
+                        <p role="status" className="font-ui text-[14px] text-fg-2">Names read from the photo. Create the board to review them.</p>
                     )}
-
-                    {step === 3 && (
-                        <div className="space-y-6">
-                            <div>
-                                <p className="oa-slab text-cardinal mb-2">03 · Fill</p>
-                                <h1 className="oa-headline !text-3xl mb-2">Start your 100 squares</h1>
-                                <p className="oa-body text-ink/60">Start with a blank board, then add names in the organizer view. You can build and edit before publishing. Your first published board is free.</p>
-                            </div>
-
-                            <button
-                                disabled={isLoading}
-                                onClick={() => handlePublish(EMPTY_BOARD)}
-                                className="w-full oa-btn oa-btn-primary !py-5"
-                            >
-                                Start blank 10×10 board
-                            </button>
-
-                            <div className="border-t border-newsprint pt-6">
-                                <p className="oa-slab text-ink/55 mb-2">Optional · paper recovery beta</p>
-                                <p className="oa-body text-sm text-ink/60 mb-4">Already started on paper? Import a photo, then review every assignment before publishing.</p>
-                            </div>
-
-                            <div
-                                role="button"
-                                tabIndex={isLoading ? -1 : 0}
-                                aria-disabled={isLoading}
-                                onClick={() => !isLoading && fileRef.current?.click()}
-                                onKeyDown={(event) => {
-                                    if (!isLoading && (event.key === 'Enter' || event.key === ' ')) {
-                                        event.preventDefault();
-                                        fileRef.current?.click();
-                                    }
-                                }}
-                                className={`border border-dashed border-ink h-[220px] relative overflow-hidden group focus-visible:outline focus-visible:outline-4 focus-visible:outline-cardinal ${isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-newsprint cursor-pointer'} flex flex-col items-center justify-center`}
-                            >
-                                <input type="file" ref={fileRef} className="hidden" accept=".jpg,.jpeg,.png,.webp" onChange={handleFileUpload} disabled={isLoading} />
-
-                                {isLoading ? (
-                                    <div className="flex flex-col items-center gap-4">
-                                        <div className="w-8 h-8 border-2 border-newsprint border-t-cardinal animate-spin"></div>
-                                        <span className="oa-slab text-ink/50">Scanning board…</span>
-                                    </div>
-                                ) : game.coverImage ? (
-                                    <>
-                                        <img src={game.coverImage} className="absolute inset-0 w-full h-full object-contain bg-newsprint" alt="Uploaded paper board preview" />
-                                        <div className="absolute inset-0 bg-ink/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <div className="oa-btn bg-broadcast-white text-ink">Change image</div>
-                                        </div>
-                                    </>
-                                ) : (
-                                    <div className="flex flex-col items-center gap-4 text-center p-6">
-                                        <div className="w-16 h-16 bg-newsprint flex items-center justify-center border border-ink">
-                                            <svg className="w-8 h-8 text-ink/45" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                                        </div>
-                                        <div>
-                                            <span className="font-bold block mb-1">Choose a board photo</span>
-                                            <span className="text-ink/50 text-xs">JPG, PNG, or WebP</span>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="pt-4 space-y-3">
-                                <button
-                                    onClick={() => handlePublish()}
-                                    disabled={isLoading || !game.coverImage || !!error || !scanSuccess}
-                                    className={`w-full oa-btn oa-btn-ghost ${(!game.coverImage || isLoading || !!error || !scanSuccess) ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                >
-                                    {isLoading ? 'Processing...' : error ? 'Scan Failed' : 'Save scanned board'}
-                                </button>
-
-                            </div>
-                        </div>
-                    )}
-
-                </div>
-            </div>
-        </div>
+                </section>
+            </main>
+        </Base>
     );
 };
 

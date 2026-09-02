@@ -70,9 +70,7 @@ describe('CreateContest paper recovery fallback', () => {
     fireEvent.change(screen.getByLabelText('Board name'), {
       target: { value: 'Week One Board' },
     });
-    fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
     fireEvent.click(screen.getByRole('button', { name: 'Select test game' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
 
     const fileInput = document.querySelector<HTMLInputElement>('input[type="file"]');
     expect(fileInput).not.toBeNull();
@@ -85,13 +83,11 @@ describe('CreateContest paper recovery fallback', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Image processed, but grid scan failed: The grid could not be read reliably.',
     );
-    const blankBoardButton = screen.getByRole('button', { name: 'Start blank 10×10 board' });
-    expect(blankBoardButton).toBeEnabled();
+    const createButton = screen.getByRole('button', { name: 'Create board' });
+    expect(createButton).toBeEnabled();
 
-    fireEvent.click(blankBoardButton);
-    expect(await screen.findByRole('heading', { name: 'Your board is ready to fill.' })).toBeVisible();
-
-    expect(createFetch).toHaveBeenCalledTimes(1);
+    fireEvent.click(createButton);
+    await waitFor(() => expect(createFetch).toHaveBeenCalledTimes(1));
     const request = createFetch.mock.calls[0];
     expect(request[0]).toBe('/api/pools');
     const body = JSON.parse(String(request[1].body));
