@@ -72,7 +72,7 @@ Two curves only.
 - **Soft spring:** ~450ms, overshoot-free spring for island expand/collapse, sheet presentation, shared-element moves (draw digits rolling into axes, a selected cell centering).
 - Route changes never hard-swap. The next surface fades or slides in place.
 - `prefers-reduced-motion` converts both curves to a 120ms opacity fade.
-- Implementation: CSS transitions and the View Transitions API where supported; GSAP (already a dependency) for the draw animation and island spring. Lenis remains only if the homepage uses smooth scroll; otherwise removed.
+- Implementation: CSS transitions and the View Transitions API where supported; GSAP (already a dependency) for the draw animation and island spring. Lenis is removed; the homepage uses native scroll.
 
 ### 2.5 The Island
 
@@ -159,7 +159,7 @@ The SEO article pages, `/paid`, `/privacy`, `/terms`, `/login`, and `/404` are r
 ### 7.2 Removed
 - Legacy v1 surfaces: `components/FilmLanding.tsx`, `components/GameDayHorizon.tsx`, `components/BoardView.tsx`, `components/OrganizerDashboard.tsx`, `components/AdminPanel.tsx`, `components/BoardGrid.tsx`, `components/PlayerFilter.tsx`, `pages/CreateContest.tsx`, and any component that becomes import-free.
 - Feature flags `homepage_v2`, `viewer_v2`, `organizer_v2` and `utils/featureFlags.ts`; `_V2` suffixes in file and component names.
-- `sketches/`, `.impeccable/`, `scripts/design-audit.mjs`, `docs/DESIGN.incumbent.md`, prototype decision docs that describe the old direction, `@google/design.md` if no longer used.
+- `sketches/`, `.impeccable/`, `scripts/design-audit.mjs`, `docs/DESIGN.incumbent.md`, prototype decision docs that describe the old direction. The `@google/design.md` lint stays and the new `DESIGN.md` keeps a valid frontmatter block so `npm run design:lint` remains a gate.
 - All `.worktrees/*` and the prunable `/private/tmp/gridone-phase4.*` worktree, plus their branches.
 
 ### 7.3 Untouched
