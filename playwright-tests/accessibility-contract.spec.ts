@@ -217,7 +217,7 @@ test.describe('Slice 2 signed-out accessibility contract automation', () => {
     await expect(page.getByRole('heading', { level: 1, name: 'Create your organizer account' })).toBeVisible();
     await page.getByLabel('Password', { exact: true }).fill('abcdef');
     await page.getByLabel('Confirm Password').fill('uvwxyz');
-    await page.getByRole('button', { name: 'Create Account' }).click();
+    await page.getByRole('button', { name: /Create (organizer )?account/i }).click();
     await expect(page.getByRole('alert')).toContainText('Passwords do not match');
     await expect(page.getByLabel('Confirm Password')).toHaveAttribute('aria-describedby', 'auth-error');
   });
