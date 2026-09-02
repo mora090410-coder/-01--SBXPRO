@@ -18,17 +18,16 @@ test.describe('feature flags off route smoke', () => {
           body: JSON.stringify({ error: 'Board not found' }),
         }));
       }
-      await page.goto(`${route.path}?viewer_v2=false&organizer_v2=false`);
+      await page.goto(`${route.path}?organizer_v2=false`);
 
       await expect(page.getByText(route.legacyText).first()).toBeVisible({ timeout: 15_000 });
-      await expect(page.locator('[data-feature-flag="viewer_v2"]')).toHaveCount(0);
       await expect(page.locator('[data-feature-flag="organizer_v2"]')).toHaveCount(0);
       await expect(page.locator('[data-variant*="_v2:on"]')).toHaveCount(0);
     });
   }
 
   test('query parameters do not enable legacy production mutation routes', async ({ page }) => {
-    await page.goto('/create?viewer_v2=true&organizer_v2=true');
+    await page.goto('/create?organizer_v2=true');
 
     await expect(page).toHaveURL(/\/login/);
     await expect(page.getByRole('heading', { name: /Create your organizer account|Welcome back/i })).toBeVisible();

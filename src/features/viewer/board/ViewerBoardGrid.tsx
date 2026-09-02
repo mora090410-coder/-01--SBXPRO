@@ -1,6 +1,7 @@
 import React from 'react';
 import type { BoardData, GameState, LiveGameData, PendingMilestone, WinnerHighlights, WinnerResolution } from '../../../../types';
 import { buildBoardGridModel, type ViewerBoardCellModel } from './boardGridModel';
+import { CapsuleButton } from '../../../design/primitives';
 
 interface ViewerBoardGridProps {
   board: BoardData;
@@ -18,13 +19,14 @@ const controlStyle = { minHeight: 44, minWidth: 44 };
 
 const stateClass = (cell: ViewerBoardCellModel) => {
   const states = cell.states;
-  if (states.includes('corrected') && states.includes('current')) return 'bg-cardinal ring-[4px] ring-inset ring-gold text-broadcast-white';
-  if (states.includes('corrected')) return 'bg-cardinal ring-[4px] ring-inset ring-cardinal-deep text-broadcast-white';
-  if (states.includes('current')) return 'bg-gold ring-[3px] ring-inset ring-gold-deep text-ink';
-  if (states.includes('selected')) return 'bg-cardinal-subtle ring-[3px] ring-inset ring-cardinal text-ink';
-  if (states.includes('resolved')) return 'bg-broadcast-white ring-[3px] ring-inset ring-gold-deep text-ink';
-  if (states.includes('open')) return 'bg-newsprint ring-1 ring-inset ring-ink/35 text-ink/70';
-  return 'bg-broadcast-white text-ink/70 hover:bg-newsprint';
+  if (states.includes('corrected') && states.includes('current')) return 'bg-cardinal text-broadcast-white ring-2 ring-inset ring-gold';
+  if (states.includes('corrected')) return 'bg-cardinal text-broadcast-white';
+  if (states.includes('current')) return 'bg-gold text-ink font-medium';
+  if (states.includes('selected') && states.includes('resolved')) return 'bg-panel text-fg border border-gold ring-2 ring-inset ring-tone-cardinal';
+  if (states.includes('selected')) return 'bg-panel-hover text-fg ring-2 ring-inset ring-tone-cardinal';
+  if (states.includes('resolved')) return 'bg-panel text-fg border border-gold';
+  if (states.includes('open')) return 'bg-transparent text-fg-3';
+  return 'bg-panel text-fg';
 };
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
@@ -91,7 +93,7 @@ const ViewerBoardGrid: React.FC<ViewerBoardGridProps> = ({
 
   const fitGrid = React.useCallback(() => {
     const available = viewportRef.current?.clientWidth || 760;
-    setZoom(clamp(available / 760, 0.5, 1));
+    setZoom(clamp(available / 786, 0.5, 1));
   }, []);
 
   React.useLayoutEffect(() => {
@@ -123,24 +125,24 @@ const ViewerBoardGrid: React.FC<ViewerBoardGridProps> = ({
     : `Columns: ${model.topTeamName}. Rows: ${model.sideTeamName}. Winning digits read across, then down.`;
 
   return (
-    <div className="grid gap-3" data-testid="viewer-board-grid-v2">
-      <p className="oa-body text-sm text-ink">{orientationLabel}</p>
+    <div className="grid gap-3" data-testid="viewer-board-grid">
+      <p className="font-ui text-[14px] text-fg-2">{orientationLabel}</p>
       <div className="flex flex-wrap items-center gap-2" aria-label="Board controls">
-        <button type="button" className="oa-slab border border-ink px-3 text-ink" style={controlStyle} onClick={() => setZoom((value) => Math.max(0.5, value - 0.1))}>Zoom out</button>
-        <button type="button" className="oa-slab border border-ink px-3 text-ink" style={controlStyle} onClick={() => centerState('current')}>Center current result</button>
-        <button type="button" className="oa-slab border border-ink px-3 text-ink" style={controlStyle} onClick={() => setZoom((value) => Math.min(1.5, value + 0.1))}>Zoom in</button>
-        <button type="button" className="oa-slab border border-ink px-3 text-ink" style={controlStyle} onClick={fitGrid}>Reset/Fit</button>
-        {selectedPlayer && <button type="button" className="oa-slab border border-ink px-3 text-ink" style={controlStyle} onClick={() => centerState('selected')}>Center selected square</button>}
-        <output className="oa-data flex min-h-11 min-w-11 items-center justify-center border border-ink px-2 text-ink" aria-label="Current zoom">{Math.round(zoom * 100)}%</output>
+        <CapsuleButton variant="quiet" className="min-w-11" style={controlStyle} onClick={() => setZoom((value) => Math.max(0.5, value - 0.1))}>Zoom out</CapsuleButton>
+        <CapsuleButton variant="quiet" className="min-w-11" style={controlStyle} onClick={() => centerState('current')}>Center current result</CapsuleButton>
+        <CapsuleButton variant="quiet" className="min-w-11" style={controlStyle} onClick={() => setZoom((value) => Math.min(1.5, value + 0.1))}>Zoom in</CapsuleButton>
+        <CapsuleButton variant="quiet" className="min-w-11" style={controlStyle} onClick={fitGrid}>Fit</CapsuleButton>
+        {selectedPlayer && <CapsuleButton variant="quiet" className="min-w-11" style={controlStyle} onClick={() => centerState('selected')}>Center selected square</CapsuleButton>}
+        <output className="font-mono tabular-nums inline-flex min-h-11 min-w-11 items-center justify-center px-3 rounded-capsule border border-hairline text-fg" aria-label="Current zoom">{Math.round(zoom * 100)}%</output>
       </div>
 
-      <div ref={viewportRef} className="gridone-viewer-board-viewport overflow-auto border border-ink bg-broadcast-white p-1">
+      <div ref={viewportRef} className="gridone-viewer-board-viewport overflow-auto rounded-card border border-hairline bg-ground p-2">
         <table
           role="grid"
           aria-label={`Football squares board, Top team ${model.topTeamName}, Side team ${model.sideTeamName}`}
           aria-rowcount={11}
           aria-colcount={12}
-          className="gridone-board-grid w-[760px] min-w-[760px] table-fixed border-collapse bg-broadcast-white text-ink"
+          className="gridone-board-grid w-[760px] min-w-[760px] table-fixed border-separate border-spacing-[2px] text-fg"
           style={{ zoom } as React.CSSProperties}
           onKeyDown={onKeyDown}
         >
@@ -151,9 +153,9 @@ const ViewerBoardGrid: React.FC<ViewerBoardGridProps> = ({
           </colgroup>
           <thead>
             <tr aria-rowindex={1}>
-              <th className="sticky left-0 top-0 z-40 bg-chyron p-2 text-broadcast-white" style={{ width: 88, minWidth: 88 }} colSpan={2}>Top · {topLabel}</th>
+              <th className="sticky left-0 top-0 z-40 bg-chyron text-broadcast-white rounded-cell font-mono text-[12px] uppercase tracking-[0.08em] p-2" style={{ width: 88, minWidth: 88 }} colSpan={2}>Top · {topLabel}</th>
               {model.topAxis.map((digit, index) => (
-                <th key={`top-${index}`} role="columnheader" scope="col" aria-colindex={index + 3} data-sticky-axis="top" aria-label={`${model.topTeamName} top digit ${digit ?? 'unknown'}`} className="oa-board-axis sticky top-0 z-30 border border-cardinal bg-cardinal-deep p-2 text-broadcast-white">
+                <th key={`top-${index}`} role="columnheader" scope="col" aria-colindex={index + 3} data-sticky-axis="top" aria-label={`${model.topTeamName} top digit ${digit ?? 'unknown'}`} className="sticky top-0 z-30 bg-chyron text-gold font-mono tabular-nums text-[15px] rounded-cell p-2">
                   {digit}
                 </th>
               ))}
@@ -163,11 +165,11 @@ const ViewerBoardGrid: React.FC<ViewerBoardGridProps> = ({
             {model.cells.map((row, rowIndex) => (
               <tr key={`row-${rowIndex}`} role="row" aria-rowindex={rowIndex + 2}>
                 {rowIndex === 0 && (
-                  <th rowSpan={10} className="sticky left-0 z-30 w-11 min-w-11 border border-ink bg-chyron p-0 text-broadcast-white">
-                    <div className="flex h-full min-h-[44px] items-center justify-center px-2" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>Side · {sideLabel}</div>
+                  <th rowSpan={10} className="sticky left-0 z-30 w-11 min-w-11 bg-chyron text-broadcast-white rounded-cell font-mono text-[12px] uppercase tracking-[0.08em] p-0">
+                    <div className="flex h-[578px] items-center justify-center px-2" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>Side · {sideLabel}</div>
                   </th>
                 )}
-                <th role="rowheader" scope="row" aria-colindex={2} data-sticky-axis="side" aria-label={`${model.sideTeamName} side digit ${model.sideAxis[rowIndex] ?? 'unknown'}`} className="oa-board-axis sticky left-11 z-20 w-11 min-w-11 border border-cardinal bg-cardinal-deep p-2 text-broadcast-white">
+                <th role="rowheader" scope="row" aria-colindex={2} data-sticky-axis="side" aria-label={`${model.sideTeamName} side digit ${model.sideAxis[rowIndex] ?? 'unknown'}`} className="sticky left-11 z-20 w-11 min-w-11 bg-chyron text-gold font-mono tabular-nums text-[15px] rounded-cell p-2">
                   {model.sideAxis[rowIndex]}
                 </th>
                 {row.map((cell) => (
@@ -189,12 +191,14 @@ const ViewerBoardGrid: React.FC<ViewerBoardGridProps> = ({
                     data-row-index={cell.rowIndex}
                     data-col-index={cell.colIndex}
                     tabIndex={focus.row === cell.rowIndex && focus.col === cell.colIndex ? 0 : -1}
-                    className={`relative h-14 border border-newsprint p-1 text-center align-middle focus-visible:outline focus-visible:outline-4 focus-visible:outline-offset-[-4px] focus-visible:outline-cardinal ${stateClass(cell)}`}
+                    className={`group relative h-14 rounded-cell p-1 text-center align-middle font-ui text-[12px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-action ${stateClass(cell)}`}
                     onFocus={() => setFocus({ row: cell.rowIndex, col: cell.colIndex })}
+                    onClick={(event) => event.currentTarget.focus()}
                   >
-                    <span className="oa-board-name flex h-full min-h-11 items-center justify-center text-xs font-bold">{cell.displayText}</span>
-                    {cell.states.includes('current') && <span className={`absolute right-1 top-1 oa-data text-[10px] ${cell.states.includes('corrected') ? 'text-gold' : 'text-ink'}`} aria-hidden="true">NOW</span>}
-                    {cell.states.includes('corrected') && <span className="absolute bottom-1 right-1 oa-data text-[10px] text-broadcast-white" aria-hidden="true">C</span>}
+                    <span className="flex h-full min-h-11 items-center justify-center font-medium">{cell.displayText}</span>
+                    <span aria-hidden="true" className="pointer-events-none absolute left-1/2 top-full z-40 mt-1 hidden w-max max-w-[220px] -translate-x-1/2 whitespace-normal rounded-control bg-chyron px-2 py-1 font-ui text-[12px] text-broadcast-white shadow-[var(--g-shadow)] group-hover:block group-focus-within:block">{(cell.names.length ? cell.names.join(', ') : 'OPEN')} · {topLabel} {cell.topDigit ?? '?'} across · {sideLabel} {cell.sideDigit ?? '?'} down</span>
+                    {cell.states.includes('current') && <span className={`absolute right-1 top-1 font-mono text-[10px] ${cell.states.includes('corrected') ? 'text-gold' : 'text-ink'}`} aria-hidden="true">NOW</span>}
+                    {cell.states.includes('corrected') && <span className="absolute bottom-1 right-1 font-mono text-[10px] text-broadcast-white" aria-hidden="true">C</span>}
                   </td>
                 ))}
               </tr>

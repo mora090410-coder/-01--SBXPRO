@@ -9,28 +9,25 @@ import {
 
 describe('GridOne Slice 3 feature flags', () => {
   it('exposes exactly the reversible v2 feature names', () => {
-    expect(FEATURE_FLAG_NAMES).toEqual(['viewer_v2', 'organizer_v2']);
-    expect(isFeatureFlagName('viewer_v2')).toBe(true);
+    expect(FEATURE_FLAG_NAMES).toEqual(['organizer_v2']);
     expect(isFeatureFlagName('organizer_v2')).toBe(true);
     expect(isFeatureFlagName('payments_v2')).toBe(false);
   });
 
   it('defaults every flag off for absent or malformed config', () => {
-    expect(resolveFeatureFlags().flags).toEqual({ viewer_v2: false, organizer_v2: false });
-    expect(resolveFeatureFlags({ config: null }).flags).toEqual({ viewer_v2: false, organizer_v2: false });
-    expect(resolveFeatureFlags({ config: 'viewer_v2=true' }).flags).toEqual({ viewer_v2: false, organizer_v2: false });
-    expect(resolveFeatureFlags({ config: { viewer_v2: 'yes', organizer_v2: 1 } }).flags).toEqual({
-      viewer_v2: false,
+    expect(resolveFeatureFlags().flags).toEqual({ organizer_v2: false });
+    expect(resolveFeatureFlags({ config: null }).flags).toEqual({ organizer_v2: false });
+    expect(resolveFeatureFlags({ config: 'organizer_v2=true' }).flags).toEqual({ organizer_v2: false });
+    expect(resolveFeatureFlags({ config: { organizer_v2: 'yes' } }).flags).toEqual({
       organizer_v2: false,
     });
-    expect(resolveFeatureFlags({ config: { flags: 'malformed', viewer_v2: true } }).flags).toEqual({
-      viewer_v2: false,
+    expect(resolveFeatureFlags({ config: { flags: 'malformed', organizer_v2: true } }).flags).toEqual({
       organizer_v2: false,
     });
 
-    const inherited = Object.create({ viewer_v2: true });
-    expect(resolveFeatureFlags({ config: inherited }).flags.viewer_v2).toBe(false);
-    expect(resolveFeatureFlags({ config: new Date() }).flags.viewer_v2).toBe(false);
+    const inherited = Object.create({ organizer_v2: true });
+    expect(resolveFeatureFlags({ config: inherited }).flags.organizer_v2).toBe(false);
+    expect(resolveFeatureFlags({ config: new Date() }).flags.organizer_v2).toBe(false);
   });
 
   it('parses only explicit boolean values and safe boolean strings', () => {
@@ -46,29 +43,34 @@ describe('GridOne Slice 3 feature flags', () => {
 
   it('resolves direct explicit booleans without leaking identifiers into labels', () => {
     const resolved = resolveFeatureFlags({
-      config: { flags: { viewer_v2: true, organizer_v2: 'false' } },
+      config: { flags: { organizer_v2: 'false' } },
       accountId: 'acct-secret-123',
       boardId: 'board-secret-456',
     });
 
-    expect(resolved.flags).toEqual({ viewer_v2: true, organizer_v2: false });
-    expect(resolved.variants).toEqual({ viewer_v2: 'viewer_v2:on', organizer_v2: 'organizer_v2:off' });
+    expect(resolved.flags).toEqual({ organizer_v2: false });
+    expect(resolved.variants).toEqual({ organizer_v2: 'organizer_v2:off' });
     expect(JSON.stringify(resolved)).not.toContain('acct-secret-123');
     expect(JSON.stringify(resolved)).not.toContain('board-secret-456');
   });
 
   it('supports bounded account and board allowlists without exposing public identifiers', () => {
     const config = {
-      flags: { viewer_v2: false, organizer_v2: false },
+      flags: { organizer_v2: false },
       cohorts: {
-        viewer_v2: { accounts: ['acct-allowed'], boards: ['board-allowed'] },
-        organizer_v2: { accounts: Array.from({ length: 105 }, (_, index) => `acct-${index}`) },
+        organizer_v2: { accounts: ['acct-allowed'], boards: ['board-allowed'] },
       },
     };
 
-    expect(resolveFeatureFlags({ config, accountId: 'acct-allowed' }).flags.viewer_v2).toBe(true);
-    expect(resolveFeatureFlags({ config, boardId: 'board-allowed' }).flags.viewer_v2).toBe(true);
-    expect(resolveFeatureFlags({ config, accountId: 'acct-104' }).flags.organizer_v2).toBe(false);
+    expect(resolveFeatureFlags({ config, accountId: 'acct-allowed' }).flags.organizer_v2).toBe(true);
+    expect(resolveFeatureFlags({ config, boardId: 'board-allowed' }).flags.organizer_v2).toBe(true);
+
+    const boundedConfig = {
+      cohorts: {
+        organizer_v2: { accounts: Array.from({ length: 105 }, (_, index) => `acct-${index}`) },
+      },
+    };
+    expect(resolveFeatureFlags({ config: boundedConfig, accountId: 'acct-104' }).flags.organizer_v2).toBe(false);
 
     const resolved = resolveFeatureFlags({ config, accountId: 'acct-allowed', boardId: 'board-allowed' });
     expect(JSON.stringify(resolved)).not.toContain('acct-allowed');
@@ -76,51 +78,51 @@ describe('GridOne Slice 3 feature flags', () => {
   });
 
   it('never lets query parameters enable production mutation paths', () => {
-    const config = { flags: { viewer_v2: false, organizer_v2: false } };
+    const config = { flags: { organizer_v2: false } };
 
     const productionMutation = resolveFeatureFlags({
       config,
-      query: '?viewer_v2=true&organizer_v2=true',
+      query: '?organizer_v2=true',
       routeIntent: 'production_mutation',
     });
 
-    expect(productionMutation.flags).toEqual({ viewer_v2: false, organizer_v2: false });
+    expect(productionMutation.flags).toEqual({ organizer_v2: false });
     expect(productionMutation.queryOverridesIgnored).toBe(true);
 
     const readOnlyPreview = resolveFeatureFlags({
       config,
-      query: '?viewer_v2=true&organizer_v2=true',
+      query: '?organizer_v2=true',
       routeIntent: 'read_only_preview',
     });
 
-    expect(readOnlyPreview.flags).toEqual({ viewer_v2: true, organizer_v2: true });
+    expect(readOnlyPreview.flags).toEqual({ organizer_v2: true });
 
     const productionDowngrade = resolveFeatureFlags({
-      config: { flags: { viewer_v2: true, organizer_v2: true } },
-      query: '?viewer_v2=false&organizer_v2=false',
+      config: { flags: { organizer_v2: true } },
+      query: '?organizer_v2=false',
       routeIntent: 'production_mutation',
     });
-    expect(productionDowngrade.flags).toEqual({ viewer_v2: true, organizer_v2: true });
+    expect(productionDowngrade.flags).toEqual({ organizer_v2: true });
     expect(productionDowngrade.queryOverridesIgnored).toBe(true);
 
     const duplicatePreview = resolveFeatureFlags({
       config,
-      query: '?viewer_v2=false&viewer_v2=true',
+      query: '?organizer_v2=false&organizer_v2=true',
       routeIntent: 'read_only_preview',
     });
-    expect(duplicatePreview.flags.viewer_v2).toBe(false);
+    expect(duplicatePreview.flags.organizer_v2).toBe(false);
     expect(duplicatePreview.queryOverridesIgnored).toBe(true);
   });
 
   it('keeps stable privacy-minimal support labels', () => {
-    expect(getStableVariantLabel('viewer_v2', true)).toBe('viewer_v2:on');
-    expect(getStableVariantLabel('viewer_v2', false)).toBe('viewer_v2:off');
-    expect(resolveFeatureFlags({ config: { flags: { viewer_v2: true } } }).variants.viewer_v2).toBe('viewer_v2:on');
+    expect(getStableVariantLabel('organizer_v2', true)).toBe('organizer_v2:on');
+    expect(getStableVariantLabel('organizer_v2', false)).toBe('organizer_v2:off');
+    expect(resolveFeatureFlags({ config: { flags: { organizer_v2: true } } }).variants.organizer_v2).toBe('organizer_v2:on');
   });
 
   it('ignores Object.prototype pollution in flags, cohorts, and allowlists', () => {
     Object.defineProperties(Object.prototype, {
-      viewer_v2: { value: true, configurable: true },
+      organizer_v2: { value: true, configurable: true },
       cohorts: { value: { organizer_v2: { accounts: ['polluted-account'] } }, configurable: true },
       accounts: { value: ['polluted-account'], configurable: true },
     });
@@ -130,9 +132,9 @@ describe('GridOne Slice 3 feature flags', () => {
         config: { cohorts: { organizer_v2: {} } },
         accountId: 'polluted-account',
       });
-      expect(resolved.flags).toEqual({ viewer_v2: false, organizer_v2: false });
+      expect(resolved.flags).toEqual({ organizer_v2: false });
     } finally {
-      delete (Object.prototype as Record<string, unknown>).viewer_v2;
+      delete (Object.prototype as Record<string, unknown>).organizer_v2;
       delete (Object.prototype as Record<string, unknown>).cohorts;
       delete (Object.prototype as Record<string, unknown>).accounts;
     }

@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { publishedOpenSquaresAreAssignable } from '../components/AdminPanel';
 
 const source = readFileSync(resolve(process.cwd(), 'components/AdminPanel.tsx'), 'utf8');
-const horizonSource = readFileSync(resolve(process.cwd(), 'components/GameDayHorizon.tsx'), 'utf8');
+const viewerShellSource = readFileSync(resolve(process.cwd(), 'src/features/viewer/shell/ViewerShell.tsx'), 'utf8');
 
 describe('open-square organizer UI contract', () => {
   it('requires an inline confirmation and persists the opt-in with the committed draw', () => {
@@ -44,7 +44,7 @@ describe('open-square organizer UI contract', () => {
   });
 
   it('uses the persisted board flag for public OPEN rendering even when locked is false', () => {
-    expect(horizonSource).toContain('board.allowOpenSquares === true');
-    expect(horizonSource).toContain('showOpenSquares={showOpenSquares}');
+    expect(viewerShellSource).toContain('board.allowOpenSquares === true');
+    expect(viewerShellSource).toContain('showOpenSquares={board.allowOpenSquares === true}');
   });
 });

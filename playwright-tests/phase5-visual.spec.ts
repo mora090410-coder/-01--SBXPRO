@@ -252,7 +252,7 @@ test('capture published viewer phone', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await installPublishedViewerFixture(page);
   await page.goto('/b/ABCDEFGH');
-  await expect(page.getByRole('main', { name: /Published Week 1 game day/i })).toBeVisible();
+  await expect(page.getByRole('main', { name: /Published Week 1 viewer/i })).toBeVisible();
   await expect(page.getByRole('button', { name: /Find my squares/i }).first()).toBeVisible();
   await capture(page, 'viewer-phone.png');
 });

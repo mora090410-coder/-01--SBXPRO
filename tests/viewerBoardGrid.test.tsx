@@ -13,6 +13,7 @@ const board: BoardData = {
   participants: [{ id: 'ann', displayName: 'Ann Lee', publicLabel: 'Ann Lee' }],
 };
 board.squares[2 * 10 + 1] = ['Ann Lee'];
+board.squares[0 * 10 + 3] = ['Ann Lee'];
 
 const game: GameState = {
   title: 'Published Week 1',
@@ -39,6 +40,7 @@ const live: LiveGameData = {
 
 const winnerHistory: WinnerResolution[] = [
   { milestone: 'FINAL', topDigit: 4, sideDigit: 7, participantName: 'Ann Lee', corrected: true, correctionReason: 'Official score correction', resolvedAt: '2026-09-13T22:00:00.000Z', resolutionVersion: 2 },
+  { milestone: 'Q1', topDigit: 7, sideDigit: 6, participantName: 'Ann Lee', corrected: false, correctionReason: '', resolvedAt: '2026-09-13T20:15:00.000Z', resolutionVersion: 1 },
 ];
 
 const renderGrid = () => render(
@@ -107,11 +109,29 @@ describe('ViewerBoardGrid Slice 7', () => {
 
     const open = within(grid).getByRole('gridcell', { name: /OPEN.*coordinate row 1 column 2.*top digit 4.*side digit 6/i });
     expect(open).toHaveAttribute('data-open', 'true');
+
+    const selectedResolved = within(grid).getByRole('gridcell', { name: /Ann Lee.*coordinate row 1 column 4.*top digit 7.*side digit 6/i });
+    expect(selectedResolved).toHaveAttribute('aria-selected', 'true');
+    expect(selectedResolved).toHaveAttribute('data-current', 'false');
+    expect(selectedResolved).toHaveAttribute('data-resolved', 'true');
+    expect(selectedResolved).toHaveClass('border-gold');
+    expect(selectedResolved).toHaveClass('ring-tone-cardinal');
+  });
+
+  it('gives every cell a short reveal with its name and digits', () => {
+    renderGrid();
+    const grid = screen.getByRole('grid', { name: /football squares board/i });
+    within(grid).getAllByRole('gridcell').forEach((cell) => {
+      const reveal = cell.querySelector('span[aria-hidden="true"]');
+      expect(reveal).not.toBeNull();
+      expect(reveal).toHaveTextContent(/across · .* down/);
+      expect(reveal?.className).toContain('max-w-[220px]');
+    });
   });
 
   it('renders zoom/find/center controls as 44px targets', () => {
     const { container } = renderGrid();
-    for (const name of [/Zoom out/i, /Center current result/i, /Zoom in/i, /Reset\/Fit/i, /Center selected square/i]) {
+    for (const name of [/Zoom out/i, /Center current result/i, /Zoom in/i, /^Fit$/i, /Center selected square/i]) {
       expect(screen.getByRole('button', { name })).toHaveStyle({ minHeight: '44px', minWidth: '44px' });
     }
     expect(screen.getByRole('status', { name: 'Current zoom' })).toHaveTextContent('100%');
@@ -122,14 +142,14 @@ describe('ViewerBoardGrid Slice 7', () => {
       clientHeight: { value: 240, configurable: true },
       scrollTo: { value: scrollTo, configurable: true },
     });
-    fireEvent.click(screen.getByRole('button', { name: 'Reset/Fit' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Fit' }));
     expect(screen.getByRole('status', { name: 'Current zoom' })).toHaveTextContent('50%');
     fireEvent.click(screen.getByRole('button', { name: 'Center current result' }));
     fireEvent.click(screen.getByRole('button', { name: 'Center selected square' }));
     expect(scrollTo).toHaveBeenCalledTimes(2);
   });
 
-  it('ViewerShell uses the v2 viewer grid and leaves legacy BoardGrid dynamic quarter controls absent from viewer_v2', () => {
+  it('ViewerShell uses the viewer grid and leaves legacy dynamic quarter controls absent', () => {
     render(
       <ViewerShell
         game={game}

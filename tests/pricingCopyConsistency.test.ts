@@ -50,7 +50,8 @@ describe('launch pricing copy', () => {
   it('does not ship invented payout amounts in live board surfaces', () => {
     const payoutSurfaces = [
       read('components/AdminPanel.tsx'),
-      read('components/GameDayHorizon.tsx'),
+      read('src/features/viewer/shell/ViewerShell.tsx'),
+      read('src/features/viewer/details/BoardDetailsDisclosure.tsx'),
       read('hooks/usePoolData.ts'),
     ].join('\n');
 

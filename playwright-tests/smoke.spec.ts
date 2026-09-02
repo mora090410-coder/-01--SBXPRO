@@ -9,10 +9,10 @@ const expectTouchTarget = async (locator: Locator) => {
 
 test('landing page leads with the live board and free-first publishing model', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: 'The board watches the game', exact: true })).toBeVisible();
-  await expect(page.getByText(/Football squares for booster clubs, offices, and game-day crews/i)).toBeVisible();
-  await expect(page.getByRole('button', { name: /Build your board — free/i })).toBeVisible();
-  await expect(page.getByText('Your first published board is free. Upgrade only when you need another.')).toBeAttached();
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('Build it once. Share one link.');
+  await expect(page.getByText(/youth-sports teams, booster clubs, schools, and community organizers/i)).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Create your free board' }).first()).toBeVisible();
+  await expect(page.getByText('First published board free')).toBeAttached();
 });
 
 test('demo board renders the sample game', async ({ page }) => {
@@ -25,21 +25,18 @@ test('demo board renders the sample game', async ({ page }) => {
 test('representative landing controls expose names, touch geometry, and keyboard focus', async ({ page }) => {
   await page.goto('/');
 
-  const build = page.getByRole('button', { name: 'Build your board — free' });
-  const demo = page.getByRole('link', { name: 'See a live board' });
+  const build = page.getByRole('link', { name: 'Create your free board' }).first();
+  const demo = page.getByRole('link', { name: 'See a live board' }).first();
 
-  await expect(build).toHaveAccessibleName('Build your board — free');
+  await expect(build).toHaveAccessibleName('Create your free board');
   await expect(demo).toHaveAccessibleName('See a live board');
   await expectTouchTarget(build);
   await expectTouchTarget(demo);
 
-  const signIn = page.getByRole('button', { name: 'Sign in' }).first();
+  const signIn = page.getByRole('link', { name: 'Sign in' }).first();
   await signIn.focus();
   await expect(signIn).toBeFocused();
-  await expect.poll(() => signIn.evaluate((element) => {
-    const style = getComputedStyle(element);
-    return `${style.outlineStyle} ${style.outlineWidth}`;
-  })).toBe('solid 3px');
+  await expect.poll(() => signIn.evaluate((element) => getComputedStyle(element).boxShadow)).not.toBe('none');
 });
 
 test('find-squares dialog traps focus, closes with Escape, and returns focus', async ({ page }) => {
@@ -55,14 +52,12 @@ test('find-squares dialog traps focus, closes with Escape, and returns focus', a
   const close = dialog.getByRole('button', { name: 'Close' });
   const player = dialog.getByLabel('Name used on board');
   await expect(dialog).toBeVisible();
-  await expect(close).toBeFocused();
+  await expect(player).toBeFocused();
   await expect(close).toHaveAccessibleName('Close');
   await expect(player).toHaveAccessibleName('Name used on board');
   await expectTouchTarget(close);
   await expectTouchTarget(player);
 
-  await page.keyboard.press('Tab');
-  await expect(player).toBeFocused();
   const lastBrowseName = dialog.getByTestId('browse-name-list').getByRole('button').last();
   await lastBrowseName.focus();
   await page.keyboard.press('Tab');

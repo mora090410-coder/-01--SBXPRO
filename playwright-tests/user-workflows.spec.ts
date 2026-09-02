@@ -46,7 +46,7 @@ const quarterScores = {
 
 test('protected routes preserve the exact destination through sign-in', async ({ page }) => {
   await page.goto('/create?scoreTest=1');
-  await expect(page).toHaveURL(/\/login\?returnTo=/);
+  await expect(page).toHaveURL(new RegExp(`/login\\?.*returnTo=${encodeURIComponent('/create?scoreTest=1').replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&')}`));
 
   await page.route('**/api/nfl/games?**', (route) => route.fulfill({
     status: 200,
@@ -162,7 +162,7 @@ test('published viewer renders the board and persists its canonical square selec
   }));
 
   await page.goto('/b/ABCDEFGH');
-  await expect(page.getByRole('main', { name: /Published Week 1 game day/i })).toBeVisible();
+  await expect(page.getByRole('main', { name: /Published Week 1 viewer/i })).toBeVisible();
   await expect(page.getByText(/This board is not published yet/i)).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Payouts' })).toBeVisible();
   await expect(page.getByText('Winner gets bragging rights')).toBeVisible();
@@ -173,14 +173,14 @@ test('published viewer renders the board and persists its canonical square selec
   await page.getByLabel('Name used on board').press('Enter');
 
   await expect(page.getByText('1 square', { exact: true })).toBeVisible();
-  await expect(page.getByRole('cell', { name: /^Ann,/ })).toHaveClass(/ring-cardinal/);
-  await expect(page.getByRole('cell', { name: /^Anna,/ })).not.toHaveClass(/ring-cardinal/);
+  await expect(page.getByRole('gridcell', { name: /^Ann,/ })).toHaveClass(/(?:^|\s)ring-2 ring-inset ring-tone-cardinal(?:\s|$)/);
+  await expect(page.getByRole('gridcell', { name: /^Anna,/ })).not.toHaveClass(/(?:^|\s)ring-2 ring-inset ring-tone-cardinal(?:\s|$)/);
   await expect(page.getByText(/Quarter-winner email for Ann/i)).toBeVisible();
 
   await page.reload();
   await expect(page.getByText('1 square', { exact: true })).toBeVisible();
-  await expect(page.getByRole('cell', { name: /^Ann,/ })).toHaveClass(/ring-cardinal/);
-  await expect(page.getByRole('cell', { name: /^Anna,/ })).not.toHaveClass(/ring-cardinal/);
+  await expect(page.getByRole('gridcell', { name: /^Ann,/ })).toHaveClass(/(?:^|\s)ring-2 ring-inset ring-tone-cardinal(?:\s|$)/);
+  await expect(page.getByRole('gridcell', { name: /^Anna,/ })).not.toHaveClass(/(?:^|\s)ring-2 ring-inset ring-tone-cardinal(?:\s|$)/);
   await expect(page.getByText(/Quarter-winner email for Ann/i)).toBeVisible();
 });
 
@@ -286,12 +286,12 @@ test('draft organizer preview stays fully visible and interactive before activat
   await expect(page.getByLabel('Board Name')).toBeEnabled();
   await page.getByRole('button', { name: 'Preview', exact: true }).click();
 
-  const preview = page.getByRole('main', { name: /QA draft board game day/i });
+  const preview = page.getByRole('region', { name: /QA draft board viewer/i });
   await expect(preview).toBeVisible();
   await expect(preview.locator('..')).not.toHaveClass(/pointer-events-none|opacity-50/);
-  await expect(page.getByText(/Private draft · sharing and live services are off/i)).toBeVisible();
-  await expect(page.getByText(/Publish this board to add live scoring/i)).toBeVisible();
-  await expect(page.getByRole('cell', { name: /^Unassigned square/i })).toHaveCount(100);
+  await expect(page.getByText(/UNLOCK LIVE SCORING/i)).toBeVisible();
+  await expect(page.getByText(/Publish this board to show live scenarios/i)).toBeVisible();
+  await expect(page.getByRole('gridcell', { name: /^Unassigned/i })).toHaveCount(100);
 
   await page.getByRole('button', { name: /Find my squares/i }).click();
   await expect(page.getByRole('dialog', { name: /Find my squares/i })).toBeVisible();

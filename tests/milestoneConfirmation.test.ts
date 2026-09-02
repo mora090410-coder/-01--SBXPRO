@@ -70,19 +70,17 @@ describe('milestone confirmation recorded fixtures', () => {
   });
 
   it('renders pending results as provisional and exposes append-only correction consequences', () => {
-    const horizon = readFileSync(
-      resolve(process.cwd(), 'components/GameDayHorizon.tsx'),
+    const viewerShell = readFileSync(
+      resolve(process.cwd(), 'src/features/viewer/shell/ViewerShell.tsx'),
       'utf8',
     );
-    const styles = readFileSync(resolve(process.cwd(), 'src/index.css'), 'utf8');
     const admin = readFileSync(resolve(process.cwd(), 'components/AdminPanel.tsx'), 'utf8');
     const migration = readFileSync(
       resolve(process.cwd(), 'supabase/migrations/015_milestone_confirmation.sql'),
       'utf8',
     );
 
-    expect(horizon).toContain('result pending confirmation');
-    expect(styles).toMatch(/\.gdh-pending-results[\s\S]*border:\s*1px dashed/);
+    expect(viewerShell).toContain('Pending confirmation');
     expect(admin).toContain('Publish correction and email both people');
     expect(migration).toContain('supersedes_resolution_id');
     expect(migration).toContain('resolution_version');

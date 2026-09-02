@@ -1,4 +1,5 @@
 import React from 'react';
+import { CapsuleButton, CapsuleTag, Eyebrow } from '../../../design/primitives';
 
 export interface FindSquaresEntryProps {
   selectedPlayer: string;
@@ -7,22 +8,23 @@ export interface FindSquaresEntryProps {
 }
 
 const FindSquaresEntry: React.FC<FindSquaresEntryProps> = ({ selectedPlayer, onFindSquares, onClearPlayer }) => (
-  <section className="py-5" aria-label="Find squares">
-    <button
-      type="button"
-      className="oa-btn oa-btn-primary w-full min-h-11 px-5 py-3 text-base"
-      style={{ minHeight: 44 }}
-      onClick={onFindSquares}
-    >
-      Find my squares
-    </button>
+  <section className="flex flex-col gap-3" aria-label="Find squares">
     {selectedPlayer ? (
-      <div className="mt-3 flex items-center justify-between gap-3 border border-broadcast-white/20 p-3" aria-live="polite">
-        <span className="oa-body text-broadcast-white">Selected: <strong>{selectedPlayer}</strong></span>
-        <button type="button" className="oa-slab min-h-11 px-3 text-broadcast-white/75 underline" style={{ minHeight: 44 }} onClick={onClearPlayer}>Clear</button>
+      <div className="flex flex-wrap items-center justify-between gap-3" aria-live="polite">
+        <div className="flex flex-col gap-1">
+          <Eyebrow>Selected name</Eyebrow>
+          <CapsuleTag tone="gold">{selectedPlayer}</CapsuleTag>
+        </div>
+        <div className="flex items-center gap-2">
+          <CapsuleButton variant="quiet" onClick={onFindSquares}>Choose another name</CapsuleButton>
+          <CapsuleButton variant="ghost" onClick={onClearPlayer}>Clear</CapsuleButton>
+        </div>
       </div>
     ) : (
-      <p className="oa-body mt-3 text-sm text-broadcast-white/70">Select the organizer-entered name to highlight squares and possible next results.</p>
+      <>
+        <CapsuleButton size="lg" className="w-full" onClick={onFindSquares}>Find my squares</CapsuleButton>
+        <p className="font-ui text-[14px] text-fg-3">Use the name the organizer wrote on the board.</p>
+      </>
     )}
   </section>
 );

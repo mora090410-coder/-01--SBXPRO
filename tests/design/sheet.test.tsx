@@ -28,10 +28,40 @@ describe('Sheet', () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
+  it('focuses the first focusable element inside the content area, not the header Close button', () => {
+    render(<Sheet open onClose={() => {}} title="Find"><input aria-label="Name" /></Sheet>);
+    expect(document.activeElement).toBe(screen.getByLabelText('Name'));
+  });
+
   it('locks body scroll while open and restores it', () => {
     const { unmount } = render(<Sheet open onClose={() => {}} title="Preview">x</Sheet>);
     expect(document.body.style.overflow).toBe('hidden');
     unmount();
     expect(document.body.style.overflow).toBe('');
+  });
+
+  it('returns focus to the trigger that opened it, even when the content autofocuses an input', () => {
+    function Harness() {
+      const [open, setOpen] = React.useState(false);
+      return (
+        <div>
+          <button onClick={() => setOpen(true)}>Open</button>
+          <Sheet open={open} onClose={() => setOpen(false)} title="Find my squares">
+            <input aria-label="Name" autoFocus />
+          </Sheet>
+        </div>
+      );
+    }
+    render(<Harness />);
+    const trigger = screen.getByRole('button', { name: 'Open' });
+    trigger.focus();
+    expect(document.activeElement).toBe(trigger);
+
+    fireEvent.click(trigger);
+    expect(document.activeElement).toBe(screen.getByLabelText('Name'));
+
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(document.activeElement).toBe(trigger);
   });
 });
