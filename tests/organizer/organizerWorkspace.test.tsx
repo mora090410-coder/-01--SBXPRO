@@ -25,8 +25,25 @@ vi.mock('../../utils/boardImage', () => ({
   boardImageFilename: vi.fn(() => 'board.png'),
 }));
 
+vi.mock('../../src/features/organizer/services/game-day/manualScoreService', () => ({
+  enableManualScoringOnServer: vi.fn(async () => ({})),
+  saveManualScoreToServer: vi.fn(async () => ({ score: null })),
+  returnAutomaticScoringOnServer: vi.fn(async () => ({})),
+}));
+
+vi.mock('../../src/features/organizer/services/corrections/milestoneCorrectionService', () => ({
+  publishMilestoneCorrectionToServer: vi.fn(async () => ({ winnerHistory: [] })),
+}));
+
+vi.mock('../../src/features/organizer/workspace/renamePublishedSquare', () => ({
+  renamePublishedSquare: vi.fn(async () => undefined),
+}));
+
 import OrganizerWorkspace from '../../src/features/organizer/workspace/OrganizerWorkspace';
 import { saveEntryMeta } from '../../src/features/organizer/workspace/entryMetaService';
+import { enableManualScoringOnServer } from '../../src/features/organizer/services/game-day/manualScoreService';
+import { publishMilestoneCorrectionToServer } from '../../src/features/organizer/services/corrections/milestoneCorrectionService';
+import { renamePublishedSquare } from '../../src/features/organizer/workspace/renamePublishedSquare';
 
 const NAMES = ['Ann R.', 'Bo T.', 'Cy L.'];
 
@@ -111,9 +128,12 @@ function renderWorkspace(overrides: Overrides = {}) {
 const expandIsland = () => fireEvent.click(screen.getByRole('button', { name: /organizer status/i }));
 const lastBoard = (onApply: ReturnType<typeof vi.fn>): BoardData => onApply.mock.calls.at(-1)![1];
 
+const writeText = vi.fn(async () => undefined);
+
 beforeEach(() => {
   vi.clearAllMocks();
   global.fetch = vi.fn();
+  Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
 });
 
 afterEach(() => {
@@ -349,7 +369,7 @@ describe('OrganizerWorkspace publish', () => {
     });
 
     expect(onReload).toHaveBeenCalled();
-    expect(await screen.findByText('Game-day controls arrive in stage 5b.')).toBeInTheDocument();
+    expect(await screen.findByText('Score authority')).toBeInTheDocument();
   });
 
   it('publishes once the flush started by the click settles clean', async () => {
@@ -460,10 +480,132 @@ describe('OrganizerWorkspace draft participant identities', () => {
 });
 
 describe('OrganizerWorkspace published boards', () => {
-  it('shows the stage 5b placeholder instead of the draft tools', () => {
-    renderWorkspace({ board: drawnBoard(100), isPublished: true, shareCode: 'abc123' });
+  const renderPublished = (overrides: Overrides = {}) => renderWorkspace({
+    board: drawnBoard(100),
+    isPublished: true,
+    shareCode: 'abc123',
+    ...overrides,
+  });
 
-    expect(screen.getByText('Game-day controls arrive in stage 5b.')).toBeInTheDocument();
+  it('marks the board published and drops the draft save pill', () => {
+    renderPublished();
+
+    expect(screen.getByText('Published')).toBeInTheDocument();
+    expect(screen.queryByText('Saved')).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Paste names')).not.toBeInTheDocument();
+  });
+
+  it('copies the viewer link from the island', async () => {
+    renderPublished();
+    expandIsland();
+
+    await act(async () => {
+      fireEvent.click(screen.getAllByRole('button', { name: 'Copy link' })[0]);
+    });
+
+    expect(writeText).toHaveBeenCalledWith(`${window.location.origin}/b/abc123`);
+    expect(await screen.findByText('Viewer link copied.')).toBeInTheDocument();
+  });
+
+  it('sends a late fill through onAssignOpenSquares and reloads', async () => {
+    const onAssignOpenSquares = vi.fn(async (_squares: string[][]) => undefined);
+    const { onReload } = renderPublished({ board: drawnBoard(99), onAssignOpenSquares });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Square 100, unassigned' }));
+    fireEvent.change(screen.getByLabelText('Name on the board'), { target: { value: 'Dana P.' } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    });
+
+    expect(onAssignOpenSquares).toHaveBeenCalledTimes(1);
+    const squares = onAssignOpenSquares.mock.calls[0][0];
+    expect(squares[99]).toEqual(['Dana P.']);
+    expect(onReload).toHaveBeenCalled();
+  });
+
+  it('refuses to clear a published assignment and never routes it through the late-fill callback', async () => {
+    const onAssignOpenSquares = vi.fn(async (_squares: string[][]) => undefined);
+    renderPublished({ board: drawnBoard(99), onAssignOpenSquares });
+
+    fireEvent.click(screen.getByRole('button', { name: `Square 1, assigned to ${NAMES[0]}` }));
+    fireEvent.change(screen.getByLabelText('Name on the board'), { target: { value: '  ' } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    });
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Published assignments cannot be changed. Select OPEN squares only.');
+    expect(onAssignOpenSquares).not.toHaveBeenCalled();
+    expect(renamePublishedSquare).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: `Square 1, assigned to ${NAMES[0]}` })).toBeInTheDocument();
+  });
+
+  it('renames a published square through the audited RPC', async () => {
+    renderPublished({ board: drawnBoard(99) });
+
+    fireEvent.click(screen.getByRole('button', { name: `Square 1, assigned to ${NAMES[0]}` }));
+    fireEvent.change(screen.getByLabelText('Name on the board'), { target: { value: 'Dana Prince' } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    });
+
+    expect(renamePublishedSquare).toHaveBeenCalledWith('pool-1', 0, 'Dana Prince');
+    expect(screen.getByRole('button', { name: 'Square 1, assigned to Dana Prince' })).toBeInTheDocument();
+    expect(await screen.findByText(`Square 1 changed from ${NAMES[0]} to Dana Prince. The change is in the board history.`)).toBeInTheDocument();
+  });
+
+  it('restores the previous name when the rename fails', async () => {
+    (renamePublishedSquare as any).mockRejectedValueOnce(new Error('rpc down'));
+    renderPublished({ board: drawnBoard(99) });
+
+    fireEvent.click(screen.getByRole('button', { name: `Square 1, assigned to ${NAMES[0]}` }));
+    fireEvent.change(screen.getByLabelText('Name on the board'), { target: { value: 'Dana P.' } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    });
+
+    expect(screen.getByRole('button', { name: `Square 1, assigned to ${NAMES[0]}` })).toBeInTheDocument();
+    expect(await screen.findByRole('alert')).toHaveTextContent('rpc down');
+  });
+
+  it('switches score authority to manual through the service', async () => {
+    renderPublished();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Manual' }));
+    });
+
+    expect(enableManualScoringOnServer).toHaveBeenCalledWith('pool-1');
+    expect(await screen.findByText('Manual scoring is on. Enter the score, then publish it.')).toBeInTheDocument();
+  });
+
+  it('publishes a milestone correction from the side rail', async () => {
+    const winnerHistory = [{
+      milestone: 'Q1' as const,
+      sideScore: 7,
+      topScore: 3,
+      sideDigit: 7,
+      topDigit: 3,
+      participantName: NAMES[0],
+      cellIndex: 0,
+      resolvedAt: '2026-09-13T18:00:00.000Z',
+      resolutionVersion: 1,
+    }];
+    renderPublished({ winnerHistory });
+
+    fireEvent.change(screen.getByLabelText('Result to correct'), { target: { value: 'Q1' } });
+    fireEvent.change(screen.getByLabelText('Why this changed (shown publicly)'), { target: { value: 'Scoreboard error' } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Publish correction' }));
+    });
+
+    expect(publishMilestoneCorrectionToServer).toHaveBeenCalledWith('pool-1', expect.objectContaining({ milestone: 'Q1', reason: 'Scoreboard error' }));
+  });
+
+  it('locks the board as the final record once the game is over', () => {
+    renderPublished({ liveData: { state: 'post', leftScore: 21, topScore: 17, isManual: false } as any });
+
+    expect(screen.getByText('This board is locked as the Final record.')).toBeInTheDocument();
+    expandIsland();
+    expect(screen.getAllByRole('link', { name: 'Create another board' }).length).toBeGreaterThan(0);
   });
 });

@@ -20,12 +20,11 @@ describe('open-square organizer UI contract', () => {
     expect(workspaceSource).toContain('allowOpenSquares: true');
   });
 
-  it.skip('keeps published occupied cells immutable and sends late fills through the dedicated callback', () => {
-    // enabled in stage 5b
+  it('keeps published occupied cells immutable and sends late fills through the dedicated callback', () => {
     expect(workspaceSource).toContain('onAssignOpenSquares');
   });
 
-  it.skip('rejects edits to published occupied cells and explains why (enabled in stage 5b when the workspace gains its game-day side)', () => {
+  it('rejects edits to published occupied cells and explains why', () => {
     expect(workspaceSource).toContain('Published assignments cannot be changed. Select OPEN squares only.');
     expect(workspaceSource).toContain('canAssignOpenSquares');
   });
