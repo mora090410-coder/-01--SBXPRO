@@ -28,6 +28,11 @@ describe('Sheet', () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
+  it('focuses the first focusable element inside the content area, not the header Close button', () => {
+    render(<Sheet open onClose={() => {}} title="Find"><input aria-label="Name" /></Sheet>);
+    expect(document.activeElement).toBe(screen.getByLabelText('Name'));
+  });
+
   it('locks body scroll while open and restores it', () => {
     const { unmount } = render(<Sheet open onClose={() => {}} title="Preview">x</Sheet>);
     expect(document.body.style.overflow).toBe('hidden');

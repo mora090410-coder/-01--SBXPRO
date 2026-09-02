@@ -33,5 +33,6 @@ describe('ScoreInstrument', () => {
     render(<ScoreInstrument game={game} board={board} live={null} liveStatus="PREGAME" isSynced={false} />);
     expect(screen.getAllByText('—').length).toBe(2);
     expect(screen.getByRole('status')).toHaveTextContent('Waiting for score');
+    expect(screen.getByRole('img', { name: 'Kansas City score not yet available' })).toBeInTheDocument();
   });
 });

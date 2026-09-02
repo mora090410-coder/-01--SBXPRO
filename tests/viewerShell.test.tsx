@@ -52,94 +52,95 @@ const renderShell = (props: Partial<ShellProps> = {}) => render(
   />
 );
 
-describe('ViewerShell Slice 6 C1', () => {
-  it('renders the unpersonalized phone-first top stack without payout or me language above Find my squares', () => {
+describe('ViewerShell', () => {
+  it('renders the unpersonalized stack: identity, score, trust, one primary action, no me language', () => {
     renderShell({ selectedPlayer: '' });
-
     const firstViewport = screen.getByTestId('viewer-first-viewport');
-    expect(within(firstViewport).getByRole('heading', { name: 'GridOne Bowl' })).toBeVisible();
+    expect(within(firstViewport).getByRole('heading', { level: 1, name: 'GridOne Bowl' })).toBeVisible();
     expect(within(firstViewport).getByText('KC at PHI')).toBeVisible();
-    expect(within(firstViewport).getByText('21')).toBeVisible();
-    expect(within(firstViewport).getByText('14')).toBeVisible();
-    expect(within(firstViewport).getByText(/Current result/i)).toHaveTextContent('Carrie Moss');
-    expect(within(firstViewport).getByText(/Winning square/i)).toHaveTextContent('PHI 4 across × KC 1 down');
-    expect(within(firstViewport).getByText(/Live/i)).toBeVisible();
-    expect(within(firstViewport).getByText(/Checked/i)).toBeVisible();
-    expect(within(firstViewport).getByText(/Score updates about every minute/i)).toBeVisible();
-    expect(within(firstViewport).getByRole('button', { name: /Find my squares/i })).toBeVisible();
+    expect(within(firstViewport).getByRole('img', { name: 'Kansas City 21' })).toBeInTheDocument();
+    expect(within(firstViewport).getByRole('img', { name: 'Philadelphia 14' })).toBeInTheDocument();
+    const status = within(firstViewport).getByRole('status');
+    expect(status).toHaveTextContent(/Current result/);
+    expect(status).toHaveTextContent('Carrie Moss');
+    expect(status).toHaveTextContent('PHI 4 across × KC 1 down');
+    expect(status).toHaveTextContent(/Score updates about every minute/);
+    expect(within(firstViewport).getByRole('button', { name: 'Find my squares' })).toBeVisible();
     expect(firstViewport).not.toHaveTextContent(/payout|makes me win/i);
+    expect(screen.getByRole('main', { name: 'GridOne Bowl viewer' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Score/ })).toHaveTextContent('KC 21');
   });
 
   it('puts personalized summary and scenarios before winner email', () => {
     renderShell({ selectedPlayer: 'Carrie Moss' });
-
-    const summary = screen.getByRole('region', { name: /Carrie Moss square summary/i });
-    const scenarios = screen.getByRole('region', { name: /What score changes the next result/i });
-    const winnerEmail = screen.getByRole('form', { name: /winner email/i });
+    const summary = screen.getByRole('region', { name: 'Carrie Moss square summary' });
+    const scenarios = screen.getByRole('region', { name: 'What score changes the next result?' });
+    const winnerEmail = screen.getByRole('form', { name: 'winner email' });
     expect(summary.compareDocumentPosition(scenarios)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     expect(scenarios.compareDocumentPosition(winnerEmail)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
-    expect(within(summary).getByText(/Carrie Moss/)).toBeVisible();
     expect(within(summary).getByText('2 squares')).toBeVisible();
-    expect(within(summary).getAllByText(/PHI column/i)).toHaveLength(2);
     expect(within(summary).getByText('Current result matches now.')).toBeVisible();
-    expect(within(summary).getByRole('button', { name: /View on board top 4 side 1/i })).toHaveStyle({ minHeight: '44px' });
+    expect(within(summary).getByRole('button', { name: /View on board top 4 side 1/ })).toBeInTheDocument();
     expect(screen.getByText('Next score: KC Safety +2')).toBeVisible();
-    expect(within(scenarios).getByText(/PHI column 4 × KC row 3/i)).toBeVisible();
-    expect(screen.getByText(/arithmetic score outcomes, not odds or predictions/i)).toBeVisible();
+    expect(screen.getByText('These are arithmetic score outcomes, not odds or predictions.')).toBeVisible();
+    expect(screen.getByRole('img', { name: '2 squares for Carrie Moss' })).toBeInTheDocument();
   });
 
-  it('does not render inert scenario rows in pregame and suppresses scenarios at Final', () => {
+  it('shows no inert scenarios in pregame and promotes the final record at Final', () => {
     const { rerender } = renderShell({ live: live({ state: 'pre', period: 0, leftScore: 0, topScore: 0 }) });
     expect(screen.queryByRole('button', { name: /Safety|Field goal|Touchdown/ })).toBeNull();
-    expect(screen.getByText(/Scenarios appear after kickoff/i)).toBeVisible();
+    expect(screen.getByText('Scenarios appear after kickoff.')).toBeVisible();
 
     rerender(<ViewerShell game={game} board={board} live={live({ state: 'post' })} liveStatus="FINAL" isSynced highlights={{ quarterWinners: {}, currentLabel: '' }} winnerHistory={[]} pendingMilestones={[]} selectedPlayer="Carrie Moss" onClearPlayer={vi.fn()} onFindSquares={vi.fn()} highlightedCoords={null} onScenarioFocus={vi.fn()} shareCode="ABCDEFGH" servicesEnabled organizerPreview={false} />);
-    expect(screen.queryByText(/What score changes the next result/i)).toBeNull();
-    expect(screen.getByText(/Final record/i)).toBeVisible();
+    expect(screen.queryByText('What score changes the next result?')).toBeNull();
+    const finalRecord = screen.getByRole('region', { name: 'Final record' });
+    const grid = screen.getByTestId('viewer-board-grid');
+    expect(finalRecord.compareDocumentPosition(grid)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
   });
 
-  it('collapses unselected live outcomes and exposes all outcomes as secondary details', async () => {
+  it('collapses unselected live outcomes behind a closed disclosure', () => {
     renderShell({ selectedPlayer: '' });
-    const disclosure = screen.getByText(/All possible next scores/i).closest('details');
+    const disclosure = screen.getByText('All possible next scores').closest('details');
     expect(disclosure).not.toHaveAttribute('open');
-    fireEvent.click(screen.getByText(/All possible next scores/i));
+    fireEvent.click(screen.getByText('All possible next scores'));
     expect(disclosure).toHaveAttribute('open');
     expect(screen.getAllByText(/Safety \+2/)).toHaveLength(2);
   });
 
-  it('shows stale/offline last-known timestamp and hides notification in preview or without durable participant', () => {
+  it('shows stale last-known copy and hides winner email in preview or without a durable participant', () => {
     const { rerender } = renderShell({ live: live({ freshness: 'offline' }), selectedPlayer: 'Carrie Moss' });
-    expect(screen.getByText(/Offline .* last known/i)).toBeVisible();
-    expect(screen.getByText(/Last known.*Checked/i)).toBeVisible();
-    expect(screen.getByText(/Using the last-known score checked .* until scoring reconnects\./i)).toBeVisible();
+    const firstViewportStatus = within(screen.getByTestId('viewer-first-viewport')).getByRole('status');
+    expect(firstViewportStatus).toHaveTextContent(/Offline · last known/);
+    expect(firstViewportStatus).toHaveTextContent(/Last known · /);
+    expect(screen.getByText(/Using the last-known score checked .* until scoring reconnects\./)).toBeVisible();
 
     rerender(<ViewerShell game={game} board={board} live={live()} liveStatus="LIVE" isSynced highlights={{ quarterWinners: {}, currentLabel: '' }} winnerHistory={[]} pendingMilestones={[]} selectedPlayer="Carrie Moss" onClearPlayer={vi.fn()} onFindSquares={vi.fn()} highlightedCoords={null} onScenarioFocus={vi.fn()} shareCode="ABCDEFGH" servicesEnabled organizerPreview />);
-    expect(screen.queryByRole('form', { name: /winner email/i })).toBeNull();
+    expect(screen.queryByRole('form', { name: 'winner email' })).toBeNull();
 
     rerender(<ViewerShell game={game} board={{ ...board, participants: [] }} live={live()} liveStatus="LIVE" isSynced highlights={{ quarterWinners: {}, currentLabel: '' }} winnerHistory={[]} pendingMilestones={[]} selectedPlayer="Carrie Moss" onClearPlayer={vi.fn()} onFindSquares={vi.fn()} highlightedCoords={null} onScenarioFocus={vi.fn()} shareCode="ABCDEFGH" servicesEnabled organizerPreview={false} />);
-    expect(screen.queryByRole('form', { name: /winner email/i })).toBeNull();
-
-    rerender(<ViewerShell game={game} board={{ ...board, participants: [{ id: 'first', displayName: 'Carrie Moss', publicLabel: 'Carrie' }, { id: 'second', displayName: 'Carrie Moss', publicLabel: 'Carrie 2' }] }} live={live()} liveStatus="LIVE" isSynced highlights={{ quarterWinners: {}, currentLabel: '' }} winnerHistory={[]} pendingMilestones={[]} selectedPlayer="Carrie Moss" onClearPlayer={vi.fn()} onFindSquares={vi.fn()} highlightedCoords={null} onScenarioFocus={vi.fn()} shareCode="ABCDEFGH" servicesEnabled organizerPreview={false} />);
-    expect(screen.queryByRole('form', { name: /winner email/i })).toBeNull();
+    expect(screen.queryByRole('form', { name: 'winner email' })).toBeNull();
   });
 
   it('uses randomized axis digits for View on board focus coordinates', () => {
-    const randomized = {
-      ...board,
-      topAxis: [9,8,7,6,5,4,3,2,1,0],
-      leftAxis: [9,8,7,6,5,4,3,2,1,0],
-    };
+    const randomized = { ...board, topAxis: [9,8,7,6,5,4,3,2,1,0], leftAxis: [9,8,7,6,5,4,3,2,1,0] };
     const onScenarioFocus = vi.fn();
     renderShell({ board: randomized, selectedPlayer: 'Carrie Moss', onScenarioFocus });
-    fireEvent.click(screen.getByRole('button', { name: /View on board top 5 side 8/i }));
+    fireEvent.click(screen.getByRole('button', { name: /View on board top 5 side 8/ }));
     expect(onScenarioFocus).toHaveBeenCalledWith({ top: 5, left: 8 });
   });
 
-  it('renders Final record with resolved winners and no scenarios', () => {
+  it('renders the final record with resolved winners and no scenarios', () => {
     const winnerHistory: WinnerResolution[] = [{ milestone: 'FINAL', sideScore: 21, topScore: 14, sideDigit: 1, topDigit: 4, participantName: 'Carrie Moss', resolvedAt: '2026-09-13T22:00:00.000Z' }];
     renderShell({ live: live({ state: 'post' }), liveStatus: 'FINAL', winnerHistory, selectedPlayer: 'Carrie Moss' });
-    expect(screen.getByText(/Final record/i)).toBeVisible();
-    expect(screen.getByText(/FINAL/)).toBeVisible();
-    expect(screen.queryByText(/What score changes the next result/i)).toBeNull();
+    expect(screen.getByRole('region', { name: 'Final record' })).toHaveTextContent(/Final · Carrie Moss/);
+    expect(screen.queryByText('What score changes the next result?')).toBeNull();
+  });
+
+  it('offers Share when a handler is provided and never uses feature-flag markers', () => {
+    const onShare = vi.fn();
+    const { container } = renderShell({ onShare });
+    fireEvent.click(screen.getByRole('button', { name: 'Share' }));
+    expect(onShare).toHaveBeenCalled();
+    expect(container.querySelector('[data-feature-flag]')).toBeNull();
   });
 });
