@@ -32,6 +32,7 @@ describe('CapsuleTag', () => {
   it('renders tones', () => {
     render(<><CapsuleTag>Draft</CapsuleTag><CapsuleTag tone="live">Live</CapsuleTag><CapsuleTag tone="gold">Final</CapsuleTag></>);
     expect(screen.getByText('Live').className).toContain('text-live');
+    expect(screen.getByText('Live').className).toContain('whitespace-nowrap');
     expect(screen.getByText('Final').className).toContain('text-gold');
     expect(screen.getByText('Draft').className).toContain('border-hairline');
   });

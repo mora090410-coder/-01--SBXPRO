@@ -43,7 +43,7 @@ interface CapsuleTagProps {
 
 export function CapsuleTag({ children, tone = 'neutral', className = '' }: CapsuleTagProps) {
   return (
-    <span className={`inline-flex items-center h-6 px-2.5 rounded-capsule font-mono uppercase text-[12px] leading-none tracking-[0.08em] ${TONE[tone]} ${className}`.trim()}>
+    <span className={`inline-flex items-center h-6 px-2.5 rounded-capsule font-mono uppercase text-[12px] leading-none tracking-[0.08em] whitespace-nowrap ${TONE[tone]} ${className}`.trim()}>
       {children}
     </span>
   );
