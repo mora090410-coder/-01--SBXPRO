@@ -57,30 +57,30 @@ const installPublishedBoard = async (page: Page) => {
   }));
 };
 
-test.describe('viewer_v2 shell', () => {
-  test('demo read-only query can show C1 viewer without enabling mutation routes', async ({ page }) => {
-    await page.goto('/demo?viewer_v2=true');
+test.describe('viewer shell', () => {
+  test('demo read-only query can show the viewer without enabling mutation routes', async ({ page }) => {
+    await page.goto('/demo');
 
-    await expect(page.locator('[data-feature-flag="viewer_v2"]')).toHaveCount(1);
+    await expect(page.locator('[data-feature-flag]')).toHaveCount(0);
     await expect(page.getByTestId('viewer-first-viewport').getByRole('heading', { name: /Demo: Super Bowl LIX/i })).toBeVisible();
     await expect(page.getByTestId('viewer-first-viewport').getByRole('button', { name: /Find my squares/i })).toBeVisible();
     await expect(page.getByTestId('viewer-first-viewport')).not.toContainText(/Payouts|makes me win/i);
 
-    await page.goto('/create?viewer_v2=true');
+    await page.goto('/create');
     await expect(page).toHaveURL(/\/login/);
-    await expect(page.locator('[data-feature-flag="viewer_v2"]')).toHaveCount(0);
+    await expect(page.locator('[data-feature-flag]')).toHaveCount(0);
   });
 
   test('exact viewer grid has one roving tab stop and keyboard navigation', async ({ page }) => {
     await installPublishedBoard(page);
-    await page.goto('/b/ABCDEFGH?viewer_v2=true');
-    const boardInstrument = page.getByTestId('viewer-board-grid-v2');
+    await page.goto('/b/ABCDEFGH');
+    const boardInstrument = page.getByTestId('viewer-board-grid');
     const grid = boardInstrument.getByRole('grid', { name: /football squares board/i });
     await expect(grid).toBeVisible();
     await expect(grid.getByText('Top · WAS')).toBeVisible();
     await expect(grid.getByText('Side · DAL')).toBeVisible();
     await expect(boardInstrument.getByText(/Columns: Washington Commanders.*Rows: Dallas Cowboys/i)).toBeVisible();
-    for (const name of [/Zoom out/i, /Center current result/i, /Zoom in/i, /Reset\/Fit/i]) {
+    for (const name of [/Zoom out/i, /Center current result/i, /Zoom in/i, /Fit/i]) {
       const box = await boardInstrument.getByRole('button', { name, exact: true }).boundingBox();
       expect(box?.height).toBeGreaterThanOrEqual(44);
       expect(box?.width).toBeGreaterThanOrEqual(44);
@@ -93,5 +93,24 @@ test.describe('viewer_v2 shell', () => {
     await expect(grid.getByRole('gridcell', { name: /OPEN.*coordinate row 1 column 2.*top digit 1.*side digit 0/i })).toBeFocused();
     await page.keyboard.press('Control+End');
     await expect(grid.getByRole('gridcell', { name: /coordinate row 10 column 10.*top digit 9.*side digit 9/i })).toBeFocused();
+  });
+
+  test('C1 first viewport, score island, and no horizontal overflow at 390x844', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/demo');
+
+    const firstViewport = page.getByTestId('viewer-first-viewport');
+    const findButtonBox = await firstViewport.getByRole('button', { name: 'Find my squares' }).boundingBox();
+    expect(findButtonBox?.y ?? 845).toBeLessThan(844);
+    const statusBox = await firstViewport.getByRole('status').first().boundingBox();
+    expect(statusBox?.y ?? 845).toBeLessThan(844);
+
+    const islandToggle = page.getByRole('button', { name: /^Score/ });
+    await expect(islandToggle).toBeVisible();
+    await islandToggle.click();
+    await expect(page.getByText('Score updates about every minute').first()).toBeVisible();
+
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+    expect(overflow).toBe(false);
   });
 });

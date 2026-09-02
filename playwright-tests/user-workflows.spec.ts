@@ -162,7 +162,7 @@ test('published viewer renders the board and persists its canonical square selec
   }));
 
   await page.goto('/b/ABCDEFGH');
-  await expect(page.getByRole('main', { name: /Published Week 1 game day/i })).toBeVisible();
+  await expect(page.getByRole('main', { name: /Published Week 1 viewer/i })).toBeVisible();
   await expect(page.getByText(/This board is not published yet/i)).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Payouts' })).toBeVisible();
   await expect(page.getByText('Winner gets bragging rights')).toBeVisible();
@@ -173,14 +173,14 @@ test('published viewer renders the board and persists its canonical square selec
   await page.getByLabel('Name used on board').press('Enter');
 
   await expect(page.getByText('1 square', { exact: true })).toBeVisible();
-  await expect(page.getByRole('cell', { name: /^Ann,/ })).toHaveClass(/ring-cardinal/);
-  await expect(page.getByRole('cell', { name: /^Anna,/ })).not.toHaveClass(/ring-cardinal/);
+  await expect(page.getByRole('gridcell', { name: /^Ann,/ })).toHaveClass(/(?:^|\s)ring-2 ring-inset ring-action(?:\s|$)/);
+  await expect(page.getByRole('gridcell', { name: /^Anna,/ })).not.toHaveClass(/(?:^|\s)ring-2 ring-inset ring-action(?:\s|$)/);
   await expect(page.getByText(/Quarter-winner email for Ann/i)).toBeVisible();
 
   await page.reload();
   await expect(page.getByText('1 square', { exact: true })).toBeVisible();
-  await expect(page.getByRole('cell', { name: /^Ann,/ })).toHaveClass(/ring-cardinal/);
-  await expect(page.getByRole('cell', { name: /^Anna,/ })).not.toHaveClass(/ring-cardinal/);
+  await expect(page.getByRole('gridcell', { name: /^Ann,/ })).toHaveClass(/(?:^|\s)ring-2 ring-inset ring-action(?:\s|$)/);
+  await expect(page.getByRole('gridcell', { name: /^Anna,/ })).not.toHaveClass(/(?:^|\s)ring-2 ring-inset ring-action(?:\s|$)/);
   await expect(page.getByText(/Quarter-winner email for Ann/i)).toBeVisible();
 });
 
