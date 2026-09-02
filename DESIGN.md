@@ -128,6 +128,8 @@ State ease 200ms `cubic-bezier(0.2, 0, 0, 1)`. Soft spring ~450ms, no overshoot,
 
 Capsule hugging the top edge on phone, bottom-right on desktop. Collapsed: rings or score. Expanded on tap or hover: full state and exactly one primary action. Always dark. Keyboard operable; Escape collapses.
 
+Score freshness is information, not decoration: viewer updates arrive about every minute, and the island's expanded state always shows the source and the retrieved time. Never imply realtime delivery.
+
 ## Anti-slop rules
 
 1. The product is the hero image. No illustrations, stock, or abstract 3D.
