@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../services/supabase';
@@ -6,6 +6,7 @@ import usePoolData from '../hooks/usePoolData';
 import { BoardData, GameState } from '../types';
 import { Base, CapsuleButton, CapsuleTag, Eyebrow, Glass, IslandRings } from '../src/design/primitives';
 import { hasBoardActivation } from '../utils/boardActivation';
+import { ghostLink } from '../src/features/homepage/sections/cta';
 
 interface Contest {
     id: string;
@@ -69,6 +70,17 @@ const Dashboard: React.FC = () => {
     const [searchParams, setSearchParams] = useSearchParams();
     const [showMigratedToast, setShowMigratedToast] = useState(false);
 
+    // Every deferred state reset is held so an unmount cannot fire it.
+    const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const discardTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const deleteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    useEffect(() => () => {
+        if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+        if (discardTimerRef.current) clearTimeout(discardTimerRef.current);
+        if (deleteTimerRef.current) clearTimeout(deleteTimerRef.current);
+    }, []);
+
     useEffect(() => {
         if (!authLoading && !user) {
             navigate('/login');
@@ -79,7 +91,8 @@ const Dashboard: React.FC = () => {
         if (searchParams.get('migrated') === 'true') {
             setShowMigratedToast(true);
             window.history.replaceState({}, '', '/dashboard');
-            setTimeout(() => setShowMigratedToast(false), 5000);
+            if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+            toastTimerRef.current = setTimeout(() => setShowMigratedToast(false), 5000);
         }
     }, [searchParams]);
 
@@ -128,7 +141,8 @@ const Dashboard: React.FC = () => {
     const handleDiscardDraft = () => {
         if (!discardConfirm) {
             setDiscardConfirm(true);
-            setTimeout(() => setDiscardConfirm(false), 3000);
+            if (discardTimerRef.current) clearTimeout(discardTimerRef.current);
+            discardTimerRef.current = setTimeout(() => setDiscardConfirm(false), 3000);
             return;
         }
         localStorage.removeItem('squares_game');
@@ -189,7 +203,8 @@ const Dashboard: React.FC = () => {
 
         if (deleteConfirmId !== contestId) {
             setDeleteConfirmId(contestId);
-            setTimeout(() => setDeleteConfirmId(null), 3000);
+            if (deleteTimerRef.current) clearTimeout(deleteTimerRef.current);
+            deleteTimerRef.current = setTimeout(() => setDeleteConfirmId(null), 3000);
             return;
         }
 
@@ -358,9 +373,9 @@ const Dashboard: React.FC = () => {
                 <footer className="mt-6 flex flex-col gap-3 border-t border-hairline pt-6 font-ui text-[13px] text-fg-3 sm:flex-row sm:items-center sm:justify-between">
                     <span>© {new Date().getFullYear()} GridOne.</span>
                     <span className="flex items-center gap-5">
-                        <Link to="/privacy" className="hover:text-fg">Privacy</Link>
-                        <Link to="/terms" className="hover:text-fg">Terms</Link>
-                        <a href="mailto:support@getgridone.com" className="hover:text-fg">Support</a>
+                        <Link to="/privacy" className={ghostLink}>Privacy</Link>
+                        <Link to="/terms" className={ghostLink}>Terms</Link>
+                        <a href="mailto:support@getgridone.com" className={ghostLink}>Support</a>
                     </span>
                 </footer>
             </main>
