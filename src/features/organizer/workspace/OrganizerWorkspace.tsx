@@ -665,7 +665,7 @@ export default function OrganizerWorkspace({
       setCorrectionDraft(null);
       await onReload?.();
       setScoreSaveStatus('saved');
-      setNote('Correction published. Everyone can now see the updated history.');
+      setNote('Correction published. Both correction notices were queued for verified recipients.');
     } catch (error: any) {
       setScoreSaveStatus('error');
       setAlert(error?.message || 'The correction could not be published.');

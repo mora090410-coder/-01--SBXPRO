@@ -135,7 +135,7 @@ const CreateContest: React.FC = () => {
         setError(null);
 
         try {
-            if (!leagueTitle) throw new Error("League Name is required.");
+            if (!leagueTitle) throw new Error("Board name is required.");
             if (!game.gameExternalId) throw new Error("Select an NFL game before creating your board.");
             if (!session?.access_token) throw new Error("You must be logged in to create a board.");
 
@@ -153,13 +153,13 @@ const CreateContest: React.FC = () => {
             });
 
             const data = await response.json();
-            if (!response.ok) throw new Error(data.message || data.error || 'Failed to create contest.');
+            if (!response.ok) throw new Error(data.message || data.error || 'Could not create the board.');
             if (!data.poolId) throw new Error("No data returned from create flow.");
 
             navigate(`/boards/${data.poolId}`);
         } catch (err: any) {
             console.error("Publish Error:", err);
-            setError(err.message || "Failed to create contest.");
+            setError(err.message || "Could not create the board.");
         } finally {
             setIsLoading(false);
         }

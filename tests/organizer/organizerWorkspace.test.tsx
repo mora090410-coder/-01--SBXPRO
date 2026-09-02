@@ -709,7 +709,7 @@ describe('OrganizerWorkspace published boards', () => {
     fireEvent.change(screen.getByLabelText('Result to correct'), { target: { value: 'Q1' } });
     fireEvent.change(screen.getByLabelText('Why this changed (shown publicly)'), { target: { value: 'Scoreboard error' } });
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Publish correction' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Publish correction and email both people' }));
     });
 
     expect(publishMilestoneCorrectionToServer).toHaveBeenCalledWith('pool-1', expect.objectContaining({ milestone: 'Q1', reason: 'Scoreboard error' }));

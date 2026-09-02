@@ -85,7 +85,7 @@ describe('milestone confirmation recorded fixtures', () => {
 
     expect(viewerShell).toContain('Pending confirmation');
     expect(corrections).toContain('Why this changed (shown publicly)');
-    expect(corrections).toContain('Publish correction');
+    expect(corrections).toContain('Publish correction and email both people');
     expect(migration).toContain('supersedes_resolution_id');
     expect(migration).toContain('resolution_version');
     expect(migration).not.toContain('ignoreDuplicates');

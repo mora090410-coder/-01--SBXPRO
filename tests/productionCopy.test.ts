@@ -93,9 +93,24 @@ const internalPhrases = [
   'queues verified winner notifications',
 ] as const;
 
+// One vocabulary: board, square, organizer, viewer, participant. A standalone
+// word scan over these files is impractical -- the corpus is source text, and
+// `contest`/`pool` occur legitimately as identifiers (`interface Contest`,
+// `contests.map`), as internal comments, and inside the `Run Your Pool`
+// competitor name in the SEO footer links. So the ban is pinned to the exact
+// user-facing phrases that carried the wrong vocabulary instead.
+const bannedPhrases = [
+  'League Name',
+  'League Name is required.',
+  'Failed to create contest.',
+] as const;
+
 describe('production-facing copy', () => {
   it('does not expose internal component, design, or implementation language', () => {
     for (const phrase of internalPhrases) {
+      expect(corpus, phrase).not.toContain(phrase);
+    }
+    for (const phrase of bannedPhrases) {
       expect(corpus, phrase).not.toContain(phrase);
     }
     expect(corpus).not.toMatch(/· rev \$\{save\.revision\}/);

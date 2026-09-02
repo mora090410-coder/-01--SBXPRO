@@ -75,7 +75,7 @@ export default function CorrectionsCard({
         </label>
         {selected && <p className="font-ui text-[14px] text-fg-2">Current winner: {selected.participantName || 'OPEN'}.</p>}
         <CapsuleButton type="button" className="self-start" disabled={!canPublish} aria-busy={pending} onClick={onPublishCorrection}>
-          {pending ? 'Publishing correction…' : 'Publish correction'}
+          {pending ? 'Publishing correction…' : 'Publish correction and email both people'}
         </CapsuleButton>
       </div>
       {winnerHistory.length > 0 && (

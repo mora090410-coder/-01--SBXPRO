@@ -233,7 +233,7 @@ const Dashboard: React.FC = () => {
     if (migrating) {
         return (
             <Base kind="cream" className="flex items-center justify-center">
-                <p role="status" className="font-ui text-[15px] text-fg-2">Finalizing your board setup...</p>
+                <p role="status" className="font-ui text-[15px] text-fg-2">Finalizing your board setup…</p>
             </Base>
         );
     }
@@ -276,7 +276,7 @@ const Dashboard: React.FC = () => {
                         <div className="flex flex-col gap-1">
                             <h2 className="font-display text-[22px] leading-none text-fg">Unsaved Board Found</h2>
                             <p className="font-ui text-[14px] text-fg-2">
-                                {`We found "${pendingGuestBoard.game.title || 'a board'}" on this device. Saving it now...`}
+                                {`We found "${pendingGuestBoard.game.title || 'a board'}" that you started before signing in. Save it to your account or discard it.`}
                             </p>
                         </div>
                         <div className="flex items-center gap-2">
@@ -318,6 +318,7 @@ const Dashboard: React.FC = () => {
                             const drawn = numbersDrawn(contest.board_data);
                             const published = hasBoardActivation(contest.board_activations) || Boolean(contest.published_at);
                             const confirming = deleteConfirmId === contest.id;
+                            const boardName = contest.title?.trim() || 'Untitled board';
                             return (
                                 <li key={contest.id}>
                                     <Glass className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4">
@@ -326,7 +327,7 @@ const Dashboard: React.FC = () => {
                                                 to={`/boards/${contest.id}`}
                                                 className="font-display text-[22px] leading-[1.1] text-fg underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action focus-visible:ring-offset-2 focus-visible:ring-offset-ground rounded-control"
                                             >
-                                                {contest.title}
+                                                {boardName}
                                             </Link>
                                             <div className="flex flex-wrap items-center gap-3">
                                                 <span className="font-mono text-[12px] uppercase tracking-[0.08em] text-fg-3">
@@ -343,14 +344,14 @@ const Dashboard: React.FC = () => {
                                                     {
                                                         value: filled / 100,
                                                         caption: `${filled}%`,
-                                                        label: `${filled} of 100 squares filled on ${contest.title}`,
+                                                        label: `${filled} of 100 squares filled on ${boardName}`,
                                                     },
                                                     {
                                                         value: drawn ? 1 : 0,
                                                         caption: drawn ? 'Drawn' : 'Draw',
                                                         label: drawn
-                                                            ? `Numbers drawn on ${contest.title}`
-                                                            : `Numbers not drawn on ${contest.title}`,
+                                                            ? `Numbers drawn on ${boardName}`
+                                                            : `Numbers not drawn on ${boardName}`,
                                                         tone: 'gold',
                                                     },
                                                 ]}
@@ -358,7 +359,7 @@ const Dashboard: React.FC = () => {
                                             <CapsuleButton
                                                 variant="quiet"
                                                 onClick={(e) => void handleDelete(e, contest.id)}
-                                                aria-label={confirming ? `Confirm deletion of ${contest.title}` : `Delete ${contest.title}`}
+                                                aria-label={confirming ? `Confirm deletion of ${boardName}` : `Delete ${boardName}`}
                                             >
                                                 {confirming ? 'Confirm?' : 'Delete'}
                                             </CapsuleButton>

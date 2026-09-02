@@ -201,7 +201,7 @@ describe('CorrectionsCard', () => {
       <CorrectionsCard winnerHistory={winnerHistory} draft={draft} pending={false} onDraftChange={onDraftChange} onPublishCorrection={onPublishCorrection} />,
     );
 
-    expect(screen.getByRole('button', { name: 'Publish correction' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Publish correction and email both people' })).toBeDisabled();
 
     fireEvent.change(screen.getByLabelText('Result to correct'), { target: { value: 'Q1' } });
     expect(onDraftChange).toHaveBeenCalledWith(expect.objectContaining({ milestone: 'Q1', sideScore: 7, topScore: 3 }));
@@ -210,15 +210,15 @@ describe('CorrectionsCard', () => {
       <CorrectionsCard winnerHistory={winnerHistory} draft={draft} pending={false} onDraftChange={onDraftChange} onPublishCorrection={onPublishCorrection} />,
     );
     expect(screen.getByText('Current winner: Alex P..')).toBeVisible();
-    expect(screen.getByRole('button', { name: 'Publish correction' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Publish correction and email both people' })).toBeDisabled();
 
     fireEvent.change(screen.getByLabelText('Why this changed (shown publicly)'), { target: { value: 'Scoreboard operator error' } });
     rerender(
       <CorrectionsCard winnerHistory={winnerHistory} draft={draft} pending={false} onDraftChange={onDraftChange} onPublishCorrection={onPublishCorrection} />,
     );
-    expect(screen.getByRole('button', { name: 'Publish correction' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Publish correction and email both people' })).toBeEnabled();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Publish correction' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Publish correction and email both people' }));
     expect(onPublishCorrection).toHaveBeenCalledOnce();
   });
 
