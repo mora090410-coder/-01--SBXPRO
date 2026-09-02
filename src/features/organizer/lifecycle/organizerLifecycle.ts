@@ -68,7 +68,8 @@ const isRecord = (value: unknown): value is Record<string, unknown> => (
 
 const nonEmptyString = (value: unknown): value is string => typeof value === 'string' && value.trim().length > 0;
 
-const isExactAxis = (axis: unknown): axis is number[] => Array.isArray(axis)
+/** Each digit 0-9 exactly once. Exported so the workspace gates on the same rule. */
+export const isExactAxis = (axis: unknown): axis is number[] => Array.isArray(axis)
   && axis.length === 10
   && axis.every((value) => Number.isInteger(value) && exactDigits.includes(value as number))
   && new Set(axis).size === 10;

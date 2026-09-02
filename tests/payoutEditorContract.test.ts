@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-const source = readFileSync(resolve(process.cwd(), 'components/AdminPanel.tsx'), 'utf8');
+const source = readFileSync(resolve(process.cwd(), 'src/features/organizer/workspace/PayoutRulesCard.tsx'), 'utf8');
 
 describe('organizer payout description editor contract', () => {
   it('uses bounded free text, stays outside the published lock, and has no invented amounts', () => {
