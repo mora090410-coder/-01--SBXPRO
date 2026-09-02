@@ -1,9 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { BoardData } from '../../types';
 import { distinctAssignedNames, matchPlayerNames } from '../../utils/playerNameMatching';
-import { ActionButton } from '../../src/components/primitives/ActionButton';
-import { Dialog } from '../../src/components/primitives/Dialog';
-import { Field } from '../../src/components/primitives/Field';
+import { CapsuleButton, CapsuleInput, Eyebrow, Sheet } from '../../src/design/primitives';
 
 interface FindSquaresModalProps {
     board: BoardData;
@@ -11,6 +9,8 @@ interface FindSquaresModalProps {
     onSelectPlayer: (player: string) => void;
     onClose: () => void;
 }
+
+const rowClass = 'w-full min-h-11 px-3 text-left font-ui text-[16px] text-fg rounded-control hover:bg-panel-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action';
 
 const FindSquaresModal: React.FC<FindSquaresModalProps> = ({ board, selectedPlayer, onSelectPlayer, onClose }) => {
     const [query, setQuery] = useState('');
@@ -31,60 +31,42 @@ const FindSquaresModal: React.FC<FindSquaresModalProps> = ({ board, selectedPlay
     };
 
     return (
-    <Dialog titleId="find-squares-title" onClose={onClose} backdropLabel="Close Find my squares" panelClassName="max-w-md mx-4 mb-0 md:mb-0">
-            <div className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                    <h3 id="find-squares-title" className="oa-headline !text-lg text-ink">Find my squares</h3>
-                    <ActionButton variant="plain" onClick={onClose} className="p-2 text-ink/60 hover:bg-newsprint transition-colors" aria-label="Close">
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </ActionButton>
-                </div>
-
-                <form onSubmit={submit} className="space-y-3">
-                    <div className="flex gap-2 items-end">
-                        <Field
-                            id="viewer-player-search"
-                            label="Name used on board"
-                            type="search"
-                            autoComplete="off"
-                            value={query}
-                            onChange={(event) => setQuery(event.target.value)}
-                            placeholder="Type your name"
-                            containerClassName="min-w-0 flex-1"
-                            className="oa-data bg-broadcast-white"
-                        />
-                        <ActionButton type="submit" disabled={!result.autoSelect} className="px-4">
-                            Find
-                        </ActionButton>
-                    </div>
+        <div data-base="dark">
+            <Sheet open onClose={onClose} title="Find my squares">
+                <form onSubmit={submit} className="flex items-end gap-2">
+                    <CapsuleInput
+                        id="viewer-player-search"
+                        label="Name used on board"
+                        hideLabel
+                        type="search"
+                        autoComplete="off"
+                        autoFocus
+                        value={query}
+                        onChange={(event) => setQuery(event.target.value)}
+                        placeholder="Type your name"
+                        className="flex-1"
+                        trailing={<CapsuleButton type="submit" disabled={!result.autoSelect}>Find</CapsuleButton>}
+                    />
                 </form>
 
-                <div className="mt-5" aria-live="polite">
+                <div className="mt-5 flex flex-col gap-2" aria-live="polite">
                     {!assignedNames.length ? (
-                        <p className="oa-data text-sm text-ink/60">No names have been assigned on this board yet.</p>
+                        <p className="font-ui text-[15px] text-fg-3">No names have been assigned on this board yet.</p>
                     ) : showBrowseList ? (
                         <>
-                            <p className="oa-slab text-ink">{hasQuery ? 'No close match. Browse every name' : 'Browse every name'}</p>
-                            <div className="mt-2 max-h-56 overflow-y-auto ring-1 ring-inset ring-ink" data-testid="browse-name-list">
+                            <Eyebrow>{hasQuery ? 'No close match. Browse every name' : 'Browse every name'}</Eyebrow>
+                            <div className="max-h-[50dvh] overflow-y-auto flex flex-col" data-testid="browse-name-list">
                                 {assignedNames.map((name) => (
-                                    <ActionButton key={name} variant="plain" onClick={() => selectPlayer(name)} className="oa-data block w-full border-b border-newsprint px-3 py-2 text-left last:border-b-0 hover:bg-newsprint focus:bg-newsprint">
-                                        {name}
-                                    </ActionButton>
+                                    <button type="button" key={name} onClick={() => selectPlayer(name)} className={rowClass}>{name}</button>
                                 ))}
                             </div>
                         </>
                     ) : (
                         <>
-                            <p className="oa-slab text-ink">
-                                {result.tier === 'exact' ? 'Choose the organizer-entered name' : 'Did you mean…'}
-                            </p>
-                            <div className="mt-2 ring-1 ring-inset ring-ink" data-testid="name-suggestions">
+                            <Eyebrow>{result.tier === 'exact' ? 'Choose the organizer-entered name' : 'Did you mean…'}</Eyebrow>
+                            <div className="flex flex-col" data-testid="name-suggestions">
                                 {result.candidates.map((name) => (
-                                    <ActionButton key={name} variant="plain" onClick={() => selectPlayer(name)} className="oa-data block w-full border-b border-newsprint px-3 py-2 text-left last:border-b-0 hover:bg-newsprint focus:bg-newsprint">
-                                        {name}
-                                    </ActionButton>
+                                    <button type="button" key={name} onClick={() => selectPlayer(name)} className={rowClass}>{name}</button>
                                 ))}
                             </div>
                         </>
@@ -92,16 +74,10 @@ const FindSquaresModal: React.FC<FindSquaresModalProps> = ({ board, selectedPlay
                 </div>
 
                 {selectedPlayer && (
-                    <ActionButton
-                        variant="plain"
-                        onClick={() => { onSelectPlayer(''); onClose(); }}
-                        className="oa-slab w-full min-h-11 mt-4 py-2 text-ink/50 hover:text-ink transition-colors"
-                    >
-                        Clear selection
-                    </ActionButton>
+                    <CapsuleButton variant="ghost" className="mt-4 w-full" onClick={() => { onSelectPlayer(''); onClose(); }}>Clear selection</CapsuleButton>
                 )}
-            </div>
-    </Dialog>
+            </Sheet>
+        </div>
     );
 };
 
