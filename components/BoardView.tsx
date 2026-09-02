@@ -8,12 +8,11 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../services/supabase';
-import { WinnerHighlights } from '../types';
+import { ScheduledGame, WinnerHighlights } from '../types';
 import { SAMPLE_BOARD } from '../constants';
 
-import AdminPanel from './AdminPanel';
 import ViewerShell from '../src/features/viewer/shell/ViewerShell';
-import OrganizerShell from '../src/features/organizer/shell/OrganizerShell';
+import OrganizerWorkspace from '../src/features/organizer/workspace/OrganizerWorkspace';
 import ErrorBoundary from './ErrorBoundary';
 import FullScreenLoading from './loading/FullScreenLoading';
 import SyntheticScoreTestBanner from './SyntheticScoreTestBanner';
@@ -23,7 +22,7 @@ import ShareModal from './board/ShareModal';
 import FindSquaresModal from './board/FindSquaresModal';
 import { calculateWinnerHighlights } from '../utils/winnerLogic';
 import { distinctAssignedNames } from '../utils/playerNameMatching';
-import { resolveFeatureFlags } from '../utils/featureFlags';
+import { createCheckoutSession } from '../services/stripe';
 import { Base, CapsuleButton, Eyebrow } from '../src/design/primitives';
 
 // Custom Hooks
@@ -31,12 +30,9 @@ import { usePoolData, INITIAL_GAME } from '../hooks/usePoolData';
 import { useLiveScoring } from '../hooks/useLiveScoring';
 import { useAuth } from '../hooks/useAuth';
 import { useBoardActions } from '../hooks/useBoardActions';
+import { useContestEntries } from '../hooks/useContestEntries';
 
-const envFlagConfig = () => ({
-    flags: {
-        organizer_v2: import.meta.env.VITE_GRIDONE_ORGANIZER_V2,
-    },
-});
+type BillingSummary = { tier: string; used: number; allowance: number };
 
 const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }) => {
     const { shareCode: routeShareCode, boardId: routeBoardId } = useParams<{ shareCode?: string; boardId?: string }>();
@@ -50,7 +46,7 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
     const poolData = usePoolData();
     const {
         game, setGame, board, setBoard, activePoolId, setActivePoolId, shareCode,
-        ownerId, loadingPool, dataReady, loadPoolData, error: poolError,
+        ownerId, loadingPool, dataReady, loadPoolData, error: poolError, revision,
         isActivated, isLocked, isPublished, winnerHistory, pendingMilestones,
         notificationDeliveryIssues, updatePool, updatePayoutDescriptions, updatePublishedOpenSquares, publishPool
     } = poolData;
@@ -91,7 +87,6 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
     const [showShareModal, setShowShareModal] = useState(false);
     const [showFindSquaresModal, setShowFindSquaresModal] = useState(false);
 
-    const [adminStartTab] = useState<'overview' | 'edit'>('overview');
     const [isPreviewMode, setIsPreviewMode] = useState(() => localStorage.getItem('gridone_preview_mode') === 'true');
     useEffect(() => { try { localStorage.removeItem('gridone_preview_mode'); } catch {} setIsPreviewMode(false); }, []);
 
@@ -109,18 +104,11 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
     const { handlePublish } = useBoardActions({
         game, board, activePoolId, updatePool, publishPool
     });
+    const { entryMetaByIndex, setEntryMetaByIndex } = useContestEntries(activePoolId);
+    const [billing, setBilling] = useState<BillingSummary | null>(null);
 
     // 4. Derived State
     const isCommissionerMode = Boolean(isOwner && !isPreviewMode);
-    const isReadOnlyViewerRoute = Boolean(demoMode || (routeShareCode && !forceAdmin));
-    const featureFlags = resolveFeatureFlags({
-        config: envFlagConfig(),
-        accountId: auth.user?.id || null,
-        boardId: activePoolId || urlPoolId || null,
-        query: window.location.search,
-        routeIntent: isReadOnlyViewerRoute ? 'read_only_preview' : 'production_mutation',
-    });
-    const organizerV2Enabled = Boolean(isOwner && featureFlags.flags.organizer_v2);
 
     // 5. Effects
     useEffect(() => {
@@ -166,6 +154,28 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
             void loadPoolData(urlPoolId);
         }
     }, [forceAdmin, loadPoolData, routeBoardId, urlPoolId]);
+
+    useEffect(() => {
+        if (!activePoolId) {
+            setBilling(null);
+            return;
+        }
+        let cancelled = false;
+        void supabase.auth.getSession().then(async ({ data }) => {
+            const token = data.session?.access_token;
+            if (!token) return;
+            const response = await fetch('/api/billing/status', {
+                headers: { Authorization: `Bearer ${token}` },
+                cache: 'no-store',
+            });
+            if (!response.ok) return;
+            const result = await response.json() as BillingSummary;
+            if (!cancelled) setBilling(result);
+        }).catch(() => {
+            // The board stays usable when the neutral plan summary is unavailable.
+        });
+        return () => { cancelled = true; };
+    }, [activePoolId]);
 
     useEffect(() => {
         if (urlPoolId) return;
@@ -228,6 +238,21 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
         localStorage.removeItem('gridone_preview_mode');
         setBoard(SAMPLE_BOARD);
         navigate('/');
+    };
+
+    const handleScheduledGameChange = (scheduledGame: ScheduledGame) => {
+        setGame(prev => ({
+            ...prev,
+            gameExternalId: scheduledGame.id,
+            kickoffAt: scheduledGame.kickoffAt,
+            // ESPN's away team is the board's left axis; home is the top axis.
+            leftAbbr: scheduledGame.awayTeam.abbr,
+            leftName: scheduledGame.awayTeam.name,
+            topAbbr: scheduledGame.homeTeam.abbr,
+            topName: scheduledGame.homeTeam.name,
+            // Legacy read compatibility only. The provider kickoff remains canonical.
+            dates: scheduledGame.kickoffAt.slice(0, 10),
+        }));
     };
 
     const highlights = useMemo<WinnerHighlights>(() => calculateWinnerHighlights(liveData), [liveData]);
@@ -319,72 +344,50 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
             )}
 
             {isCommissionerMode && (
-                <div className="oa-root relative z-[80] min-h-[100dvh] w-full bg-broadcast-white p-0 text-ink">
-                    {organizerV2Enabled ? (
-                        <OrganizerShell
-                            game={game}
-                            board={board}
-                            activePoolId={activePoolId || ''}
-                            liveData={liveData}
-                            winnerHistory={liveWinnerHistory}
-                            notificationDeliveryIssues={notificationDeliveryIssues}
-                            onApply={(g, b) => { setGame(g); setBoard(b); }}
-                            onPublish={handlePublish}
-                            onSavePayoutDescriptions={(descriptions) => {
-                                if (!activePoolId) throw new Error('Save this board before adding payout descriptions.');
-                                return updatePayoutDescriptions(activePoolId, descriptions);
-                            }}
-                            onAssignOpenSquares={async (squares) => {
-                                if (!activePoolId) throw new Error('Reload this board before assigning OPEN squares.');
-                                await updatePublishedOpenSquares(activePoolId, squares);
-                                await loadPoolData(activePoolId);
-                            }}
-                            onReload={() => activePoolId ? loadPoolData(activePoolId) : undefined}
-                            onOpenViewer={() => {
-                                if (shareCode) window.open(`/b/${shareCode}`, '_blank', 'noopener,noreferrer');
-                            }}
-                            onLogout={handleLogout}
-                            isActivated={isActivated}
-                            isPublished={isPublished}
-                            shareCode={shareCode}
-                            renderPreview={() => (
-                                <div className="relative z-50 flex min-h-[calc(100dvh-6rem)] w-full flex-col">
-                                    {renderMainContent(true)}
-                                </div>
-                            )}
-                        />
-                    ) : (
-                        <AdminPanel
-                            game={game}
-                            board={board}
-                            activePoolId={activePoolId || ''}
-                            liveData={liveData}
-                            winnerHistory={liveWinnerHistory}
-                            notificationDeliveryIssues={notificationDeliveryIssues}
-                            initialTab={adminStartTab}
-                            onApply={(g, b) => { setGame(g); setBoard(b); }}
-                            onPublish={handlePublish}
-                            onSavePayoutDescriptions={(descriptions) => {
-                                if (!activePoolId) throw new Error('Save this board before adding payout descriptions.');
-                                return updatePayoutDescriptions(activePoolId, descriptions);
-                            }}
-                            onAssignOpenSquares={async (squares) => {
-                                if (!activePoolId) throw new Error('Reload this board before assigning OPEN squares.');
-                                await updatePublishedOpenSquares(activePoolId, squares);
-                                await loadPoolData(activePoolId);
-                            }}
-                            onLogout={handleLogout}
-                            isActivated={isActivated}
-                            isPublished={isPublished}
-                            shareCode={shareCode}
-                            renderPreview={() => (
-                                <div className="relative z-50 flex min-h-[calc(100dvh-6rem)] w-full flex-col">
-                                    {renderMainContent(true)}
-                                </div>
-                            )}
-                        />
+                <OrganizerWorkspace
+                    game={game}
+                    board={board}
+                    activePoolId={activePoolId || ''}
+                    liveData={liveData}
+                    winnerHistory={liveWinnerHistory}
+                    notificationDeliveryIssues={notificationDeliveryIssues}
+                    revision={revision ?? 0}
+                    entryMeta={entryMetaByIndex}
+                    onEntryMetaChange={(meta) => setEntryMetaByIndex((current) => ({
+                        ...current,
+                        [meta.cell_index]: meta,
+                    }))}
+                    onScheduledGameChange={handleScheduledGameChange}
+                    billing={billing}
+                    onCheckout={(tier, organizationName) => {
+                        if (!activePoolId) throw new Error('Save this board before upgrading.');
+                        return createCheckoutSession(activePoolId, tier, organizationName);
+                    }}
+                    onApply={(g, b) => { setGame(g); setBoard(b); }}
+                    onPublish={handlePublish}
+                    onSavePayoutDescriptions={(descriptions) => {
+                        if (!activePoolId) throw new Error('Save this board before adding payout descriptions.');
+                        return updatePayoutDescriptions(activePoolId, descriptions);
+                    }}
+                    onAssignOpenSquares={async (squares) => {
+                        if (!activePoolId) throw new Error('Reload this board before assigning OPEN squares.');
+                        await updatePublishedOpenSquares(activePoolId, squares);
+                        await loadPoolData(activePoolId);
+                    }}
+                    onReload={() => activePoolId ? loadPoolData(activePoolId) : undefined}
+                    onOpenViewer={() => {
+                        if (shareCode) window.open(`/b/${shareCode}`, '_blank', 'noopener,noreferrer');
+                    }}
+                    onLogout={handleLogout}
+                    isActivated={isActivated}
+                    isPublished={isPublished}
+                    shareCode={shareCode}
+                    renderPreview={() => (
+                        <div className="relative z-50 flex min-h-[calc(100dvh-6rem)] w-full flex-col">
+                            {renderMainContent(true)}
+                        </div>
                     )}
-                </div>
+                />
             )}
         </div>
     );

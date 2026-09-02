@@ -1,7 +1,15 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Base } from '../../../design/primitives';
-import type { BoardData, EntryMeta, GameState, PayoutDescriptions, ScheduledGame } from '../../../../types';
-import type { OrganizerShellProps } from '../shell/OrganizerShell';
+import type {
+  BoardData,
+  EntryMeta,
+  GameState,
+  LiveGameData,
+  NotificationDeliveryIssue,
+  PayoutDescriptions,
+  ScheduledGame,
+  WinnerResolution,
+} from '../../../../types';
 import { evaluateOrganizerLifecycle, isExactAxis } from '../lifecycle/organizerLifecycle';
 import { compressImage } from '../../../../utils/image';
 import { parseBoardImage } from '../../../../services/boardImportService';
@@ -44,7 +52,24 @@ import CorrectionsCard from './gameday/CorrectionsCard';
 import DeliveryIssuesCard from './gameday/DeliveryIssuesCard';
 import FinalRecordCard from './gameday/FinalRecordCard';
 
-export interface OrganizerWorkspaceProps extends OrganizerShellProps {
+export interface OrganizerWorkspaceProps {
+  game: GameState;
+  board: BoardData;
+  activePoolId: string | null;
+  liveData: LiveGameData | null;
+  winnerHistory: WinnerResolution[];
+  notificationDeliveryIssues: NotificationDeliveryIssue[];
+  onApply: (game: GameState, board: BoardData) => void;
+  onPublish: (currentData: { game: GameState; board: BoardData }) => Promise<string | void>;
+  onSavePayoutDescriptions: (descriptions: PayoutDescriptions) => Promise<PayoutDescriptions>;
+  onAssignOpenSquares: (squares: string[][]) => Promise<void>;
+  onReload?: () => Promise<void> | void;
+  onOpenViewer?: () => void;
+  onLogout: () => void;
+  isActivated: boolean;
+  isPublished: boolean;
+  shareCode: string | null;
+  renderPreview?: () => React.ReactNode;
   /** Server revision from usePoolData; drives the autosave conflict check. */
   revision: number;
   entryMeta: Record<number, EntryMeta>;

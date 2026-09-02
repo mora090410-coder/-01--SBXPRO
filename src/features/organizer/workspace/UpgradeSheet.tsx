@@ -11,7 +11,7 @@ export interface UpgradeSheetProps {
   onCheckout: () => void;
 }
 
-/** 402 upgrade path to Stripe checkout. Copy mirrors `components/AdminPanel.tsx`'s `UpgradePaywall`. */
+/** 402 upgrade path to Stripe checkout. */
 export default function UpgradeSheet({ open, tier, error, organizationName, onOrganizationNameChange, onClose, onCheckout }: UpgradeSheetProps) {
   const isOrganization = tier === 'org';
   const organizationNameIsValid = organizationName.trim().length >= 2 && organizationName.trim().length <= 120;

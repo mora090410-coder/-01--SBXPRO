@@ -4,7 +4,7 @@ export type PublishResult =
   | { published: true; shareCode: string; viewerUrl: string; revision: number; tier: string; used: number; allowance: number }
   | { published: false; upgradeTo: 'gameday' | 'org'; message: string };
 
-/** Publishes a board's viewer link. Mirrors `components/AdminPanel.tsx`'s publish call. */
+/** Publishes a board's viewer link through the pool publish endpoint. */
 export async function publishBoard(poolId: string, options: { allowOpenSquares: boolean }): Promise<PublishResult> {
   const { data } = await supabase.auth.getSession();
   const response = await fetch(`/api/pools/${poolId}/publish`, {

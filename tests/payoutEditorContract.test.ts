@@ -9,7 +9,7 @@ describe('organizer payout description editor contract', () => {
     expect(source).toContain('onSavePayoutDescriptions');
     expect(source).toContain('maxLength={120}');
     expect(source).toContain('maxLength={280}');
-    expect(source).toContain('Save payout descriptions');
+    expect(source).toContain('Save payout rules');
     expect(source).toContain('Winner gets bragging rights');
     expect(source).not.toMatch(/payout[^\n]*(?:125|250)/i);
     expect(source).not.toMatch(/type="number"[^>]*payout|payout[^>]*type="number"/i);

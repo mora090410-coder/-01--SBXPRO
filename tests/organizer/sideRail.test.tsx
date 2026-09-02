@@ -35,7 +35,7 @@ describe('PayoutRulesCard', () => {
     fireEvent.change(screen.getByLabelText('Q1'), { target: { value: 'Bragging rights' } });
     expect(props.onChange).toHaveBeenCalledWith('Q1', 'Bragging rights');
 
-    fireEvent.click(screen.getByText('Save payout descriptions'));
+    fireEvent.click(screen.getByText('Save payout rules'));
     expect(props.onSavePayoutDescriptions).toHaveBeenCalledTimes(1);
   });
 
@@ -56,7 +56,7 @@ describe('PayoutRulesCard', () => {
   it('disables fields and save when disabled is true', () => {
     render(<PayoutRulesCard {...baseModel()} disabled />);
     expect(screen.getByLabelText('Q1')).toBeDisabled();
-    expect(screen.getByText('Save payout descriptions').closest('button')).toBeDisabled();
+    expect(screen.getByText('Save payout rules').closest('button')).toBeDisabled();
   });
 });
 

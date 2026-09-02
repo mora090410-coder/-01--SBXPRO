@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {
   Base, type BaseKind, CapsuleButton, CapsuleInput, CapsuleTag, Eyebrow, Glass, Island, IslandRings, Numeral, Ring, Sheet, Spotlight,
 } from '../primitives';
-import OrganizerWorkspaceDemo from './OrganizerWorkspaceDemo';
 
 const RINGS = [
   { value: 0.83, label: '83 percent filled', caption: '83%' },
@@ -78,49 +77,24 @@ function Panel({ kind }: { kind: BaseKind }) {
   );
 }
 
-type KitchenView = 'primitives' | 'organizer-workspace';
-
 export default function DesignKitchen() {
-  const [view, setView] = useState<KitchenView>('primitives');
-
   return (
     <div className="min-h-screen">
-      <div className="flex items-center gap-3 p-4">
-        <CapsuleButton
-          variant="ghost"
-          aria-pressed={view === 'primitives'}
-          onClick={() => setView('primitives')}
-        >
-          Primitives
-        </CapsuleButton>
-        <CapsuleButton
-          variant="ghost"
-          aria-pressed={view === 'organizer-workspace'}
-          onClick={() => setView('organizer-workspace')}
-        >
-          Organizer workspace
-        </CapsuleButton>
+      <div className="grid grid-cols-1 lg:grid-cols-2 min-h-screen">
+        <Panel kind="dark" />
+        <Panel kind="cream" />
+        <Island
+          label="Board status"
+          placement="corner"
+          collapsed={<IslandRings rings={RINGS} />}
+          expanded={(
+            <div className="flex flex-col gap-3 min-w-[260px]">
+              <p className="font-ui text-[15px] text-broadcast-white/70">83 filled · 17 open · 6 unpaid</p>
+              <CapsuleButton>Draw numbers</CapsuleButton>
+            </div>
+          )}
+        />
       </div>
-
-      {view === 'primitives' ? (
-        <div className="grid grid-cols-1 lg:grid-cols-2 min-h-screen">
-          <Panel kind="dark" />
-          <Panel kind="cream" />
-          <Island
-            label="Board status"
-            placement="corner"
-            collapsed={<IslandRings rings={RINGS} />}
-            expanded={(
-              <div className="flex flex-col gap-3 min-w-[260px]">
-                <p className="font-ui text-[15px] text-broadcast-white/70">83 filled · 17 open · 6 unpaid</p>
-                <CapsuleButton>Draw numbers</CapsuleButton>
-              </div>
-            )}
-          />
-        </div>
-      ) : (
-        <OrganizerWorkspaceDemo />
-      )}
     </div>
   );
 }

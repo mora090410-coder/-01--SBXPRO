@@ -74,14 +74,18 @@ describe('milestone confirmation recorded fixtures', () => {
       resolve(process.cwd(), 'src/features/viewer/shell/ViewerShell.tsx'),
       'utf8',
     );
-    const admin = readFileSync(resolve(process.cwd(), 'components/AdminPanel.tsx'), 'utf8');
+    const corrections = readFileSync(
+      resolve(process.cwd(), 'src/features/organizer/workspace/gameday/CorrectionsCard.tsx'),
+      'utf8',
+    );
     const migration = readFileSync(
       resolve(process.cwd(), 'supabase/migrations/015_milestone_confirmation.sql'),
       'utf8',
     );
 
     expect(viewerShell).toContain('Pending confirmation');
-    expect(admin).toContain('Publish correction and email both people');
+    expect(corrections).toContain('Why this changed (shown publicly)');
+    expect(corrections).toContain('Publish correction');
     expect(migration).toContain('supersedes_resolution_id');
     expect(migration).toContain('resolution_version');
     expect(migration).not.toContain('ignoreDuplicates');
