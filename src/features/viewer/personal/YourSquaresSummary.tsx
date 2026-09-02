@@ -49,7 +49,7 @@ const YourSquaresSummary: React.FC<YourSquaresSummaryProps> = ({ board, game, li
     <section className="flex flex-col gap-4" role="region" aria-label={`${selectedPlayer} square summary`}>
       <div className="flex items-baseline justify-between gap-3">
         <Eyebrow>Your squares · {selectedPlayer}</Eyebrow>
-        <span className="font-mono tabular-nums text-[15px] text-fg">{rows.length} {rows.length === 1 ? 'square' : 'squares'}</span>
+        <span className="whitespace-nowrap font-mono tabular-nums text-[15px] text-fg">{rows.length} {rows.length === 1 ? 'square' : 'squares'}</span>
       </div>
       <ul className="flex flex-wrap gap-2" aria-label="Your squares">
         {rows.map((row) => (
@@ -72,7 +72,7 @@ const YourSquaresSummary: React.FC<YourSquaresSummaryProps> = ({ board, game, li
                 </span>
               </div>
               {row.top !== null && row.left !== null && (
-                <CapsuleButton variant="quiet" onClick={() => onViewSquare({ top: row.top as number, left: row.left as number })}>
+                <CapsuleButton variant="quiet" className="shrink-0 whitespace-nowrap" onClick={() => onViewSquare({ top: row.top as number, left: row.left as number })}>
                   <span aria-hidden="true">View on board</span>
                   <span className="sr-only">View on board top {row.top} side {row.left}</span>
                 </CapsuleButton>

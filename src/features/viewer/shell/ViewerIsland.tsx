@@ -1,6 +1,6 @@
 import React from 'react';
 import type { BoardData, GameState, LiveGameData } from '../../../../types';
-import { Island, Ring } from '../../../design/primitives';
+import { Island } from '../../../design/primitives';
 import { buildViewerScoreModel } from '../score/viewerScoreModel';
 
 export interface ViewerIslandProps {
@@ -34,7 +34,7 @@ const ViewerIsland: React.FC<ViewerIslandProps> = ({ game, live, liveStatus, isS
           <span className="text-broadcast-white/40">·</span>
           <span className={live.state === 'in' ? 'text-tone-live' : 'text-broadcast-white/70'}>{score.periodLabel}</span>
           {selectedPlayer ? (
-            <Ring value={Math.min(1, yourSquares / 100)} label={`${yourSquares} squares for ${selectedPlayer}`} caption={String(yourSquares)} tone={winsNow ? 'gold' : 'fg'} size={24} />
+            <span role="img" aria-label={`${yourSquares} squares for ${selectedPlayer}`} className={`ml-1 inline-flex h-7 min-w-7 items-center justify-center rounded-capsule px-2 font-mono tabular-nums text-[13px] ${winsNow ? 'bg-gold/20 text-gold' : 'bg-broadcast-white/10 text-broadcast-white'}`}>{yourSquares}</span>
           ) : null}
         </span>
       )}
