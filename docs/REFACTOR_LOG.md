@@ -381,3 +381,11 @@ Remove `tests/designAudit.test.ts`, `scripts/design-audit.mjs`, the two package 
 - **Not touched:** schema, functions, workers, services, hooks, legacy surfaces (deleted in stages 3–5).
 - **Evidence:** unit suite 79 files / 436 tests green, strict TypeScript, production build, design lint 0 errors, kitchen route verified in the browser at desktop and 375px (fonts loaded, glass blur, both grounds, sheet focus trap and scroll lock, island expand, no horizontal overflow).
 - **Rollback:** revert the commits of this stage; no domain state affected.
+
+## 2026-09-01 — Broadcast Glass stage 3: homepage
+
+- **Scope:** one homepage at `/` built on the Broadcast Glass primitives (hero with a primitive-built Q3 viewer card, live score moment, three parent answers, organizer screen, pricing rows, FAQ, footer guide index). Removed `FilmLanding`, its 301 film frames, `lib/scrollRuntime.ts`, the `lenis` dependency, `HomepageV2`, `HomepageProofArtifact`, and the `homepage_v2` flag. Pricing and demo data now live in `src/features/homepage/pricing.ts` and `demoData.ts`; the next-score rows and the "wins right now" line are derived from the demo board so they cannot drift.
+- **Pricing:** live ladder unchanged per `docs/pricing-recommendation-2026-09-01.md`; route schema offers now derive from `PRICING`.
+- **Deferred to stage 6:** replace the primitive-built hero and organizer artifacts with renders of the redesigned viewer and organizer; give the board fragment per-cell accessibility once the real grid is used.
+- **Evidence:** unit suite 81 files / 444 tests, strict TypeScript, production build (dist 1.3 MB, down from 15 MB), design lint 0 errors, Playwright homepage / feature-flags-off / accessibility-contract on Chromium, desktop and 375px screenshots reviewed (no overflow, focus ring visible, one spotlight).
+- **Rollback:** revert this stage's commits; restores the flagged pair of landings and the film assets.
