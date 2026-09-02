@@ -165,7 +165,7 @@ const ViewerBoardGrid: React.FC<ViewerBoardGridProps> = ({
               <tr key={`row-${rowIndex}`} role="row" aria-rowindex={rowIndex + 2}>
                 {rowIndex === 0 && (
                   <th rowSpan={10} className="sticky left-0 z-30 w-11 min-w-11 bg-chyron text-broadcast-white rounded-cell font-mono text-[12px] uppercase tracking-[0.08em] p-0">
-                    <div className="flex h-full min-h-[44px] items-center justify-center px-2" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>Side · {sideLabel}</div>
+                    <div className="flex h-[578px] items-center justify-center px-2" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>Side · {sideLabel}</div>
                   </th>
                 )}
                 <th role="rowheader" scope="row" aria-colindex={2} data-sticky-axis="side" aria-label={`${model.sideTeamName} side digit ${model.sideAxis[rowIndex] ?? 'unknown'}`} className="sticky left-11 z-20 w-11 min-w-11 bg-chyron text-gold font-mono tabular-nums text-[15px] rounded-cell p-2">
