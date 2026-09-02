@@ -15,7 +15,7 @@ export async function publishBoard(poolId: string, options: { allowOpenSquares: 
     },
     body: JSON.stringify(options.allowOpenSquares ? { allowOpenSquares: true } : {}),
   });
-  const result = await response.json();
+  const result = await response.json().catch(() => ({}));
 
   if (response.status === 402 && (result.upgradeTo === 'gameday' || result.upgradeTo === 'org')) {
     return { published: false, upgradeTo: result.upgradeTo, message: result.error };
