@@ -27,7 +27,7 @@ const ViewerIsland: React.FC<ViewerIslandProps> = ({ game, live, liveStatus, isS
       label="Score"
       placement="top"
       collapsed={(
-        <span className="flex items-center gap-3 font-mono tabular-nums text-[14px] text-broadcast-white">
+        <span className="flex items-center gap-3 whitespace-nowrap font-mono tabular-nums text-[14px] text-broadcast-white">
           <span>{leftLabel} {live.leftScore}</span>
           <span className="text-broadcast-white/40">·</span>
           <span>{topLabel} {live.topScore}</span>

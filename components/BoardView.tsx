@@ -296,7 +296,7 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
             {(demoMode || !loadingPool) && !isCommissionerMode && (
                 <div className="flex-1 flex flex-col relative z-50 w-full max-w-[1440px] mx-auto min-h-0">
                     {demoMode && (
-                        <aside className="mx-4 mt-4 flex flex-wrap items-center justify-between gap-3 rounded-card border border-hairline bg-panel px-4 py-3" aria-label="Demo board notice">
+                        <aside className="mx-4 mt-20 flex flex-wrap items-center justify-between gap-3 rounded-card border border-hairline bg-panel px-4 py-3" aria-label="Demo board notice">
                             <p className="font-ui text-[15px] text-fg"><span className="font-medium">Demo board — sample names and scores.</span> This is a sample board. Ready to run yours?</p>
                             <div className="flex flex-wrap gap-2">
                                 <CapsuleButton onClick={() => navigate('/create')}>Create your free board</CapsuleButton>
