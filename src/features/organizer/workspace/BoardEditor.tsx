@@ -43,10 +43,13 @@ export default function BoardEditor({
   const topDigits = drawPreview ? drawPreview.top : board.topAxis;
   const leftDigits = drawPreview ? drawPreview.left : board.leftAxis;
 
-  const flushPaste = () => {
+  const flushPasteValue = (value: string) => {
     if (!onPasteNames) return;
-    const names = splitNames(pasteValue);
-    onPasteNames(names);
+    const names = splitNames(value);
+    if (names.length) {
+      onPasteNames(names);
+      setPasteValue('');
+    }
   };
 
   const isCellDisabled = (isOpen: boolean) => {
@@ -63,8 +66,11 @@ export default function BoardEditor({
           aria-label="Paste names"
           value={pasteValue}
           onChange={(event) => setPasteValue(event.target.value)}
-          onPaste={() => setTimeout(flushPaste, 0)}
-          onBlur={flushPaste}
+          onPaste={(event) => {
+            const el = event.currentTarget;
+            setTimeout(() => flushPasteValue(el.value), 0);
+          }}
+          onBlur={(event) => flushPasteValue(event.currentTarget.value)}
           className="w-full min-h-[80px] rounded-card border border-hairline bg-panel p-3 font-ui text-[14px] text-fg placeholder:text-fg-3 outline-none focus-visible:border-action"
           placeholder="Paste one name per line"
         />

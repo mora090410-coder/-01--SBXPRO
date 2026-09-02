@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Sheet } from '../../../design/primitives/Sheet';
 import { CapsuleButton, CapsuleInput, CapsuleTag } from '../../../design/primitives';
 import type { EntryMeta } from '../../../../types';
@@ -21,6 +21,8 @@ export default function SquareSheet({ open, index, name, meta, isPublished, hasN
   const [nameValue, setNameValue] = useState(name);
   const [sellerValue, setSellerValue] = useState(meta?.seller_label ?? '');
   const [paidStatus, setPaidStatus] = useState<'unpaid' | 'paid'>(meta?.paid_status === 'paid' ? 'paid' : 'unpaid');
+  const unpaidRadioRef = useRef<HTMLButtonElement>(null);
+  const paidRadioRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -54,6 +56,16 @@ export default function SquareSheet({ open, index, name, meta, isPublished, hasN
     save(showSaveAndNext);
   };
 
+  const onPaymentKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
+    const toggleKeys = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'];
+    if (!toggleKeys.includes(event.key)) return;
+    event.preventDefault();
+    const next = paidStatus === 'unpaid' ? 'paid' : 'unpaid';
+    setPaidStatus(next);
+    const nextRef = next === 'paid' ? paidRadioRef : unpaidRadioRef;
+    nextRef.current?.focus();
+  };
+
   return (
     <Sheet open={open} onClose={onClose} title={`Square ${(index ?? 0) + 1}`}>
       <div className="flex flex-col gap-5">
@@ -74,18 +86,24 @@ export default function SquareSheet({ open, index, name, meta, isPublished, hasN
           <span className="font-ui text-[14px] text-fg-2">Payment</span>
           <div role="radiogroup" aria-label="Payment" className="flex gap-2">
             <button
+              ref={unpaidRadioRef}
               type="button"
               role="radio"
               aria-checked={paidStatus === 'unpaid'}
               onClick={() => setPaidStatus('unpaid')}
+              onKeyDown={onPaymentKeyDown}
+              className="min-h-11 min-w-11 px-3 rounded-capsule inline-flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action"
             >
               <CapsuleTag tone={paidStatus === 'unpaid' ? 'cardinal' : 'neutral'}>Unpaid</CapsuleTag>
             </button>
             <button
+              ref={paidRadioRef}
               type="button"
               role="radio"
               aria-checked={paidStatus === 'paid'}
               onClick={() => setPaidStatus('paid')}
+              onKeyDown={onPaymentKeyDown}
+              className="min-h-11 min-w-11 px-3 rounded-capsule inline-flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action"
             >
               <CapsuleTag tone={paidStatus === 'paid' ? 'gold' : 'neutral'}>Paid</CapsuleTag>
             </button>

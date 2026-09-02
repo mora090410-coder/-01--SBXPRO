@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import BoardEditor from '../../src/features/organizer/workspace/BoardEditor';
 import SquareSheet from '../../src/features/organizer/workspace/SquareSheet';
@@ -37,6 +37,23 @@ describe('BoardEditor', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Square 2, unassigned' }));
     expect(onSelectSquare).toHaveBeenCalledWith(1);
   });
+  it('reads the live textarea value on paste instead of the stale React state', () => {
+    vi.useFakeTimers();
+    try {
+      const onPasteNames = vi.fn();
+      render(<BoardEditor board={board} game={game} entryMeta={{}} drawPreview={null} highlightOpen={false} isPublished={false} canAssignOpenSquares={false} onSelectSquare={vi.fn()} onPasteNames={onPasteNames} />);
+      const area = screen.getByRole('textbox', { name: 'Paste names' }) as HTMLTextAreaElement;
+      fireEvent.paste(area);
+      fireEvent.change(area, { target: { value: 'Bo\nCy' } });
+      act(() => {
+        vi.runAllTimers();
+      });
+      expect(onPasteNames).toHaveBeenCalledWith(['Bo', 'Cy']);
+      expect(area.value).toBe('');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
 
 describe('SquareSheet', () => {
@@ -54,5 +71,23 @@ describe('SquareSheet', () => {
     render(<SquareSheet open index={0} name="Ann" isPublished hasNextOpen={false} onSave={vi.fn()} onClose={vi.fn()} />);
     expect(screen.getByText(/recorded in the board history/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Save and next' })).toBeNull();
+  });
+  it('sizes the payment radios to a 44px touch target', () => {
+    render(<SquareSheet open index={0} name="Ann" isPublished={false} hasNextOpen={false} onSave={vi.fn()} onClose={vi.fn()} />);
+    const radios = within(screen.getByRole('radiogroup', { name: 'Payment' })).getAllByRole('radio');
+    expect(radios).toHaveLength(2);
+    radios.forEach((radio) => {
+      expect(radio.className).toContain('min-h-11');
+    });
+  });
+  it('moves the payment selection with the arrow keys', () => {
+    render(<SquareSheet open index={0} name="Ann" isPublished={false} hasNextOpen={false} onSave={vi.fn()} onClose={vi.fn()} />);
+    const group = screen.getByRole('radiogroup', { name: 'Payment' });
+    const unpaid = within(group).getByRole('radio', { name: 'Unpaid' });
+    const paid = within(group).getByRole('radio', { name: 'Paid' });
+    unpaid.focus();
+    fireEvent.keyDown(unpaid, { key: 'ArrowRight' });
+    expect(paid).toHaveAttribute('aria-checked', 'true');
+    expect(paid).toHaveFocus();
   });
 });
