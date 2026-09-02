@@ -316,9 +316,66 @@ test.describe('Slice 2 signed-out accessibility contract automation', () => {
     await expect(page.getByText(/Quarter-winner email for Ann/i)).toBeVisible();
   });
 
-  test('viewer C1 first-viewport, stale/offline scenario copy, and Final-record hierarchy have an explicit owner', async ({ page }) => {
-    test.fixme(true, 'Owner: Slice 6 viewer. Expected: unpersonalized 390x844 first viewport shows board identity, score authority/freshness, Score updates about every minute, and Find my squares before payouts/rules; personalized mode shows selected name/count, coordinate/digit summary, View on board, personal status, matching next-score or explicit none before notification form; stale/offline scenarios say Using the last known score checked [time]; Final removes future-score scenarios and replaces them with the Final record. Remove when viewer_v2 C1 shell ships behind its flag.');
-    await page.goto('/b/ABCDEFGH');
+  test('viewer C1 first-viewport, stale/offline scenario copy, and Final-record hierarchy stay deterministic', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await installPublishedBoard(page, {
+      score: { ...liveScore, freshness: 'offline', warning: 'Offline warning', retrievedAt: '2026-09-13T20:15:00.000Z' },
+    });
+    await page.goto('/b/ABCDEFGH?viewer_v2=true');
+
+    const firstViewport = page.getByTestId('viewer-first-viewport');
+    await expect(page.getByRole('main', { name: /Published Week 1 viewer/i })).toBeVisible();
+    await expect(firstViewport.getByRole('heading', { name: 'Published Week 1' })).toBeVisible();
+    await expect(firstViewport.getByRole('status').filter({ hasText: 'Offline · last known' })).toBeVisible();
+    await expect(firstViewport.getByText('Score updates about every minute')).toBeVisible();
+    await expect(firstViewport.getByRole('button', { name: 'Find my squares' })).toBeVisible();
+    await expect(firstViewport.getByText(/Using the last-known score checked .+ until scoring reconnects\./i)).toBeVisible();
+
+    const firstViewportOrder = await firstViewport.evaluate((root) => {
+      const heading = root.querySelector('h1');
+      const status = root.querySelector('[role="status"]');
+      const find = Array.from(root.querySelectorAll('button')).find((button) => button.textContent?.trim() === 'Find my squares');
+      const details = Array.from(root.querySelectorAll('summary')).find((summary) => summary.textContent?.includes('Board details'));
+      if (!heading || !status || !find || !details) return false;
+      const position = Node.DOCUMENT_POSITION_FOLLOWING;
+      return Boolean(
+        heading.compareDocumentPosition(status) & position
+        && status.compareDocumentPosition(find) & position
+        && find.compareDocumentPosition(details) & position
+      );
+    });
+    expect(firstViewportOrder).toBe(true);
+
+    const findButtonBox = await firstViewport.getByRole('button', { name: 'Find my squares' }).boundingBox();
+    expect(findButtonBox?.y ?? 845).toBeLessThan(844);
+
+    await page.getByRole('button', { name: /Find my squares/i }).first().click();
+    await page.getByLabel('Name used on board').fill('Ann');
+    await page.getByLabel('Name used on board').press('Enter');
+    const summary = page.getByRole('region', { name: /Ann square summary/i });
+    const winnerEmail = page.getByRole('form', { name: /winner email/i });
+    await expect(summary.getByText('1 square', { exact: true })).toBeVisible();
+    await expect(summary.getByText(/WAS column 0 × DAL row 0/i)).toBeVisible();
+    await expect(summary.getByRole('button', { name: /View on board top 0 side 0/i })).toBeVisible();
+    await expect(summary.getByText(/None of the next scores listed here match this square\./i)).toBeVisible();
+    await expect(winnerEmail).toBeVisible();
+    const personalizedBeforeEmail = await page.locator('[aria-label="Ann square summary"], [role="form"][aria-label="winner email"]').evaluateAll((nodes) => {
+      const [summaryNode, emailNode] = nodes;
+      return Boolean(summaryNode && emailNode && summaryNode.compareDocumentPosition(emailNode) & Node.DOCUMENT_POSITION_FOLLOWING);
+    });
+    expect(personalizedBeforeEmail).toBe(true);
+
+    await page.unrouteAll({ behavior: 'ignoreErrors' });
+    await installPublishedBoard(page, {
+      score: { ...liveScore, state: 'post', period: 4, clock: 'Final', detail: 'Final', freshness: 'fresh' },
+      winnerHistory: [
+        { milestone: 'FINAL', topDigit: 4, sideDigit: 7, participantName: 'Ann', resolvedAt: '2026-09-13T21:00:00.000Z', resolutionVersion: 1 },
+      ],
+    });
+    await page.goto('/b/ABCDEFGH?viewer_v2=true');
+    await expect(page.getByRole('heading', { name: 'Final record' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'What score changes the next result?' })).toHaveCount(0);
+    await expect(page.getByText(/Safety \+2|Field goal \+3|Touchdown \+6/)).toHaveCount(0);
   });
 
   test('viewer stale, offline, and manual score authority states remain explicit', async ({ page }) => {

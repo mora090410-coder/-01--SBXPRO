@@ -52,19 +52,19 @@ const renderGrid = () => render(
     selectedPlayer="Ann Lee"
     highlightedCoords={{ top: 4, left: 7 }}
     showOpenSquares
-    onFindSquares={vi.fn()}
   />
 );
 
 describe('ViewerBoardGrid Slice 7', () => {
-  it('renders sticky top and side axes with exact Top team and Side team orientation labels', () => {
+  it('renders sticky axes with actual team abbreviations and an across/down orientation explanation', () => {
     renderGrid();
     const grid = screen.getByRole('grid', { name: /football squares board/i });
     expect(grid).toHaveAttribute('aria-rowcount', '11');
     expect(grid).toHaveAttribute('aria-colcount', '12');
     expect(grid.querySelectorAll('col')).toHaveLength(12);
-    expect(within(grid).getByText('Top team')).toBeVisible();
-    expect(within(grid).getByText('Side team')).toBeVisible();
+    expect(within(grid).getByText('Top · WAS')).toBeVisible();
+    expect(within(grid).getByText('Side · DAL')).toBeVisible();
+    expect(screen.getByText(/Columns: Washington Commanders — digit 4.*Rows: Dallas Cowboys — digit 7.*Current square: WAS 4 across × DAL 7 down/i)).toBeVisible();
     expect(within(grid).getByRole('columnheader', { name: /Washington Commanders top digit 4/i })).toHaveAttribute('data-sticky-axis', 'top');
     expect(within(grid).getByRole('rowheader', { name: /Dallas Cowboys side digit 7/i })).toHaveAttribute('data-sticky-axis', 'side');
   });
@@ -111,7 +111,7 @@ describe('ViewerBoardGrid Slice 7', () => {
 
   it('renders zoom/find/center controls as 44px targets', () => {
     const { container } = renderGrid();
-    for (const name of [/Zoom out/i, /Center current result/i, /Zoom in/i, /Fit board/i, /Find/i, /Center selected square/i]) {
+    for (const name of [/Zoom out/i, /Center current result/i, /Zoom in/i, /Reset\/Fit/i, /Center selected square/i]) {
       expect(screen.getByRole('button', { name })).toHaveStyle({ minHeight: '44px', minWidth: '44px' });
     }
     expect(screen.getByRole('status', { name: 'Current zoom' })).toHaveTextContent('100%');
@@ -122,6 +122,8 @@ describe('ViewerBoardGrid Slice 7', () => {
       clientHeight: { value: 240, configurable: true },
       scrollTo: { value: scrollTo, configurable: true },
     });
+    fireEvent.click(screen.getByRole('button', { name: 'Reset/Fit' }));
+    expect(screen.getByRole('status', { name: 'Current zoom' })).toHaveTextContent('50%');
     fireEvent.click(screen.getByRole('button', { name: 'Center current result' }));
     fireEvent.click(screen.getByRole('button', { name: 'Center selected square' }));
     expect(scrollTo).toHaveBeenCalledTimes(2);

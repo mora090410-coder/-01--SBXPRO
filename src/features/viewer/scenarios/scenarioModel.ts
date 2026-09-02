@@ -25,6 +25,7 @@ export interface ViewerScenarioModel {
   status: ScenarioStatus;
   currentQuarter: ViewerQuarter;
   scenarios: ViewerScenario[];
+  lastKnownCheckedAt: string | null;
   disclaimer: 'These are arithmetic score outcomes, not odds or predictions.';
 }
 
@@ -66,11 +67,13 @@ export const buildScenarioModel = ({
 }): ViewerScenarioModel => {
   const currentQuarter = quarterForLive(live);
   const status = scenarioStatus(live);
+  const lastKnownCheckedAt = status === 'last-known' ? live?.retrievedAt || null : null;
   if (!live || status === 'final') {
     return {
       status,
       currentQuarter,
       scenarios: [],
+      lastKnownCheckedAt,
       disclaimer: 'These are arithmetic score outcomes, not odds or predictions.',
     };
   }
@@ -94,6 +97,7 @@ export const buildScenarioModel = ({
     status,
     currentQuarter,
     scenarios,
+    lastKnownCheckedAt,
     disclaimer: 'These are arithmetic score outcomes, not odds or predictions.',
   };
 };

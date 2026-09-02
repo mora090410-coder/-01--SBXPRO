@@ -22,6 +22,8 @@ const ScoreInstrument: React.FC<ScoreInstrumentProps> = ({ game, board, live, li
   const quarter = quarterForLive(live);
   const currentNames = live ? playersForDigits(board, live.topScore % 10, live.leftScore % 10, quarter) : [];
   const stale = live?.freshness === 'stale' || live?.freshness === 'offline' || live?.freshness === 'refreshing';
+  const topDigit = live ? live.topScore % 10 : null;
+  const sideDigit = live ? live.leftScore % 10 : null;
 
   return (
     <section className="border-b border-broadcast-white/20 pb-5" aria-labelledby="viewer-score-title">
@@ -43,6 +45,7 @@ const ScoreInstrument: React.FC<ScoreInstrumentProps> = ({ game, board, live, li
 
       <div className="mt-4 grid gap-2 text-sm text-broadcast-white" role="status" aria-live="polite">
         <p><strong>{score.periodLabel}</strong> · Current result: <strong>{live ? shortName(currentNames) : 'Waiting for score'}</strong></p>
+        {live && live.state !== 'pre' && <p>Winning square: <strong>{game.topAbbr || 'Top'} {topDigit} across × {game.leftAbbr || 'Side'} {sideDigit} down</strong></p>}
         <p><strong>{score.authority.label}</strong> · {score.authority.detail}</p>
         <p>{stale ? 'Last known · ' : ''}{score.freshness || 'Checked time unavailable'} · {score.pollingText}</p>
         {live?.detail && <p className="text-broadcast-white/70">{live.detail}</p>}

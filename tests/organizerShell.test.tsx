@@ -156,6 +156,19 @@ describe('OrganizerShell Slice 10 B2', () => {
     expect(screen.getByLabelText(/^Final record$/i)).toBeVisible();
   });
 
+  it('explains completed boards as locked final records and routes organizers toward another board', () => {
+    renderShell({
+      board: board({ topAxis: digits, leftAxis: digits }),
+      isActivated: true,
+      isPublished: true,
+      liveData: { leftScore: 24, topScore: 31, quarterScores: { Q1: { left: 7, top: 7 }, Q2: { left: 3, top: 7 }, Q3: { left: 7, top: 10 }, Q4: { left: 7, top: 7 }, OT: { left: 0, top: 0 } }, clock: '0:00', period: 4, state: 'post', detail: 'Final', isOvertime: false },
+      winnerHistory: [{ milestone: 'FINAL', sideScore: 24, topScore: 31, sideDigit: 4, topDigit: 1, participantName: 'Ava', resolvedAt: '2026-09-13T22:00:00.000Z' }],
+    });
+    const completed = screen.getByRole('region', { name: /completed board/i });
+    expect(completed).toHaveTextContent(/This board is locked as the Final record/i);
+    expect(within(completed).getByRole('link', { name: /Create another board/i })).toHaveAttribute('href', '/create');
+  });
+
   it('saves payout descriptions through the existing BoardView callback and refreshes', async () => {
     const onSavePayoutDescriptions = vi.fn(async (descriptions) => descriptions);
     const onReload = vi.fn();

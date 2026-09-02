@@ -40,6 +40,7 @@ describe('HomepageV2 Slice12 A1', () => {
     expect(within(hero).getByRole('heading', { name: /Football-squares fundraiser boards/i })).toBeVisible();
     expect(within(hero).getByText(/For youth-sports teams, booster clubs, schools, and community organizers/i)).toBeVisible();
     expect(within(hero).getByRole('link', { name: 'Create your free board' })).toHaveAttribute('href', '/create');
+    expect(within(hero).getByRole('link', { name: 'Sign in to existing account' })).toHaveAttribute('href', '/login?mode=signin');
     expect(within(hero).getByRole('link', { name: 'See a live board' })).toHaveAttribute('href', '/demo');
     expect(within(hero).getByText('First published board free')).toBeVisible();
     expect(within(hero).getByText('GridOne tracks the board. It does not collect square money, hold funds, adjudicate off-platform payment, or pay winners.')).toBeVisible();

@@ -12,7 +12,6 @@ interface ViewerBoardGridProps {
   selectedPlayer: string;
   highlightedCoords?: { left: number; top: number } | null;
   showOpenSquares?: boolean;
-  onFindSquares: () => void;
 }
 
 const controlStyle = { minHeight: 44, minWidth: 44 };
@@ -40,7 +39,6 @@ const ViewerBoardGrid: React.FC<ViewerBoardGridProps> = ({
   selectedPlayer,
   highlightedCoords = null,
   showOpenSquares = false,
-  onFindSquares,
 }) => {
   const model = React.useMemo(() => buildBoardGridModel({
     board,
@@ -91,10 +89,14 @@ const ViewerBoardGrid: React.FC<ViewerBoardGridProps> = ({
     if (cell) focusCell(cell.rowIndex, cell.colIndex, true);
   };
 
-  const fitGrid = () => {
+  const fitGrid = React.useCallback(() => {
     const available = viewportRef.current?.clientWidth || 760;
     setZoom(clamp(available / 760, 0.5, 1));
-  };
+  }, []);
+
+  React.useLayoutEffect(() => {
+    if ((viewportRef.current?.clientWidth || 0) > 0) fitGrid();
+  }, [fitGrid]);
 
   const onKeyDown = (event: React.KeyboardEvent<HTMLTableElement>) => {
     const { key, ctrlKey } = event;
@@ -114,19 +116,22 @@ const ViewerBoardGrid: React.FC<ViewerBoardGridProps> = ({
     focusCell(next.row, next.col);
   };
 
-  const currentLabel = live && live.state !== 'pre' ? `${model.topTeamName} ${live.topScore % 10} / ${model.sideTeamName} ${live.leftScore % 10}` : 'No current score';
+  const topLabel = game.topAbbr || model.topTeamName;
+  const sideLabel = game.leftAbbr || model.sideTeamName;
+  const orientationLabel = live && live.state !== 'pre'
+    ? `Columns: ${model.topTeamName} — digit ${live.topScore % 10}. Rows: ${model.sideTeamName} — digit ${live.leftScore % 10}. Current square: ${topLabel} ${live.topScore % 10} across × ${sideLabel} ${live.leftScore % 10} down.`
+    : `Columns: ${model.topTeamName}. Rows: ${model.sideTeamName}. Winning digits read across, then down.`;
 
   return (
     <div className="grid gap-3" data-testid="viewer-board-grid-v2">
+      <p className="oa-body text-sm text-ink">{orientationLabel}</p>
       <div className="flex flex-wrap items-center gap-2" aria-label="Board controls">
-        <button type="button" className="oa-slab border border-ink px-3 text-ink" style={controlStyle} onClick={() => setZoom((value) => Math.max(0.75, value - 0.1))}>Zoom out</button>
+        <button type="button" className="oa-slab border border-ink px-3 text-ink" style={controlStyle} onClick={() => setZoom((value) => Math.max(0.5, value - 0.1))}>Zoom out</button>
         <button type="button" className="oa-slab border border-ink px-3 text-ink" style={controlStyle} onClick={() => centerState('current')}>Center current result</button>
         <button type="button" className="oa-slab border border-ink px-3 text-ink" style={controlStyle} onClick={() => setZoom((value) => Math.min(1.5, value + 0.1))}>Zoom in</button>
-        <button type="button" className="oa-slab border border-ink px-3 text-ink" style={controlStyle} onClick={fitGrid}>Fit board</button>
-        <button type="button" className="oa-slab border border-ink px-3 text-ink" style={controlStyle} onClick={onFindSquares}>Find</button>
-        <button type="button" className="oa-slab border border-ink px-3 text-ink" style={controlStyle} onClick={() => centerState('selected')}>Center selected square</button>
+        <button type="button" className="oa-slab border border-ink px-3 text-ink" style={controlStyle} onClick={fitGrid}>Reset/Fit</button>
+        {selectedPlayer && <button type="button" className="oa-slab border border-ink px-3 text-ink" style={controlStyle} onClick={() => centerState('selected')}>Center selected square</button>}
         <output className="oa-data flex min-h-11 min-w-11 items-center justify-center border border-ink px-2 text-ink" aria-label="Current zoom">{Math.round(zoom * 100)}%</output>
-        <span className="oa-data text-xs text-ink/60" aria-live="polite">{currentLabel}</span>
       </div>
 
       <div ref={viewportRef} className="gridone-viewer-board-viewport overflow-auto border border-ink bg-broadcast-white p-1">
@@ -135,8 +140,8 @@ const ViewerBoardGrid: React.FC<ViewerBoardGridProps> = ({
           aria-label={`Football squares board, Top team ${model.topTeamName}, Side team ${model.sideTeamName}`}
           aria-rowcount={11}
           aria-colcount={12}
-          className="gridone-board-grid w-full min-w-[760px] table-fixed border-collapse bg-broadcast-white text-ink"
-          style={{ width: 760 * zoom, minWidth: 760 * zoom }}
+          className="gridone-board-grid w-[760px] min-w-[760px] table-fixed border-collapse bg-broadcast-white text-ink"
+          style={{ zoom } as React.CSSProperties}
           onKeyDown={onKeyDown}
         >
           <colgroup>
@@ -146,7 +151,7 @@ const ViewerBoardGrid: React.FC<ViewerBoardGridProps> = ({
           </colgroup>
           <thead>
             <tr aria-rowindex={1}>
-              <th className="sticky left-0 top-0 z-40 bg-chyron p-2 text-broadcast-white" style={{ width: 88, minWidth: 88 }} colSpan={2}>Top team</th>
+              <th className="sticky left-0 top-0 z-40 bg-chyron p-2 text-broadcast-white" style={{ width: 88, minWidth: 88 }} colSpan={2}>Top · {topLabel}</th>
               {model.topAxis.map((digit, index) => (
                 <th key={`top-${index}`} role="columnheader" scope="col" aria-colindex={index + 3} data-sticky-axis="top" aria-label={`${model.topTeamName} top digit ${digit ?? 'unknown'}`} className="oa-board-axis sticky top-0 z-30 border border-cardinal bg-cardinal-deep p-2 text-broadcast-white">
                   {digit}
@@ -159,7 +164,7 @@ const ViewerBoardGrid: React.FC<ViewerBoardGridProps> = ({
               <tr key={`row-${rowIndex}`} role="row" aria-rowindex={rowIndex + 2}>
                 {rowIndex === 0 && (
                   <th rowSpan={10} className="sticky left-0 z-30 w-11 min-w-11 border border-ink bg-chyron p-0 text-broadcast-white">
-                    <div className="flex h-full min-h-[44px] items-center justify-center px-2" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>Side team</div>
+                    <div className="flex h-full min-h-[44px] items-center justify-center px-2" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>Side · {sideLabel}</div>
                   </th>
                 )}
                 <th role="rowheader" scope="row" aria-colindex={2} data-sticky-axis="side" aria-label={`${model.sideTeamName} side digit ${model.sideAxis[rowIndex] ?? 'unknown'}`} className="oa-board-axis sticky left-11 z-20 w-11 min-w-11 border border-cardinal bg-cardinal-deep p-2 text-broadcast-white">

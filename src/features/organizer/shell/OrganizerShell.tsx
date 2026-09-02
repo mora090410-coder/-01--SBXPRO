@@ -152,6 +152,7 @@ export default function OrganizerShell({
   const conflictBlocked = saveState.status === 'conflicted';
   const hardBlocked = model.hardBlockers.length > 0;
   const axesCommitted = exactAxis(draftBoard.topAxis) && exactAxis(draftBoard.leftAxis);
+  const finalRecord = isPublished && liveData?.state === 'post';
   const drawDisabled = !model.canEnterDraw || conflictBlocked;
   const publishDisabled = !axesCommitted || !model.canPublish || conflictBlocked || publishPending;
   const nextDraw = () => {
@@ -360,6 +361,14 @@ export default function OrganizerShell({
         {actionMessage && <p role="status" className="border border-newsprint p-3">{actionMessage}</p>}
         {actionError && <p role="alert" className="border border-cardinal p-3 text-cardinal">{actionError}</p>}
         {conflictBlocked && onReload && <button type="button" className="oa-btn oa-btn-primary justify-self-start" onClick={() => void onReload()}>Reload latest board</button>}
+        {finalRecord && (
+          <section role="region" aria-label="Completed board" className="border border-gold bg-newsprint p-4 text-ink">
+            <p className="oa-slab text-sm uppercase tracking-[0.18em] text-cardinal">Final record</p>
+            <h2 className="oa-headline mt-1 text-2xl text-ink">This board is locked as the Final record.</h2>
+            <p className="oa-body mt-2 text-sm text-ink/70">Scores, winners, OPEN outcomes, and public corrections stay visible for trust. Regular setup editing is closed; create another board for the next fundraiser or game.</p>
+            <a href="/create" className="oa-btn oa-btn-primary mt-3 inline-flex">Create another board</a>
+          </section>
+        )}
         {isPublished ? (
           <>
             <GameDayControls

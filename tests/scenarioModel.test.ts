@@ -44,11 +44,24 @@ describe('viewer scenario model', () => {
   });
 
   it('uses last-known stale/offline scores explicitly and suppresses no-score and final states', () => {
-    expect(buildScenarioModel({ board: board(), game, live: live({ freshness: 'stale' }) }).status).toBe('last-known');
-    expect(buildScenarioModel({ board: board(), game, live: live({ freshness: 'offline' }) }).status).toBe('last-known');
-    expect(buildScenarioModel({ board: board(), game, live: null }).scenarios).toEqual([]);
-    expect(buildScenarioModel({ board: board(), game, live: null }).status).toBe('no-score');
-    expect(buildScenarioModel({ board: board(), game, live: live({ state: 'post' }) }).scenarios).toEqual([]);
-    expect(buildScenarioModel({ board: board(), game, live: live({ state: 'post' }) }).status).toBe('final');
+    const stale = buildScenarioModel({ board: board(), game, live: live({ freshness: 'stale', retrievedAt: '2026-09-13T20:15:00.000Z' }) });
+    const offline = buildScenarioModel({ board: board(), game, live: live({ freshness: 'offline', retrievedAt: '2026-09-13T20:16:00.000Z' }) });
+    const noScore = buildScenarioModel({ board: board(), game, live: null });
+    const final = buildScenarioModel({ board: board(), game, live: live({ state: 'post', retrievedAt: '2026-09-13T20:17:00.000Z' }) });
+
+    expect(stale.status).toBe('last-known');
+    expect(stale.lastKnownCheckedAt).toBe('2026-09-13T20:15:00.000Z');
+    expect(offline.status).toBe('last-known');
+    expect(offline.lastKnownCheckedAt).toBe('2026-09-13T20:16:00.000Z');
+    expect(noScore.scenarios).toEqual([]);
+    expect(noScore.status).toBe('no-score');
+    expect(noScore.lastKnownCheckedAt).toBeNull();
+    expect(final.scenarios).toEqual([]);
+    expect(final.status).toBe('final');
+    expect(final.lastKnownCheckedAt).toBeNull();
+  });
+
+  it('uses the generic last-known fallback when stale/offline score lacks a checked timestamp', () => {
+    expect(buildScenarioModel({ board: board(), game, live: live({ freshness: 'stale', retrievedAt: undefined }) }).lastKnownCheckedAt).toBeNull();
   });
 });

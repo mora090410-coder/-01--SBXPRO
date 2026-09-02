@@ -58,7 +58,7 @@ const YourSquaresSummary: React.FC<YourSquaresSummaryProps> = ({ board, game, li
         {rows.map((row) => (
           <li key={row.index} className="border border-broadcast-white/20 bg-ink/30 p-3">
             <div className="flex items-center justify-between gap-3">
-              <span className="oa-data text-broadcast-white">top {row.top} / side {row.left}</span>
+              <span className="oa-data text-broadcast-white">{game.topAbbr || 'Top'} column {row.top} × {game.leftAbbr || 'Side'} row {row.left}</span>
               {row.top !== null && row.left !== null && (
                 <button
                   type="button"

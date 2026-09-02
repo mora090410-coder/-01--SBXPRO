@@ -62,6 +62,7 @@ describe('ViewerShell Slice 6 C1', () => {
     expect(within(firstViewport).getByText('21')).toBeVisible();
     expect(within(firstViewport).getByText('14')).toBeVisible();
     expect(within(firstViewport).getByText(/Current result/i)).toHaveTextContent('Carrie Moss');
+    expect(within(firstViewport).getByText(/Winning square/i)).toHaveTextContent('PHI 4 across × KC 1 down');
     expect(within(firstViewport).getByText(/Live/i)).toBeVisible();
     expect(within(firstViewport).getByText(/Checked/i)).toBeVisible();
     expect(within(firstViewport).getByText(/Score updates about every minute/i)).toBeVisible();
@@ -79,10 +80,11 @@ describe('ViewerShell Slice 6 C1', () => {
     expect(scenarios.compareDocumentPosition(winnerEmail)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     expect(within(summary).getByText(/Carrie Moss/)).toBeVisible();
     expect(within(summary).getByText('2 squares')).toBeVisible();
-    expect(within(summary).getAllByText(/top 4.*side 1/i)).toHaveLength(2);
+    expect(within(summary).getAllByText(/PHI column/i)).toHaveLength(2);
     expect(within(summary).getByText('Current result matches now.')).toBeVisible();
     expect(within(summary).getByRole('button', { name: /View on board top 4 side 1/i })).toHaveStyle({ minHeight: '44px' });
     expect(screen.getByText('Next score: KC Safety +2')).toBeVisible();
+    expect(within(scenarios).getByText(/PHI column 4 × KC row 3/i)).toBeVisible();
     expect(screen.getByText(/arithmetic score outcomes, not odds or predictions/i)).toBeVisible();
   });
 
@@ -109,6 +111,7 @@ describe('ViewerShell Slice 6 C1', () => {
     const { rerender } = renderShell({ live: live({ freshness: 'offline' }), selectedPlayer: 'Carrie Moss' });
     expect(screen.getByText(/Offline .* last known/i)).toBeVisible();
     expect(screen.getByText(/Last known.*Checked/i)).toBeVisible();
+    expect(screen.getByText(/Using the last-known score checked .* until scoring reconnects\./i)).toBeVisible();
 
     rerender(<ViewerShell game={game} board={board} live={live()} liveStatus="LIVE" isSynced highlights={{ quarterWinners: {}, currentLabel: '' }} winnerHistory={[]} pendingMilestones={[]} selectedPlayer="Carrie Moss" onClearPlayer={vi.fn()} onFindSquares={vi.fn()} highlightedCoords={null} onScenarioFocus={vi.fn()} shareCode="ABCDEFGH" servicesEnabled organizerPreview />);
     expect(screen.queryByRole('form', { name: /winner email/i })).toBeNull();

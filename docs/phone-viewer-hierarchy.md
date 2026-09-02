@@ -230,15 +230,16 @@ The grid confirms the published board and lets viewers inspect every square. It 
 
 ### Orientation
 
-Always provide an external or sticky orientation cue:
+Always provide an external or sticky orientation cue using the viewer’s physical reading direction:
 
-- `Top: [team]`
-- `Side: [team]`
+- `Columns: [top team]`
+- `Rows: [side team]`
+- During play: `[top-team abbreviation] [digit] across × [side-team abbreviation] [digit] down`
 
 Inside the grid:
 
-- Top team and axis remain sticky during vertical movement
-- Side team and axis remain sticky during horizontal movement
+- Top team abbreviation and column axis remain sticky during vertical movement
+- Side team abbreviation and row axis remain sticky during horizontal movement
 - Axis digits use tabular typography
 
 ### Controls
@@ -249,7 +250,6 @@ Minimum 44×44 CSS pixels:
 - Current zoom
 - Zoom in
 - Reset/Fit
-- Find
 - Center selected, when personalized
 
 Reset/Fit returns to the documented default view. Zoom cannot strand the viewer without visible orientation or reset controls.

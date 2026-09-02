@@ -77,9 +77,10 @@ test.describe('viewer_v2 shell', () => {
     const boardInstrument = page.getByTestId('viewer-board-grid-v2');
     const grid = boardInstrument.getByRole('grid', { name: /football squares board/i });
     await expect(grid).toBeVisible();
-    await expect(grid.getByText('Top team')).toBeVisible();
-    await expect(grid.getByText('Side team')).toBeVisible();
-    for (const name of [/Zoom out/i, /Center current result/i, /Zoom in/i, /Fit board/i, /Find/i, /Center selected square/i]) {
+    await expect(grid.getByText('Top · WAS')).toBeVisible();
+    await expect(grid.getByText('Side · DAL')).toBeVisible();
+    await expect(boardInstrument.getByText(/Columns: Washington Commanders.*Rows: Dallas Cowboys/i)).toBeVisible();
+    for (const name of [/Zoom out/i, /Center current result/i, /Zoom in/i, /Reset\/Fit/i]) {
       const box = await boardInstrument.getByRole('button', { name, exact: true }).boundingBox();
       expect(box?.height).toBeGreaterThanOrEqual(44);
       expect(box?.width).toBeGreaterThanOrEqual(44);

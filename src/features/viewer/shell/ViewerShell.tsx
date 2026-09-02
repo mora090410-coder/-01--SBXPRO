@@ -124,7 +124,6 @@ const ViewerShell: React.FC<ViewerShellProps> = ({
                 selectedPlayer={selectedPlayer}
                 highlightedCoords={boardFocus}
                 showOpenSquares={board.allowOpenSquares === true}
-                onFindSquares={onFindSquares}
               />
             )}
           </div>

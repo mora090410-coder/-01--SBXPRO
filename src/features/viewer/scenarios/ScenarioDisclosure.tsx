@@ -2,8 +2,6 @@ import React from 'react';
 import type { BoardData, GameState, LiveGameData } from '../../../../types';
 import { buildScenarioModel, type ViewerScenario } from './scenarioModel';
 
-const scenarioText = (scenario: ViewerScenario) => `${scenario.team} ${scenario.label} +${scenario.points} → digits ${scenario.top}/${scenario.left}`;
-
 export interface ScenarioDisclosureProps {
   board: BoardData;
   game: GameState;
@@ -12,6 +10,13 @@ export interface ScenarioDisclosureProps {
   servicesEnabled: boolean;
   onScenarioFocus: (coords: { left: number; top: number } | null) => void;
 }
+
+const lastKnownCopy = (checkedAt: string | null): string => {
+  if (!checkedAt) return 'Using last-known score until scoring reconnects.';
+  const timestamp = new Date(checkedAt);
+  if (Number.isNaN(timestamp.getTime())) return 'Using last-known score until scoring reconnects.';
+  return `Using the last-known score checked ${timestamp.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} until scoring reconnects.`;
+};
 
 const ScenarioDisclosure: React.FC<ScenarioDisclosureProps> = ({ board, game, live, selectedPlayer, servicesEnabled, onScenarioFocus }) => {
   if (!servicesEnabled) return <p className="oa-body text-broadcast-white/70">Publish this board to show live scenarios.</p>;
@@ -39,14 +44,15 @@ const ScenarioDisclosure: React.FC<ScenarioDisclosureProps> = ({ board, game, li
       onClick={() => onScenarioFocus({ left: scenario.left, top: scenario.top })}
     >
       <span className="oa-slab block">{scenario.team} {scenario.label} +{scenario.points}</span>
-      <span className="oa-body text-sm text-broadcast-white/70">digits {scenario.top}/{scenario.left} · {scenario.names.length ? scenario.names.join(', ') : 'OPEN'}</span>
+      <span className="oa-body text-sm text-broadcast-white/70">{game.topAbbr || 'Top'} column {scenario.top} × {game.leftAbbr || 'Side'} row {scenario.left} · winner: {scenario.names.length ? scenario.names.join(', ') : 'OPEN'}</span>
     </button>
   );
 
   return (
     <section className="border-t border-broadcast-white/20 py-5" aria-labelledby="viewer-scenarios-title">
       <h2 id="viewer-scenarios-title" className="oa-headline text-2xl text-broadcast-white">What score changes the next result?</h2>
-      {model.status === 'last-known' && <p className="oa-body mt-2 text-sm text-gold">Using last-known score until scoring reconnects.</p>}
+      <p className="oa-body mt-2 text-sm text-broadcast-white/70">Read each result across the top team’s columns, then down the side team’s rows.</p>
+      {model.status === 'last-known' && <p className="oa-body mt-2 text-sm text-gold">{lastKnownCopy(model.lastKnownCheckedAt)}</p>}
       {selectedPlayer && selected.length > 0 && (
         <div className="mt-4 grid gap-2" aria-label="Next scores that match your squares">
           {selected.map(renderButton)}

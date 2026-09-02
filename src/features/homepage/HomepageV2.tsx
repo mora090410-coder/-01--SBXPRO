@@ -17,14 +17,17 @@ export default function HomepageV2() {
     <main data-testid="homepage-v2" className="min-h-[100dvh] overflow-x-hidden bg-ink text-broadcast-white">
       <section data-testid="homepage-v2-first-viewport" className="mx-auto grid min-h-[100dvh] w-full max-w-7xl items-start gap-6 px-4 py-5 md:grid-cols-[minmax(0,0.92fr)_minmax(360px,1fr)] md:px-8 md:py-8">
         <div className="min-w-0">
-          <p className="text-xs font-black uppercase tracking-[0.24em] text-gold">GridOne</p>
-          <h1 className="mt-3 max-w-3xl text-4xl font-black leading-[0.95] tracking-[-0.05em] text-broadcast-white md:text-7xl">Football-squares fundraiser boards</h1>
-          <p className="mt-5 max-w-2xl text-lg font-semibold leading-relaxed text-broadcast-white/82 md:text-2xl">For youth-sports teams, booster clubs, schools, and community organizers: build the board, share one viewer link, and let GridOne track game day.</p>
-          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+          <div className="flex min-h-11 items-center justify-between gap-4">
+            <p className="text-xs font-black uppercase tracking-[0.24em] text-gold">GridOne</p>
+            <Link to="/login?mode=signin" className="inline-flex min-h-11 items-center border-b border-broadcast-white/35 text-sm font-bold text-broadcast-white hover:border-gold hover:text-gold" style={minTouch}>Sign in to existing account</Link>
+          </div>
+          <h1 className="mt-1 max-w-3xl text-4xl font-black leading-[0.95] tracking-[-0.05em] text-broadcast-white md:text-7xl">Football-squares fundraiser boards</h1>
+          <p className="mt-4 max-w-2xl text-lg font-semibold leading-relaxed text-broadcast-white/82 md:text-2xl">For youth-sports teams, booster clubs, schools, and community organizers: build the board, share one viewer link, and let GridOne track game day.</p>
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row">
             <Link to="/create" className="inline-flex min-h-11 items-center justify-center rounded-full bg-gold px-6 text-base font-black text-ink shadow-lg shadow-gold/20" style={minTouch}>Create your free board</Link>
             <Link to="/demo" className="inline-flex min-h-11 items-center justify-center rounded-full border border-broadcast-white/25 bg-broadcast-white/10 px-6 text-base font-black text-broadcast-white" style={minTouch}>See a live board</Link>
           </div>
-          <div className="mt-5 grid gap-3 text-sm font-bold text-broadcast-white/86 sm:grid-cols-3">
+          <div className="mt-3 grid gap-3 text-sm font-bold text-broadcast-white/86 sm:grid-cols-3">
             <p className="rounded-2xl border border-live-green/35 bg-live-green/10 p-3 text-live-green">First published board free</p>
             <p className="rounded-2xl border border-broadcast-white/15 bg-broadcast-white/5 p-3">Viewers open the link without creating an account</p>
             <p className="rounded-2xl border border-broadcast-white/15 bg-broadcast-white/5 p-3">GridOne tracks the board. It does not collect square money, hold funds, adjudicate off-platform payment, or pay winners.</p>
