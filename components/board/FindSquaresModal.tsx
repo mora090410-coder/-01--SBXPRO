@@ -40,7 +40,6 @@ const FindSquaresModal: React.FC<FindSquaresModalProps> = ({ board, selectedPlay
                         hideLabel
                         type="search"
                         autoComplete="off"
-                        autoFocus
                         value={query}
                         onChange={(event) => setQuery(event.target.value)}
                         placeholder="Type your name"

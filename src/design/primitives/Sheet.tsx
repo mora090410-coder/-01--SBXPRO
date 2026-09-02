@@ -13,12 +13,19 @@ interface SheetProps {
 export function Sheet({ open, onClose, title, children, height = 'auto' }: SheetProps) {
   const panelRef = useRef<HTMLElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
-  const restoreRef = useRef<HTMLElement | null>(null);
+  const openerRef = useRef<HTMLElement | null>(null);
   const titleId = useId();
+
+  // Capture the element that had focus before the sheet opened during render, not inside
+  // an effect: React commits `autoFocus` on the sheet's own content before any effect
+  // runs, so by the time an effect reads document.activeElement it's already the content,
+  // not the trigger. Render runs first, while activeElement is still the trigger.
+  if (open && openerRef.current === null && typeof document !== 'undefined') {
+    openerRef.current = document.activeElement as HTMLElement | null;
+  }
 
   useEffect(() => {
     if (!open) return;
-    restoreRef.current = document.activeElement as HTMLElement | null;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     const panel = panelRef.current;
@@ -27,8 +34,18 @@ export function Sheet({ open, onClose, title, children, height = 'auto' }: Sheet
     (firstInContent ?? panel)?.focus();
     return () => {
       document.body.style.overflow = previousOverflow;
-      restoreRef.current?.focus?.();
+      openerRef.current?.focus?.();
     };
+  }, [open]);
+
+  // Separate effect, declared after the one above, so its body runs only once `open` has
+  // actually settled to false for a commit (not React 18 StrictMode's dev-only synthetic
+  // mount->cleanup->mount replay, which never runs a body with `open: false` — it re-runs
+  // the effect above with `open` still true). Clearing the ref here — after the restore
+  // effect's cleanup has already run for this commit — lets the next real open recapture
+  // a fresh trigger without disturbing the restore that just happened.
+  useEffect(() => {
+    if (!open) openerRef.current = null;
   }, [open]);
 
   if (!open) return null;

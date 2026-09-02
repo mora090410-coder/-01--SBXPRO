@@ -416,11 +416,7 @@ test.describe('Slice 2 signed-out accessibility contract automation', () => {
     await expect(page.getByRole('heading', { name: 'Final record' })).toBeVisible();
     await expect(page.getByText(/Halftime.*Open square/)).toBeVisible();
     await expect(page.getByText(/Final.*Ann/)).toBeVisible();
-    // Known gap: BoardDetailsDisclosure/FinalRecord marks a corrected milestone with a bare
-    // "corrected" suffix but never surfaces `correctionReason` — docs/phone-viewer-hierarchy.md
-    // ("Viewer-visible corrections show before/after, time, and reason") requires the reason to
-    // be shown. Tracked as an app defect, not asserted here as passing behavior.
-    await expect(page.getByText(/corrected/i)).toBeVisible();
+    await expect(page.getByText('Official final score corrected')).toBeVisible();
   });
 
   test('find-my-squares dialog keeps focus inside, closes, and returns focus', async ({ page }) => {

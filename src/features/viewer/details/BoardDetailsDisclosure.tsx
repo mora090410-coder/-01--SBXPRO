@@ -18,25 +18,39 @@ export const FinalRecord: React.FC<{ winnerHistory: WinnerResolution[]; game: Ga
         {winnerHistory.map((winner) => {
           const isOpenSquare = Boolean(winner.openSquare) && !winner.participantName;
           const notes = game.payoutDescriptions?.notes?.trim();
+          const previousVersion = winner.versions?.length ? winner.versions[winner.versions.length - 1] : undefined;
+          const previousName = previousVersion?.participantName ?? (previousVersion?.openSquare ? 'Open square' : undefined);
+          const currentName = winner.participantName ?? (winner.openSquare ? 'Open square' : undefined);
+          const showPrevious = winner.corrected && previousName && previousName !== currentName;
           return (
-            <li key={`${winner.milestone}-${winner.resolvedAt}-${winner.resolutionVersion || 1}`} className="flex items-baseline justify-between gap-3">
-              <span className="font-ui text-[15px] text-fg">
-                <span className="font-medium">{milestoneLabel(winner.milestone)}</span> ·{' '}
-                {isOpenSquare ? (
-                  <>
-                    Open square
-                    {notes && (
-                      <>
-                        {' '}
-                        <a href="#board-rules" className="underline underline-offset-2">see board rules</a>
-                      </>
-                    )}
-                  </>
-                ) : (
-                  winner.participantName || (winner.openSquare ? 'Open square' : 'Unassigned')
-                )}
+            <li key={`${winner.milestone}-${winner.resolvedAt}-${winner.resolutionVersion || 1}`} className="flex flex-col gap-1">
+              <span className="flex items-baseline justify-between gap-3">
+                <span className="font-ui text-[15px] text-fg">
+                  <span className="font-medium">{milestoneLabel(winner.milestone)}</span> ·{' '}
+                  {isOpenSquare ? (
+                    <>
+                      Open square
+                      {notes && (
+                        <>
+                          {' '}
+                          <a href="#board-rules" className="underline underline-offset-2">see board rules</a>
+                        </>
+                      )}
+                    </>
+                  ) : (
+                    winner.participantName || (winner.openSquare ? 'Open square' : 'Unassigned')
+                  )}
+                </span>
+                <span className="font-mono tabular-nums text-[14px] text-fg-3">{winner.topDigit} across · {winner.sideDigit} down{winner.corrected ? ' · corrected' : ''}</span>
               </span>
-              <span className="font-mono tabular-nums text-[14px] text-fg-3">{winner.topDigit} across · {winner.sideDigit} down{winner.corrected ? ' · corrected' : ''}</span>
+              {winner.corrected && (
+                <span className="font-ui text-[13px] text-fg-2">
+                  Corrected
+                  {winner.correctedAt ? ` ${new Date(winner.correctedAt).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}` : ''}
+                  {winner.correctionReason ? ` · ${winner.correctionReason}` : ''}
+                  {showPrevious ? ` · Previously ${previousName}` : ''}
+                </span>
+              )}
             </li>
           );
         })}

@@ -44,4 +44,32 @@ describe('BoardDetailsDisclosure', () => {
     expect(screen.getByText(/Halftime/)).toBeInTheDocument();
     expect(screen.getByText('Board details')).toBeInTheDocument();
   });
+
+  it('shows the correction reason for a corrected result', () => {
+    const history: WinnerResolution[] = [{
+      milestone: 'FINAL',
+      sideScore: 24,
+      topScore: 17,
+      sideDigit: 4,
+      topDigit: 7,
+      participantName: 'Carrie Moss',
+      resolvedAt: '2026-09-13T22:00:00.000Z',
+      corrected: true,
+      correctedAt: '2026-09-13T22:05:00.000Z',
+      correctionReason: 'Official final score corrected',
+      versions: [{
+        resolutionVersion: 1,
+        sideScore: 23,
+        topScore: 17,
+        sideDigit: 3,
+        topDigit: 7,
+        participantName: 'Ann Lee',
+        resolvedAt: '2026-09-13T21:55:00.000Z',
+        corrected: false,
+      }],
+    }];
+    render(<BoardDetailsDisclosure game={game} board={board} winnerHistory={history} final />);
+    expect(screen.getByText(/Official final score corrected/)).toBeInTheDocument();
+    expect(screen.getByText(/Previously Ann Lee/)).toBeInTheDocument();
+  });
 });
