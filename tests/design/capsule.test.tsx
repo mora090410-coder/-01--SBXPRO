@@ -11,6 +11,7 @@ describe('CapsuleButton', () => {
     expect(btn.getAttribute('type')).toBe('button');
     expect(btn.className).toContain('bg-action');
     expect(btn.className).toContain('rounded-capsule');
+    expect(btn.className).toContain('font-semibold');
     fireEvent.click(btn);
     expect(onClick).toHaveBeenCalledTimes(1);
   });
