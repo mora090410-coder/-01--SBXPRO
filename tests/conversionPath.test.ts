@@ -1,15 +1,20 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const source = (path: string) => readFileSync(resolve(process.cwd(), path), 'utf8');
+const homepageCorpus = () => [
+  'src/features/homepage/Homepage.tsx',
+  'src/features/homepage/pricing.ts',
+  ...readdirSync(resolve(process.cwd(), 'src/features/homepage/sections')).map((f) => `src/features/homepage/sections/${f}`),
+].map(source).join('\n');
 
 const exactPricing = 'Your first published board is free. Game Day is $9.99 once for up to 5 published boards in the 2026 season. Organization is $79 per season for up to 50 published boards.';
 const exactBoundary = 'GridOne tracks the board. It does not collect square money, hold funds, adjudicate off-platform payment, or pay winners.';
 
 describe('public conversion path', () => {
   it('answers landing-page objections and closes with a second conversion point', () => {
-    const homepage = source('src/features/homepage/HomepageV2.tsx');
+    const homepage = homepageCorpus();
     for (const copy of [
       'For youth-sports teams, booster clubs, schools, and community organizers',
       'Viewers open the link without creating an account',
