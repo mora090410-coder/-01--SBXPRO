@@ -33,3 +33,6 @@ dist-ssr
 # Playwright
 test-results
 playwright-report
+.superpowers
+# Agent worktrees
+.worktrees
