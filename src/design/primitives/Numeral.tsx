@@ -4,14 +4,14 @@ type Size = 'sm' | 'md' | 'lg' | 'xl';
 const SIZE: Record<Size, string> = {
   sm: 'text-[17px]',
   md: 'text-[28px]',
-  lg: 'text-[44px]',
-  xl: 'text-[72px]',
+  lg: 'text-[36px] md:text-[44px]',
+  xl: 'text-[52px] md:text-[72px]',
 };
 const SECONDARY: Record<Size, string> = {
   sm: 'text-[13px]',
   md: 'text-[17px]',
-  lg: 'text-[24px]',
-  xl: 'text-[36px]',
+  lg: 'text-[20px] md:text-[24px]',
+  xl: 'text-[28px] md:text-[36px]',
 };
 
 interface NumeralProps {

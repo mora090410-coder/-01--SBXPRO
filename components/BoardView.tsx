@@ -37,7 +37,6 @@ const envFlagConfig = () => ({
     flags: {
         viewer_v2: import.meta.env.VITE_GRIDONE_VIEWER_V2,
         organizer_v2: import.meta.env.VITE_GRIDONE_ORGANIZER_V2,
-        homepage_v2: import.meta.env.VITE_GRIDONE_HOMEPAGE_V2,
     },
 });
 

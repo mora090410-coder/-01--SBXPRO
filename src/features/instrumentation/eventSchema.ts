@@ -16,6 +16,7 @@ export const GRIDONE_INSTRUMENTATION_EVENT_NAMES = [
 
 export type GridOneInstrumentationEventName = (typeof GRIDONE_INSTRUMENTATION_EVENT_NAMES)[number];
 
+// homepage_v2 variants are retained for historical events; the flag no longer exists.
 export type FeatureVariant = 'viewer_v2:on' | 'viewer_v2:off' | 'organizer_v2:on' | 'organizer_v2:off' | 'homepage_v2:on' | 'homepage_v2:off';
 
 type Surface = 'homepage' | 'organizer' | 'viewer';

@@ -257,7 +257,7 @@ test('draft organizer preview stays fully visible and interactive before activat
   });
 
   await page.goto(`/boards/${boardId}`);
-  expect(await page.evaluate(() => window.__lenis)).toBeUndefined();
+  expect(await page.evaluate(() => (window as unknown as { __lenis?: unknown }).__lenis)).toBeUndefined();
   expect(await page.evaluate(() =>
     document.documentElement.scrollWidth <= document.documentElement.clientWidth
   )).toBe(true);

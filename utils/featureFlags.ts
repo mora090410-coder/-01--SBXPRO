@@ -1,4 +1,4 @@
-export const FEATURE_FLAG_NAMES = ['viewer_v2', 'organizer_v2', 'homepage_v2'] as const;
+export const FEATURE_FLAG_NAMES = ['viewer_v2', 'organizer_v2'] as const;
 
 export type FeatureFlagName = (typeof FEATURE_FLAG_NAMES)[number];
 export type FeatureFlagState = Record<FeatureFlagName, boolean>;
@@ -34,7 +34,6 @@ const MAX_IDENTIFIER_LENGTH = 128;
 const DEFAULT_FLAGS: FeatureFlagState = {
   viewer_v2: false,
   organizer_v2: false,
-  homepage_v2: false,
 };
 
 export function isFeatureFlagName(value: string): value is FeatureFlagName {
@@ -98,7 +97,6 @@ export function resolveFeatureFlags(input: FeatureFlagResolutionInput = {}): Fea
     variants: {
       viewer_v2: getStableVariantLabel('viewer_v2', flags.viewer_v2),
       organizer_v2: getStableVariantLabel('organizer_v2', flags.organizer_v2),
-      homepage_v2: getStableVariantLabel('homepage_v2', flags.homepage_v2),
     },
     queryOverridesIgnored,
   };

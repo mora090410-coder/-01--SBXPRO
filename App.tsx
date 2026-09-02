@@ -1,14 +1,12 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, useSearchParams, useNavigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { BrowserRouter as Router, Routes, Route, useSearchParams } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
 import FullScreenLoading from './components/loading/FullScreenLoading';
 import Layout from './components/layout/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
 import RequireAuth from './components/auth/RequireAuth';
 import BoardView from './components/BoardView';
-import FilmLanding from './components/FilmLanding';
 import CreateContest from './pages/CreateContest';
-import { resolveFeatureFlags } from './utils/featureFlags';
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
 import NotFound from './pages/NotFound';
@@ -29,7 +27,7 @@ const BoosterClubFootballSquares = React.lazy(() => import('./pages/BoosterClubF
 const ChurchSchoolFundraiserSquares = React.lazy(() => import('./pages/ChurchSchoolFundraiserSquares').then((module) => ({ default: module.ChurchSchoolFundraiserSquares })));
 const NFLOpeningWeekSquares = React.lazy(() => import('./pages/NFLOpeningWeekSquares').then((module) => ({ default: module.NFLOpeningWeekSquares })));
 const FootballSquaresApp = React.lazy(() => import('./pages/FootballSquaresApp').then((module) => ({ default: module.FootballSquaresApp })));
-const HomepageV2 = React.lazy(() => import('./src/features/homepage/HomepageV2'));
+const Homepage = React.lazy(() => import('./src/features/homepage/Homepage'));
 const DesignKitchen = React.lazy(() => import('./src/design/kitchen/DesignKitchen'));
 
 const HomepageProductFallback = () => (
@@ -43,36 +41,13 @@ const HomepageProductFallback = () => (
 
 const Root = () => {
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
-  const { user } = useAuth();
   const poolId = searchParams.get('poolId');
-  const featureFlags = resolveFeatureFlags({
-    config: { flags: { homepage_v2: import.meta.env.VITE_GRIDONE_HOMEPAGE_V2 } },
-    query: searchParams,
-    routeIntent: 'production_mutation',
-  });
 
   if (poolId) {
     return <BoardView />;
   }
 
-  if (featureFlags.flags.homepage_v2) {
-    return <React.Suspense fallback={<HomepageProductFallback />}><HomepageV2 /></React.Suspense>;
-  }
-
-  return (
-    <FilmLanding
-      onCreate={() => {
-        if (user) {
-          navigate('/create');
-        } else {
-          // Direct to sign up, but return to create page after
-          navigate('/login?mode=signup&returnTo=/create');
-        }
-      }}
-      onLogin={() => navigate('/login?mode=signin')}
-    />
-  );
+  return <React.Suspense fallback={<HomepageProductFallback />}><Homepage /></React.Suspense>;
 };
 
 const App: React.FC = () => {

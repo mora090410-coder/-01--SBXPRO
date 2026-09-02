@@ -3,8 +3,18 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const liveCopyFiles = [
-  'src/features/homepage/HomepageV2.tsx',
-  'src/features/homepage/HomepageProofArtifact.tsx',
+  'src/features/homepage/Homepage.tsx',
+  'src/features/homepage/pricing.ts',
+  'src/features/homepage/demoData.ts',
+  'src/features/homepage/sections/Hero.tsx',
+  'src/features/homepage/sections/ScoreSection.tsx',
+  'src/features/homepage/sections/ParentMoments.tsx',
+  'src/features/homepage/sections/OrganizerSection.tsx',
+  'src/features/homepage/sections/PriceAndClose.tsx',
+  'src/features/homepage/artifacts/HeroViewerCard.tsx',
+  'src/features/homepage/artifacts/OrganizerCard.tsx',
+  'src/features/homepage/artifacts/ScoreMoment.tsx',
+  'src/features/homepage/artifacts/BoardFragment.tsx',
   'src/features/viewer/notifications/WinnerEmailDisclosure.tsx',
   'src/features/viewer/scenarios/ScenarioDisclosure.tsx',
   'src/features/viewer/personal/YourSquaresSummary.tsx',

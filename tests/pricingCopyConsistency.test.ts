@@ -3,9 +3,10 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const currentPricingCopyFiles = [
-  'components/FilmLanding.tsx',
-  'src/features/homepage/HomepageV2.tsx',
-  'src/features/homepage/HomepageProofArtifact.tsx',
+  'src/features/homepage/pricing.ts',
+  'src/features/homepage/Homepage.tsx',
+  'src/features/homepage/sections/PriceAndClose.tsx',
+  'src/features/homepage/sections/Hero.tsx',
   'pages/Terms.tsx',
   'pages/HowToRunSquares.tsx',
   'pages/RunYourPoolAlternative.tsx',
@@ -33,15 +34,17 @@ describe('launch pricing copy', () => {
     expect(read('PRODUCT.md')).toContain('The Free tier includes **1 published board per account per season**.');
     expect(read('PRODUCT.md')).toContain('The **Game Day** tier is **$9.99 once** for up to 5 published boards');
     expect(read('PRODUCT.md')).toContain('The **Organization** tier is **$79 per season** for up to 50 published boards');
-    expect(read('components/FilmLanding.tsx')).toContain('Your first published board is free. Upgrade only when you need another.');
   });
 
   it('keeps system vocabulary out of the landing-page sales copy', () => {
-    const landing = read('components/FilmLanding.tsx');
+    const landing = currentPricingCopyFiles
+      .filter((path) => path.startsWith('src/features/homepage/'))
+      .map(read)
+      .join('\n');
 
     expect(landing).not.toMatch(/\b(?:beta|synthetic|fallback|read-only|grounded|native|canonical|provenance|freshness|entitlement)\b/i);
     expect(landing).toContain('See a live board');
-    expect(landing).toContain('FREE TO START');
+    expect(landing).toContain('First published board free');
   });
 
   it('does not ship invented payout amounts in live board surfaces', () => {

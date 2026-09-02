@@ -1,3 +1,5 @@
+import { PRICING } from '../src/features/homepage/pricing';
+
 export const SITE_NAME = 'GridOne';
 export const SITE_URL = 'https://www.getgridone.com';
 export const DEFAULT_OG_IMAGE = `${SITE_URL}/og-image.jpg`;
@@ -75,29 +77,13 @@ export const PUBLIC_ROUTE_METADATA: PublicRouteMetadata[] = [
         applicationCategory: 'SportsApplication',
         operatingSystem: 'Any',
         description: 'Run football squares and Super Bowl squares online for fundraisers, office pools, watch parties, and community groups.',
-        offers: [
-          {
-            '@type': 'Offer',
-            name: 'Free',
-            price: '0',
-            priceCurrency: 'USD',
-            description: 'One published board per season',
-          },
-          {
-            '@type': 'Offer',
-            name: 'Game Day',
-            price: '9.99',
-            priceCurrency: 'USD',
-            description: 'Up to 5 published boards for the 2026 season',
-          },
-          {
-            '@type': 'Offer',
-            name: 'Organization',
-            price: '79',
-            priceCurrency: 'USD',
-            description: 'Up to 50 published boards plus organization features for the season',
-          },
-        ],
+        offers: PRICING.map((tier) => ({
+          '@type': 'Offer',
+          name: tier.name,
+          price: tier.price.replace('$', ''),
+          priceCurrency: 'USD',
+          description: tier.detail,
+        })),
       },
     ],
   },
