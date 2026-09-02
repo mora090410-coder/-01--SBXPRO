@@ -16,7 +16,7 @@ export function Hero() {
       <div className="relative mt-10 grid gap-12 md:mt-16 md:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] md:items-center">
         <div className="flex flex-col gap-6 max-w-[560px]">
           <Eyebrow>Football squares fundraiser boards</Eyebrow>
-          <h1 className="font-display text-[44px] leading-[1] tracking-[-0.01em] text-fg md:text-[64px]">Build it once. Share one link.</h1>
+          <h1 className="font-display text-[44px] leading-[1] tracking-[-0.01em] text-fg md:text-[64px]">Build it once. <span className="block">Share one link.</span></h1>
           <p className="font-ui text-[17px] leading-[1.5] text-fg-2">
             Let the board run game day. For youth-sports teams, booster clubs, schools, and community organizers who would rather watch the game than the paper.
           </p>

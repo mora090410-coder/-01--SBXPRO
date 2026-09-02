@@ -37,12 +37,18 @@ export function PriceAndClose() {
         </div>
         <Glass as="section" aria-label="Plans" padding="none" className="divide-y divide-hairline">
           {PRICING.map((tier) => (
-            <div key={tier.id} className="grid grid-cols-[minmax(0,1fr)_auto] gap-4 p-6 items-start">
+            <div key={tier.id} className="flex flex-col gap-3 p-6 sm:grid sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start sm:gap-4">
+              <Numeral
+                value={tier.price}
+                secondary={tier.priceNote}
+                size="md"
+                label={`${tier.price} ${tier.priceNote}`}
+                className="sm:order-2 sm:justify-self-end"
+              />
               <div className="flex flex-col gap-1">
                 <h3 className="font-ui text-[17px] font-medium text-fg">{tier.name}</h3>
                 <p className="font-ui text-[15px] text-fg-2">{tier.detail}</p>
               </div>
-              <Numeral value={tier.price} secondary={tier.priceNote} size="md" label={`${tier.price} ${tier.priceNote}`} />
             </div>
           ))}
         </Glass>
