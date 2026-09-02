@@ -143,4 +143,40 @@ describe('CreateContest one-screen creation', () => {
 
     consoleError.mockRestore();
   });
+
+  it('holds Create board disabled while a photo scan is in flight, then re-enables it', async () => {
+    const createFetch = vi.fn(async () => new Response(JSON.stringify({ poolId: 'pool-1' }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    }));
+    vi.stubGlobal('fetch', createFetch);
+
+    let resolveScan!: (board: any) => void;
+    mocks.parseBoardImage.mockReturnValue(new Promise((resolve) => {
+      resolveScan = resolve;
+    }));
+
+    renderPage();
+
+    fireEvent.change(screen.getByLabelText('Board name'), { target: { value: 'Week One Board' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Select test game' }));
+
+    const fileInput = document.querySelector<HTMLInputElement>('input[type="file"]');
+    expect(fileInput).not.toBeNull();
+    fireEvent.change(fileInput!, {
+      target: {
+        files: [new File(['paper board'], 'board.png', { type: 'image/png' })],
+      },
+    });
+
+    const scanningButton = await screen.findByRole('button', { name: 'Scanning photo…' });
+    expect(scanningButton).toBeDisabled();
+    expect(createFetch).not.toHaveBeenCalled();
+
+    resolveScan({ squares: Array.from({ length: 100 }, () => []) });
+
+    const createButton = await screen.findByRole('button', { name: 'Create board' });
+    expect(createButton).toBeEnabled();
+    expect(createFetch).not.toHaveBeenCalled();
+  });
 });

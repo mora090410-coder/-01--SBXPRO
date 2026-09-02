@@ -224,10 +224,10 @@ const CreateContest: React.FC = () => {
                     variant="primary"
                     size="lg"
                     className="w-full"
-                    disabled={!canCreate || isLoading}
+                    disabled={!canCreate || isLoading || isScanning}
                     onClick={() => void createBoard()}
                 >
-                    {isLoading ? 'Creating board…' : 'Create board'}
+                    {isLoading ? 'Creating board…' : isScanning ? 'Scanning photo…' : 'Create board'}
                 </CapsuleButton>
 
                 <section aria-labelledby="paper-import" className="flex flex-col gap-3 border-t border-hairline pt-6">
@@ -241,7 +241,7 @@ const CreateContest: React.FC = () => {
                         accept=".jpg,.jpeg,.png,.webp"
                         onChange={handleFileUpload}
                         disabled={isScanning || isLoading}
-                        className="min-h-11 w-full rounded-control border border-hairline bg-panel px-4 py-3 font-ui text-[15px] text-fg file:mr-4 file:h-9 file:rounded-capsule file:border-0 file:bg-action file:px-4 file:font-ui file:text-[14px] file:font-semibold file:text-action-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action focus-visible:ring-offset-2 focus-visible:ring-offset-ground"
+                        className="min-h-11 w-full rounded-control border border-hairline bg-panel px-4 py-3 font-ui text-[15px] text-fg file:mr-4 file:h-11 file:rounded-capsule file:border-0 file:bg-action file:px-4 file:font-ui file:text-[14px] file:font-semibold file:text-action-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action focus-visible:ring-offset-2 focus-visible:ring-offset-ground"
                     />
                     {isScanning && (
                         <p role="status" className="font-ui text-[14px] text-fg-2">Reading the board photo…</p>
