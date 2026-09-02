@@ -118,13 +118,14 @@ describe('ViewerBoardGrid Slice 7', () => {
     expect(selectedResolved).toHaveClass('ring-tone-cardinal');
   });
 
-  it('gives every cell an alternate name reveal that matches its accessible name', () => {
+  it('gives every cell a short reveal with its name and digits', () => {
     renderGrid();
     const grid = screen.getByRole('grid', { name: /football squares board/i });
     within(grid).getAllByRole('gridcell').forEach((cell) => {
       const reveal = cell.querySelector('span[aria-hidden="true"]');
       expect(reveal).not.toBeNull();
-      expect(reveal).toHaveTextContent(cell.getAttribute('aria-label') || '');
+      expect(reveal).toHaveTextContent(/across · .* down/);
+      expect(reveal?.className).toContain('max-w-[220px]');
     });
   });
 

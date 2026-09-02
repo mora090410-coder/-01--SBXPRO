@@ -193,9 +193,10 @@ const ViewerBoardGrid: React.FC<ViewerBoardGridProps> = ({
                     tabIndex={focus.row === cell.rowIndex && focus.col === cell.colIndex ? 0 : -1}
                     className={`group relative h-14 rounded-cell p-1 text-center align-middle font-ui text-[12px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-action ${stateClass(cell)}`}
                     onFocus={() => setFocus({ row: cell.rowIndex, col: cell.colIndex })}
+                    onClick={(event) => event.currentTarget.focus()}
                   >
                     <span className="flex h-full min-h-11 items-center justify-center font-medium">{cell.displayText}</span>
-                    <span aria-hidden="true" className="pointer-events-none absolute left-1/2 top-full z-40 mt-1 hidden -translate-x-1/2 whitespace-nowrap rounded-control bg-chyron px-2 py-1 font-ui text-[12px] text-broadcast-white shadow-[var(--g-shadow)] group-hover:block group-focus-within:block">{cell.ariaName}</span>
+                    <span aria-hidden="true" className="pointer-events-none absolute left-1/2 top-full z-40 mt-1 hidden w-max max-w-[220px] -translate-x-1/2 whitespace-normal rounded-control bg-chyron px-2 py-1 font-ui text-[12px] text-broadcast-white shadow-[var(--g-shadow)] group-hover:block group-focus-within:block">{(cell.names.length ? cell.names.join(', ') : 'OPEN')} · {topLabel} {cell.topDigit ?? '?'} across · {sideLabel} {cell.sideDigit ?? '?'} down</span>
                     {cell.states.includes('current') && <span className={`absolute right-1 top-1 font-mono text-[10px] ${cell.states.includes('corrected') ? 'text-gold' : 'text-ink'}`} aria-hidden="true">NOW</span>}
                     {cell.states.includes('corrected') && <span className="absolute bottom-1 right-1 font-mono text-[10px] text-broadcast-white" aria-hidden="true">C</span>}
                   </td>
