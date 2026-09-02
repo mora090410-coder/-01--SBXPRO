@@ -24,13 +24,13 @@ const publicAppPaths = (): string[] => {
     appSource.matchAll(/<Route\s+path="([^"]+)"/g),
     (match) => match[1],
   );
-  // /design-kitchen is a temporary dev-only route (removed in redesign stage 7); never indexed.
-  const protectedPaths = new Set(['/boards/:boardId', '/dashboard', '/create', '/design-kitchen']);
+  // Auth-gated routes plus the dev-only kitchen route; none are public SEO surfaces.
+  const excludedPaths = new Set(['/boards/:boardId', '/dashboard', '/create', '/design-kitchen']);
 
   return literalRoutePaths.filter((path) => (
     path !== '*'
     && !path.includes(':')
-    && !protectedPaths.has(path)
+    && !excludedPaths.has(path)
   ));
 };
 

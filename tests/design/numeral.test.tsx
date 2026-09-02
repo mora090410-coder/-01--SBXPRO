@@ -10,10 +10,11 @@ describe('Numeral', () => {
     expect(el.className).toContain('font-mono');
     expect(el.className).toContain('tabular-nums');
     expect(screen.getByText('.99').className).toContain('text-fg-3');
+    expect(screen.getByRole('img', { name: '14 dollars and 99 cents' })).toBeInTheDocument();
   });
 
   it('scales', () => {
-    render(<Numeral value={21} size="xl" />);
-    expect(screen.getByText('21').className).toContain('text-[72px]');
+    const { container } = render(<Numeral value={21} size="xl" />);
+    expect(container.firstElementChild?.className).toContain('text-[72px]');
   });
 });

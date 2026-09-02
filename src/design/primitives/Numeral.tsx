@@ -28,9 +28,10 @@ export function Numeral({ value, secondary, size = 'md', className = '', label }
   return (
     <span
       aria-label={label}
+      role={label ? 'img' : undefined}
       className={`inline-flex items-baseline gap-0.5 font-mono tabular-nums leading-none text-fg ${SIZE[size]} ${className}`.trim()}
     >
-      <span aria-hidden={label ? 'true' : undefined} className={SIZE[size]}>{value}</span>
+      <span aria-hidden={label ? 'true' : undefined}>{value}</span>
       {secondary ? <span aria-hidden={label ? 'true' : undefined} className={`text-fg-3 ${SECONDARY[size]}`}>{secondary}</span> : null}
     </span>
   );

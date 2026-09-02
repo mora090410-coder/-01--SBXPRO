@@ -18,6 +18,9 @@
   --color-gold: var(--g-gold);
   --color-gold-deep: var(--g-gold-deep);
   --color-live: var(--g-live);
+  --color-tone-gold: var(--g-tone-gold);
+  --color-tone-live: var(--g-tone-live);
+  --color-tone-cardinal: var(--g-tone-cardinal);
   --color-ink: var(--g-ink);
   --color-chyron: var(--g-chyron);
   --color-broadcast-white: var(--g-white);
@@ -350,6 +353,16 @@
     .bg-chyron button:focus-visible,
     .oa-btn-onred:focus-visible {
         outline-color: var(--color-gold);
+    }
+
+    /* Broadcast Glass surfaces manage their own focus rings (see src/design/primitives). */
+    [data-base] a:focus-visible,
+    [data-base] button:focus-visible,
+    [data-base] input:focus-visible,
+    [data-base] select:focus-visible,
+    [data-base] textarea:focus-visible,
+    [data-base] [tabindex]:focus-visible {
+        outline: none;
     }
 
     /* Inputs ── warm fill, full focus boundary, and explicit error state. */

@@ -139,7 +139,7 @@ const App: React.FC = () => {
               <Route path="/articles/nfl-opening-week-squares-pool" element={<NFLOpeningWeekSquares />} />
               <Route path="/articles/football-squares-app" element={<FootballSquaresApp />} />
               <Route path="/privacy" element={<Privacy />} />
-              <Route path="/design-kitchen" element={<DesignKitchen />} />
+              {import.meta.env.DEV ? <Route path="/design-kitchen" element={<DesignKitchen />} /> : null}
               <Route path="/terms" element={<Terms />} />
 
               <Route path="*" element={<NotFound />} />

@@ -29,10 +29,10 @@ type Tone = 'neutral' | 'gold' | 'live' | 'cardinal';
 
 const TONE: Record<Tone, string> = {
   neutral: 'border border-hairline text-fg-2',
-  gold: 'bg-gold/15 text-gold',
+  gold: 'bg-tone-gold/15 text-tone-gold',
   /** Only for an in-progress NFL game. Never for generic emphasis. */
-  live: 'bg-live/15 text-live',
-  cardinal: 'bg-cardinal/15 text-cardinal',
+  live: 'bg-tone-live/15 text-tone-live',
+  cardinal: 'bg-tone-cardinal/15 text-tone-cardinal',
 };
 
 interface CapsuleTagProps {

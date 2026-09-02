@@ -42,12 +42,15 @@
   --g-hairline: rgba(255, 255, 255, 0.10);
   --g-text: var(--g-white);
   --g-text-2: rgba(239, 240, 241, 0.60);
-  --g-text-3: rgba(239, 240, 241, 0.40);
+  --g-text-3: rgba(239, 240, 241, 0.58);
   --g-action: var(--g-gold);
   --g-action-hover: var(--g-gold-deep);
   --g-action-text: var(--g-ink);
   --g-shadow: 0 24px 48px rgba(0, 0, 0, 0.45);
   --g-glow: color-mix(in srgb, var(--g-cardinal) 55%, transparent);
+  --g-tone-gold: var(--g-gold);
+  --g-tone-live: var(--g-live);
+  --g-tone-cardinal: #F2B8C0;
 }
 
 /* Cream base: organizer. Cardinal is the action color. */
@@ -59,12 +62,15 @@
   --g-hairline: rgba(14, 15, 18, 0.08);
   --g-text: var(--g-ink);
   --g-text-2: rgba(14, 15, 18, 0.60);
-  --g-text-3: rgba(14, 15, 18, 0.40);
+  --g-text-3: rgba(14, 15, 18, 0.62);
   --g-action: var(--g-cardinal);
   --g-action-hover: var(--g-cardinal-deep);
   --g-action-text: #FFFFFF;
   --g-shadow: 0 24px 48px rgba(14, 15, 18, 0.06);
   --g-glow: color-mix(in srgb, var(--g-gold) 30%, transparent);
+  --g-tone-gold: #6B5000;
+  --g-tone-live: #0F5A2A;
+  --g-tone-cardinal: var(--g-cardinal);
 }
 
 @media (prefers-reduced-motion: reduce) {

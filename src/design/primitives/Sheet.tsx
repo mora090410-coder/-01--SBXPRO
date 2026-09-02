@@ -68,9 +68,9 @@ export function Sheet({ open, onClose, title, children, height = 'auto' }: Sheet
         className={`relative w-full max-w-[640px] ${heightClass} overflow-y-auto rounded-b-none animate-[sheet-rise_var(--g-dur-spring)_var(--g-ease-state)] outline-none`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="sticky top-0 flex items-center justify-between px-6 pt-4 pb-3 bg-transparent">
+        <div className="sticky top-0 flex items-center justify-between px-6 pt-2 pb-2 bg-transparent">
           <h2 id={titleId} className="font-ui text-[17px] font-medium text-fg">{title}</h2>
-          <button type="button" onClick={onClose} className="font-ui text-[15px] text-fg-2 hover:text-fg rounded-capsule px-3 h-9 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action">Close</button>
+          <button type="button" onClick={onClose} className="font-ui text-[15px] text-fg-2 hover:text-fg rounded-capsule px-4 h-11 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action">Close</button>
         </div>
         <div className="px-6 pb-8">{children}</div>
       </Glass>

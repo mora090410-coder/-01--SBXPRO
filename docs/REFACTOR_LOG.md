@@ -377,7 +377,7 @@ Remove `tests/designAudit.test.ts`, `scripts/design-audit.mjs`, the two package 
 ## 2026-09-01 — Broadcast Glass stage 1+2: baseline and design foundation
 
 - **Scope:** removed stale agent worktrees and branches; added `src/design/tokens.css`, `Base`, motion helpers, and the Eyebrow, Capsule, Glass, Spotlight, Numeral, Sheet, Ring, and Island primitives with unit coverage; added the temporary `/design-kitchen` route; rewrote `DESIGN.md` and `docs/DESIGN_TOKENS.md`; retired the old design audit.
-- **Known transient effect:** legacy surfaces that use `rounded-control` render 12px corners instead of 8px until they are deleted in stages 3–5.
+- **Known transient effect:** legacy surfaces mix 8px radii (hand-written CSS still on `--gridone-radius-control`) and 12px radii (Tailwind `rounded-control` now resolves to the new token) until they are deleted in stages 3–5.
 - **Not touched:** schema, functions, workers, services, hooks, legacy surfaces (deleted in stages 3–5).
 - **Evidence:** unit suite 77 files / 431 tests green, strict TypeScript, production build, design lint 0 errors, kitchen route verified in the browser at desktop and 375px (fonts loaded, glass blur, both grounds, sheet focus trap and scroll lock, island expand, no horizontal overflow).
 - **Rollback:** revert the commits of this stage; no domain state affected.
