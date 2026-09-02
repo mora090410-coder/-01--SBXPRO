@@ -68,7 +68,7 @@ export default function PayoutRulesCard({ descriptions, status, disabled = false
           disabled={disabled || saving}
           onClick={onSavePayoutDescriptions}
         >
-          {saving ? 'Saving…' : 'Save payout descriptions'}
+          {saving ? 'Saving…' : 'Save payout rules'}
         </CapsuleButton>
         <StatusLine status={status} />
       </div>

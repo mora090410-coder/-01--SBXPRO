@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { secureShuffleDigits } from '../components/AdminPanel';
+import { secureShuffleDigits } from '../src/features/organizer/workspace/secureDraw';
 
 describe('fixed-axis number draw', () => {
   it('always returns each digit exactly once', () => {

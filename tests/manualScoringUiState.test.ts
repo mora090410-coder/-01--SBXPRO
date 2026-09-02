@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   manualPeriodForState,
   seedManualScoreFromSnapshot,
-} from '../components/AdminPanel';
+} from '../src/features/organizer/game-day/manualScoringModel';
 import type { LiveGameData } from '../types';
 
 const quarterScores = {

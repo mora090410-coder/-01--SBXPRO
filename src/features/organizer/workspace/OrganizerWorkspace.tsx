@@ -1,15 +1,39 @@
-import React, { useCallback, useMemo, useState } from 'react';
-import { Base, Eyebrow, Glass } from '../../../design/primitives';
-import type { BoardData, EntryMeta, GameState, PayoutDescriptions, ScheduledGame } from '../../../../types';
-import type { OrganizerShellProps } from '../shell/OrganizerShell';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Base } from '../../../design/primitives';
+import type {
+  BoardData,
+  EntryMeta,
+  GameState,
+  LiveGameData,
+  NotificationDeliveryIssue,
+  PayoutDescriptions,
+  WinnerResolution,
+} from '../../../../types';
 import { evaluateOrganizerLifecycle, isExactAxis } from '../lifecycle/organizerLifecycle';
 import { compressImage } from '../../../../utils/image';
 import { parseBoardImage } from '../../../../services/boardImportService';
 import { renderBoardPng, shareBoardPng, boardImageFilename } from '../../../../utils/boardImage';
 import { useWorkspaceDraft } from './useWorkspaceDraft';
+import { applyScheduledGame } from './applyScheduledGame';
 import { saveEntryMeta, clearEntryMeta } from './entryMetaService';
 import { secureShuffleDigits } from './secureDraw';
 import { publishBoard, type PublishResult } from './publishBoard';
+import { renamePublishedSquare } from './renamePublishedSquare';
+import {
+  EMPTY_MANUAL_SCORES,
+  manualPeriodForState,
+  seedManualScoreFromSnapshot,
+  type ManualGameState,
+  type ManualQuarterKey,
+  type ManualScoreSide,
+} from '../game-day/manualScoringModel';
+import {
+  enableManualScoringOnServer,
+  returnAutomaticScoringOnServer,
+  saveManualScoreToServer,
+} from '../services/game-day/manualScoreService';
+import { publishedOpenSquaresAreAssignable } from '../services/game-day/publishedOpenSquares';
+import { publishMilestoneCorrectionToServer, type MilestoneCorrectionDraft } from '../services/corrections/milestoneCorrectionService';
 import WorkspaceHeader from './WorkspaceHeader';
 import BoardEditor from './BoardEditor';
 import SquareSheet from './SquareSheet';
@@ -22,13 +46,34 @@ import PreviewSheet from './PreviewSheet';
 import PublishSheet from './PublishSheet';
 import UpgradeSheet from './UpgradeSheet';
 import PublishedSheet from './PublishedSheet';
+import SharePanel from './gameday/SharePanel';
+import ScoreAuthorityCard from './gameday/ScoreAuthorityCard';
+import CorrectionsCard from './gameday/CorrectionsCard';
+import DeliveryIssuesCard from './gameday/DeliveryIssuesCard';
+import FinalRecordCard from './gameday/FinalRecordCard';
 
-export interface OrganizerWorkspaceProps extends OrganizerShellProps {
+export interface OrganizerWorkspaceProps {
+  game: GameState;
+  board: BoardData;
+  activePoolId: string | null;
+  liveData: LiveGameData | null;
+  winnerHistory: WinnerResolution[];
+  notificationDeliveryIssues: NotificationDeliveryIssue[];
+  onApply: (game: GameState, board: BoardData) => void;
+  onPublish: (currentData: { game: GameState; board: BoardData }) => Promise<string | void>;
+  onSavePayoutDescriptions: (descriptions: PayoutDescriptions) => Promise<PayoutDescriptions>;
+  onAssignOpenSquares: (squares: string[][]) => Promise<void>;
+  onReload?: () => Promise<void> | void;
+  onOpenViewer?: () => void;
+  onLogout: () => void;
+  isActivated: boolean;
+  isPublished: boolean;
+  shareCode: string | null;
+  renderPreview?: () => React.ReactNode;
   /** Server revision from usePoolData; drives the autosave conflict check. */
   revision: number;
   entryMeta: Record<number, EntryMeta>;
   onEntryMetaChange: (meta: EntryMeta) => void;
-  onScheduledGameChange?: (game: ScheduledGame) => void;
   billing?: { tier: string; used: number; allowance: number } | null;
   onCheckout?: (tier: 'gameday' | 'org', organizationName?: string) => Promise<void>;
 }
@@ -36,7 +81,10 @@ export interface OrganizerWorkspaceProps extends OrganizerShellProps {
 type PublishedBoard = Extract<PublishResult, { published: true }>;
 
 const PUBLISH_BLOCKED = 'Publish blocked. Reload or save the latest clean draft before publishing.';
-const GAME_DAY_PLACEHOLDER = 'Game-day controls arrive in stage 5b.';
+const PUBLISHED_IMMUTABLE = 'Published assignments cannot be changed. Select OPEN squares only.';
+const LATE_FILL_CLOSED = 'Open squares can only be filled before kickoff.';
+const LATE_FILL_FAILED = 'The OPEN squares could not be assigned. Reload and try again.';
+const RENAME_FAILED = 'The name could not be changed. The board still shows the previous name.';
 const UNTITLED_WORKSPACE = 'Untitled board workspace';
 const SQUARE_META_FAILED = 'Square details were not saved. The name is on the board; try saving the details again.';
 const CLEAR_META_FAILED = 'The private notes were not cleared. Try again.';
@@ -108,32 +156,35 @@ const lifecycleCells = (board: BoardData, entryMeta: Record<number, EntryMeta>) 
 };
 
 /**
- * The organizer workspace for a board that has not been published yet.
- * Composes the status island, the board editor, and the publish sheets over
- * `useWorkspaceDraft`'s autosaving draft. Published boards render only the
- * header plus a placeholder until stage 5b brings the game-day side.
+ * The organizer workspace. Before publishing it composes the status island,
+ * the board editor, and the publish sheets over `useWorkspaceDraft`'s
+ * autosaving draft. After publishing the same shell hosts the game-day side:
+ * the public link, score authority, corrections, and the locked final record.
  */
 export default function OrganizerWorkspace({
   game: gameProp,
   board: boardProp,
   activePoolId,
+  liveData,
+  winnerHistory,
+  notificationDeliveryIssues,
   revision,
   entryMeta,
   onEntryMetaChange,
-  onScheduledGameChange,
   billing,
   onCheckout,
   onApply,
   onPublish,
   onSavePayoutDescriptions,
+  onAssignOpenSquares,
   onReload,
   onOpenViewer,
   onLogout,
+  isActivated,
   isPublished,
+  shareCode,
   renderPreview,
 }: OrganizerWorkspaceProps) {
-  // `onAssignOpenSquares` and `shareCode` stay on the props type so BoardView
-  // keeps one call site; stage 5b's game-day surface is what reads them.
   const { game, board, setGame, setBoard, saveState, flush, retry, reloadLatest } = useWorkspaceDraft({
     game: gameProp,
     board: boardProp,
@@ -161,9 +212,25 @@ export default function OrganizerWorkspace({
   const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
   const [note, setNote] = useState<string | null>(null);
+  const [scoreSaveStatus, setScoreSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [correctionHistory, setCorrectionHistory] = useState(winnerHistory);
+  const [correctionDraft, setCorrectionDraft] = useState<MilestoneCorrectionDraft | null>(null);
+  // Late fill closes at kickoff, so the gate has to re-evaluate while the
+  // organizer sits on the page rather than only on the next render.
+  const [clockNow, setClockNow] = useState(() => Date.now());
   // Failures get their own live region so a blocker note never hides them and
   // a stale failure never outlives the next successful action.
   const [alert, setAlert] = useState<string | null>(null);
+
+  useEffect(() => {
+    setCorrectionHistory(winnerHistory);
+  }, [winnerHistory]);
+
+  useEffect(() => {
+    if (!isPublished) return;
+    const interval = window.setInterval(() => setClockNow(Date.now()), 30_000);
+    return () => window.clearInterval(interval);
+  }, [isPublished]);
 
   const openCount = openCountOf(board);
   const assignedCount = 100 - openCount;
@@ -193,7 +260,16 @@ export default function OrganizerWorkspace({
     save: saveState,
   }), [activePoolId, board, entryMeta, game, isPublished, saveState]);
 
-  const shareUrl = published ? `${window.location.origin}${published.viewerUrl}` : '';
+  const viewerPath = published ? published.viewerUrl : shareCode ? `/b/${shareCode}` : null;
+  const shareUrl = viewerPath ? `${window.location.origin}${viewerPath}` : '';
+
+  const canAssignOpenSquares = publishedOpenSquaresAreAssignable({
+    isPublished,
+    openSquareCount: openCount,
+    kickoffAt: game.kickoffAt,
+    now: clockNow,
+  }) && !conflicted;
+  const finalRecord = isPublished && liveData?.state === 'post';
 
   // Everything except the acknowledgement, which the draw itself collects.
   const DRAW_TOLERATED = new Set<string>([ACKNOWLEDGEMENT_BLOCKER, 'save_dirty', 'save_saving']);
@@ -218,6 +294,13 @@ export default function OrganizerWorkspace({
     startPreview();
   };
 
+  // A square blanked after the draw reopens the open-square question. The
+  // organizer answers it in place: no new digits are staged, only the
+  // acknowledgement the publish gate is waiting on.
+  const acknowledgeOpenSquaresOnly = () => {
+    setBoard((current) => ({ ...current, allowOpenSquares: true }));
+  };
+
   const cancelDraw = () => {
     setDrawPreview(null);
     setDrawRequested(false);
@@ -231,6 +314,7 @@ export default function OrganizerWorkspace({
       topAxis: top,
       leftAxis: left,
       isDynamic: false,
+      allowOpenSquares: openCount > 0,
       leftAxisByQuarter: undefined,
       topAxisByQuarter: undefined,
     }));
@@ -431,6 +515,173 @@ export default function OrganizerWorkspace({
     }
   };
 
+  /**
+   * Published boards take one of two routes out of the square sheet: a late
+   * fill on an OPEN cell through the dedicated callback, or an audited rename
+   * on an assigned cell. Clearing or overwriting an assignment any other way
+   * is refused — the published board is the record families are reading.
+   */
+  const lateFillOpenSquare = async (index: number, name: string) => {
+    const squares = [...board.squares];
+    // Never let a late fill touch an occupied cell, whatever route got here.
+    if (squares[index]?.length) {
+      setAlert(PUBLISHED_IMMUTABLE);
+      return;
+    }
+    if (!canAssignOpenSquares) {
+      setAlert(LATE_FILL_CLOSED);
+      return;
+    }
+    squares[index] = [name];
+    try {
+      await onAssignOpenSquares(squares);
+      await onReload?.();
+      setAlert(null);
+      setNote(`Square ${index + 1} assigned before kickoff.`);
+    } catch (error: any) {
+      setAlert(error?.message || LATE_FILL_FAILED);
+    }
+  };
+
+  const renameSquare = async (index: number, previous: string, next: string) => {
+    if (!activePoolId) return;
+    setBoard((current) => {
+      const squares = [...current.squares];
+      squares[index] = [next];
+      return { ...current, squares };
+    });
+    try {
+      await renamePublishedSquare(activePoolId, index, next);
+      setAlert(null);
+      setNote(`Square ${index + 1} changed from ${previous} to ${next}. The change is in the board history.`);
+    } catch (error: any) {
+      setBoard((current) => {
+        const squares = [...current.squares];
+        squares[index] = [previous];
+        return { ...current, squares };
+      });
+      setAlert(error?.message || RENAME_FAILED);
+    }
+  };
+
+  const savePublishedSquare = async (index: number, name: string, meta: EntryMeta) => {
+    const previous = board.squares[index]?.[0]?.trim() ?? '';
+    const next = name.trim();
+    setSelectedSquare(null);
+
+    if (!previous) {
+      if (next) await lateFillOpenSquare(index, next);
+    } else if (!next) {
+      setAlert(PUBLISHED_IMMUTABLE);
+      return;
+    } else if (next !== previous) {
+      await renameSquare(index, previous, next);
+    }
+
+    if (!activePoolId) return;
+    try {
+      await saveEntryMeta(activePoolId, meta);
+      onEntryMetaChange(meta);
+    } catch {
+      setAlert(SQUARE_META_FAILED);
+    }
+  };
+
+  const enableManualScoring = async () => {
+    if (!activePoolId || game.useManualScores) return;
+    setScoreSaveStatus('saving');
+    setAlert(null);
+    try {
+      await enableManualScoringOnServer(activePoolId);
+      setGame((current) => {
+        const seed = seedManualScoreFromSnapshot(current.scoreSnapshot ?? liveData);
+        return { ...current, useManualScores: true, scoreSnapshot: null, manualQuarterScores: seed.manualQuarterScores, manualPeriod: seed.manualPeriod, manualGameState: seed.manualGameState };
+      });
+      // Deliberately no reload: the seeded quarters live only in the local
+      // draft until they are published, and a published board never goes
+      // dirty, so re-adopting the server game here would wipe them back to 0.
+      setScoreSaveStatus('idle');
+      setNote('Manual scoring is on. Enter the score, then publish it.');
+    } catch (error: any) {
+      setScoreSaveStatus('error');
+      setAlert(error?.message || 'Manual scoring could not be enabled.');
+    }
+  };
+
+  const saveManualScore = async () => {
+    if (!activePoolId) return;
+    setScoreSaveStatus('saving');
+    setAlert(null);
+    try {
+      const result = await saveManualScoreToServer(activePoolId, game);
+      setGame((current) => ({ ...current, useManualScores: true, scoreSnapshot: result.score }));
+      await onReload?.();
+      setScoreSaveStatus('saved');
+      setNote('Manual score is live. Winners for completed quarters were updated once.');
+    } catch (error: any) {
+      setScoreSaveStatus('error');
+      setAlert(error?.message || 'Unable to save the score.');
+    }
+  };
+
+  const enableAutomaticScoring = async () => {
+    if (!activePoolId) return;
+    setScoreSaveStatus('saving');
+    setAlert(null);
+    try {
+      await returnAutomaticScoringOnServer(activePoolId);
+      setGame((current) => ({ ...current, useManualScores: false, scoreSnapshot: null }));
+      await onReload?.();
+      setScoreSaveStatus('idle');
+      setNote('Automatic score checks are enabled.');
+    } catch (error: any) {
+      setScoreSaveStatus('error');
+      setAlert(error?.message || 'Automatic scoring could not be enabled.');
+    }
+  };
+
+  const updateManualQuarter = (quarter: ManualQuarterKey, side: ManualScoreSide, value: number) => {
+    setGame((current) => {
+      const base = current.manualQuarterScores ?? EMPTY_MANUAL_SCORES;
+      return { ...current, manualQuarterScores: { ...base, [quarter]: { ...base[quarter], [side]: Math.max(0, value) } } };
+    });
+  };
+
+  const updateManualGameState = (state: ManualGameState) => {
+    setGame((current) => ({
+      ...current,
+      manualGameState: state,
+      manualPeriod: manualPeriodForState(state, current.manualPeriod, current.manualQuarterScores),
+    }));
+  };
+
+  const publishCorrection = async () => {
+    if (!activePoolId || !correctionDraft) return;
+    setScoreSaveStatus('saving');
+    setAlert(null);
+    try {
+      const result = await publishMilestoneCorrectionToServer(activePoolId, correctionDraft);
+      if (Array.isArray(result.winnerHistory)) setCorrectionHistory(result.winnerHistory);
+      setCorrectionDraft(null);
+      await onReload?.();
+      setScoreSaveStatus('saved');
+      setNote('Correction published. Both correction notices were queued for verified recipients.');
+    } catch (error: any) {
+      setScoreSaveStatus('error');
+      setAlert(error?.message || 'The correction could not be published.');
+    }
+  };
+
+  const copyViewerLink = async () => {
+    try {
+      await navigator.clipboard?.writeText(shareUrl);
+      setAlert(null);
+      setNote('Viewer link copied.');
+    } catch {
+      setAlert('The link could not be copied. Open the public board panel and copy the address there.');
+    }
+  };
+
   const scrollToBoard = () => {
     document.getElementById('workspace-board')?.scrollIntoView({ block: 'start' });
   };
@@ -467,7 +718,7 @@ export default function OrganizerWorkspace({
       saveState={saveState}
       isPublished={isPublished}
       onTitleChange={(title) => setGame((current) => ({ ...current, title }))}
-      onGameChange={onScheduledGameChange}
+      onGameChange={(scheduled) => setGame((current) => applyScheduledGame(current, scheduled))}
       onRetry={() => void retry()}
       onReload={() => void reloadLatest()}
       onLogout={onLogout}
@@ -483,9 +734,11 @@ export default function OrganizerWorkspace({
         index={selectedSquare}
         name={selectedSquare === null ? '' : board.squares[selectedSquare]?.[0] ?? ''}
         meta={selectedSquare === null ? undefined : entryMeta[selectedSquare]}
-        isPublished={false}
+        isPublished={isPublished}
         hasNextOpen={openCount > 0}
-        onSave={(index, name, meta, advance) => void saveSquare(index, name, meta, advance)}
+        onSave={(index, name, meta, advance) => void (isPublished
+          ? savePublishedSquare(index, name, meta)
+          : saveSquare(index, name, meta, advance))}
         onClose={() => setSelectedSquare(null)}
       />
 
@@ -534,17 +787,77 @@ export default function OrganizerWorkspace({
   );
 
   if (isPublished) {
+    const gameDayPrimary = finalRecord
+      ? { label: 'Create another board', onClick: () => window.location.assign('/create') }
+      : { label: 'Copy link', onClick: () => void copyViewerLink() };
+
     return (
       <Base kind="cream">
+        <OrganizerIsland
+          filled={assignedCount}
+          paid={paidCount}
+          drawn
+          phase={model.phase}
+          primary={gameDayPrimary}
+          secondary={onOpenViewer ? [{ label: 'Open public board', onClick: () => onOpenViewer() }] : undefined}
+        />
         <main aria-label={mainLabel} className="mx-auto max-w-7xl px-4 pt-6 pb-24 lg:pt-8">
           {header}
           {alertRegion}
-          <section aria-label="Game day" className="mt-8">
-            <Glass padding="lg" className="flex flex-col gap-2">
-              <Eyebrow>Game day</Eyebrow>
-              <p className="font-ui text-[15px] text-fg-2">{GAME_DAY_PLACEHOLDER}</p>
-            </Glass>
-          </section>
+          {/* Game-day confirmations stay in the flow: the island collapses, and
+              a rename or a late fill is worth reading without expanding it. */}
+          {note ? <p role="status" className="mt-4 font-ui text-[15px] text-fg-2">{note}</p> : null}
+          <div className="mt-8 grid min-w-0 gap-8 lg:grid-cols-[minmax(0,1fr)_360px] [&>*]:min-w-0">
+            <section id="workspace-board" aria-label="Board" className="flex min-w-0 max-w-full flex-col gap-6">
+              {finalRecord && <FinalRecordCard winnerHistory={correctionHistory} />}
+              <SharePanel shareUrl={shareUrl} onOpenViewer={() => onOpenViewer?.()} />
+              <ScoreAuthorityCard
+                game={game}
+                liveData={liveData}
+                scoreSaveStatus={scoreSaveStatus}
+                isActivated={isActivated}
+                onEnableAutomaticScoring={() => void enableAutomaticScoring()}
+                onEnableManualScoring={() => void enableManualScoring()}
+                onUpdateManualGameState={updateManualGameState}
+                onUpdateManualPeriod={(period) => setGame((current) => ({ ...current, manualPeriod: period }))}
+                onUpdateManualQuarter={updateManualQuarter}
+                onSaveManualScore={() => void saveManualScore()}
+              />
+              <BoardEditor
+                board={board}
+                game={game}
+                entryMeta={entryMeta}
+                drawPreview={null}
+                highlightOpen={false}
+                isPublished
+                canAssignOpenSquares={canAssignOpenSquares}
+                onSelectSquare={setSelectedSquare}
+              />
+            </section>
+            <aside className="flex flex-col gap-6">
+              <PayoutRulesCard
+                descriptions={game.payoutDescriptions || {}}
+                status={payoutStatus}
+                disabled={!activePoolId}
+                onChange={updatePayoutDescription}
+                onSavePayoutDescriptions={() => void savePayoutDescriptions()}
+              />
+              <CorrectionsCard
+                winnerHistory={correctionHistory}
+                draft={correctionDraft}
+                pending={scoreSaveStatus === 'saving'}
+                onDraftChange={setCorrectionDraft}
+                onPublishCorrection={() => void publishCorrection()}
+              />
+              <DeliveryIssuesCard issues={notificationDeliveryIssues} />
+              <BoardToolsCard
+                isPublished
+                exporting={exporting}
+                onExport={(mode) => void exportBoard(mode)}
+                hasSellers={Object.values(entryMeta).some((meta) => Boolean(meta?.seller_label))}
+              />
+            </aside>
+          </div>
         </main>
         {sheets}
       </Base>
@@ -576,7 +889,8 @@ export default function OrganizerWorkspace({
                 preview={Boolean(drawPreview)}
                 disabled={conflicted}
                 onAcknowledge={acknowledgeOpenSquares}
-                onKeepAssigning={cancelDraw}
+                onAcknowledgeWithoutDraw={acknowledgeOpenSquaresOnly}
+                onKeepAssigning={() => { cancelDraw(); scrollToBoard(); }}
                 onDraw={startPreview}
                 onCommit={commitDraw}
                 onAgain={startPreview}

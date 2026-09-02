@@ -36,6 +36,92 @@ const scheduledGame = {
   homeTeam: { abbr: 'WAS', name: 'Washington Commanders' },
 };
 
+const createdBoardId = '33333333-3333-4333-8333-333333333333';
+
+/** Owner-only requests the workspace makes on every board route. */
+const installOrganizerSupport = async (page: Page) => {
+  await page.route('**/rest/v1/contest_entries*', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: '[]',
+  }));
+  await page.route('**/api/billing/status', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ tier: 'free', used: 0, allowance: 1 }),
+  }));
+  await page.route('**/api/nfl/games?**', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ games: [scheduledGame] }),
+  }));
+};
+
+/** The board row the create flow lands on once /api/pools has accepted the POST. */
+const installCreatedBoard = async (page: Page, boardId: string, title: string) => {
+  await page.route(`**/api/pools/${boardId}/score`, (route) => route.fulfill({
+    status: 402,
+    contentType: 'application/json',
+    body: JSON.stringify({ error: 'Publish this board to use automatic live scoring and updates.' }),
+  }));
+  await page.route(`**/api/pools/${boardId}`, (route) => {
+    if (route.request().method() === 'PUT') {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ ok: true, revision: 2 }),
+      });
+    }
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        id: boardId,
+        share_code: 'ABCDEFGH',
+        owner_id: ownerId,
+        title,
+        status: 'draft',
+        revision: 1,
+        gameExternalId: scheduledGame.id,
+        kickoffAt: scheduledGame.kickoffAt,
+        dates: '2026-09-13',
+        leftAbbr: 'DAL',
+        leftName: 'Dallas Cowboys',
+        topAbbr: 'WAS',
+        topName: 'Washington Commanders',
+        payoutDescriptions: {},
+        board: {
+          leftAxis: Array(10).fill(null),
+          topAxis: Array(10).fill(null),
+          squares: Array.from({ length: 100 }, () => [] as string[]),
+          isDynamic: false,
+        },
+        score: null,
+        is_activated: false,
+        locked: true,
+        published_at: null,
+        winner_history: [],
+      }),
+    });
+  });
+  await installOrganizerSupport(page);
+};
+
+/**
+ * The island opens on hover on pointer devices, so a plain click can toggle it
+ * shut again. Keyboard activation is the deterministic path.
+ */
+const openIsland = async (page: Page) => {
+  const island = page.getByRole('region', { name: 'Organizer status' });
+  const toggle = island.getByRole('button', { name: /Organizer status/ });
+  if ((await toggle.getAttribute('aria-expanded')) !== 'true') {
+    await toggle.focus();
+    await page.keyboard.press('Enter');
+  }
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  return island;
+};
+
 const quarterScores = {
   Q1: { left: 3, top: 7 },
   Q2: { left: 7, top: 7 },
@@ -78,22 +164,24 @@ test('organizer creates a board from one scheduled NFL event', async ({ page }) 
       status: 201,
       contentType: 'application/json',
       body: JSON.stringify({
-        poolId: ownerId,
-        boardId: ownerId,
+        poolId: createdBoardId,
+        boardId: createdBoardId,
         shareCode: 'ABCDEFGH',
         revision: 1,
       }),
     });
   });
+  await installCreatedBoard(page, createdBoardId, 'Week 1 fundraiser');
 
   await page.goto('/create');
   await page.getByLabel('Board name').fill('Week 1 fundraiser');
-  await page.getByRole('button', { name: 'Continue' }).click();
   await page.getByRole('radio', { name: /DAL.*at.*WAS/i }).check();
-  await page.getByRole('button', { name: 'Continue' }).click();
-  await page.getByRole('button', { name: /Create blank 10×10 board/i }).click();
+  await page.getByRole('button', { name: 'Create board' }).click();
 
-  await expect(page.getByRole('heading', { name: /Your board is ready to fill/i })).toBeVisible();
+  // Creation lands straight in the workspace: there is no interstitial.
+  await expect(page).toHaveURL(new RegExp(`/boards/${createdBoardId}$`));
+  await expect(page.getByRole('main', { name: /workspace$/ })).toBeVisible();
+  await expect(page.getByLabel('Board name')).toHaveValue('Week 1 fundraiser');
   expect(submitted.game.gameExternalId).toBe(scheduledGame.id);
   expect(submitted.game.kickoffAt).toBe(scheduledGame.kickoffAt);
   expect(submitted.board.squares).toHaveLength(100);
@@ -195,45 +283,53 @@ test('invalid public links show an explicit unavailable state', async ({ page })
   await expect(page.getByRole('alert')).toContainText('This link does not open a published GridOne board.');
 });
 
-test('draft organizer preview stays fully visible and interactive before activation', async ({ page }) => {
+test('draft organizer preview opens the private viewer without sharing the board', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await installOrganizerSession(page);
   const boardId = ownerId;
   let automaticScoreRequests = 0;
-  let scheduleRequests = 0;
   const board = {
     leftAxis: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
     topAxis: [9, 8, 7, 6, 5, 4, 3, 2, 1, 0],
-    squares: Array.from({ length: 100 }, () => [] as string[]),
+    squares: Array.from({ length: 100 }, (_, index) => (index === 0 ? ['Ann'] : ([] as string[]))),
     isDynamic: false,
   };
-  await page.route(`**/api/pools/${boardId}`, (route) => route.fulfill({
-    status: 200,
-    contentType: 'application/json',
-    body: JSON.stringify({
-      id: boardId,
-      share_code: 'ABCDEFGH',
-      owner_id: ownerId,
-      title: 'QA draft board',
-      status: 'draft',
-      revision: 1,
-      meta: 'Preview verification',
-      gameExternalId: scheduledGame.id,
-      kickoffAt: scheduledGame.kickoffAt,
-      dates: '2026-09-13',
-      leftAbbr: 'DAL',
-      leftName: 'Dallas Cowboys',
-      topAbbr: 'WAS',
-      topName: 'Washington Commanders',
-      payoutDescriptions: {},
-      board,
-      score: null,
-      is_activated: false,
-      locked: true,
-      published_at: null,
-      winner_history: [],
-    }),
-  }));
+  await page.route(`**/api/pools/${boardId}`, (route) => {
+    if (route.request().method() === 'PUT') {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ ok: true, revision: 2 }),
+      });
+    }
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        id: boardId,
+        share_code: 'ABCDEFGH',
+        owner_id: ownerId,
+        title: 'QA draft board',
+        status: 'draft',
+        revision: 1,
+        meta: 'Preview verification',
+        gameExternalId: scheduledGame.id,
+        kickoffAt: scheduledGame.kickoffAt,
+        dates: '2026-09-13',
+        leftAbbr: 'DAL',
+        leftName: 'Dallas Cowboys',
+        topAbbr: 'WAS',
+        topName: 'Washington Commanders',
+        payoutDescriptions: {},
+        board,
+        score: null,
+        is_activated: false,
+        locked: true,
+        published_at: null,
+        winner_history: [],
+      }),
+    });
+  });
   await page.route(`**/api/pools/${boardId}/score`, (route) => {
     automaticScoreRequests += 1;
     return route.fulfill({
@@ -242,59 +338,27 @@ test('draft organizer preview stays fully visible and interactive before activat
       body: JSON.stringify({ error: 'Publish this board to use automatic live scoring and updates.' }),
     });
   });
-  await page.route('**/rest/v1/contest_entries*', (route) => route.fulfill({
-    status: 200,
-    contentType: 'application/json',
-    body: '[]',
-  }));
-  await page.route('**/api/nfl/games?**', (route) => {
-    scheduleRequests += 1;
-    return route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ games: [scheduledGame] }),
-    });
-  });
+  await installOrganizerSupport(page);
 
   await page.goto(`/boards/${boardId}`);
+  await expect(page.getByRole('main', { name: 'QA draft board workspace' })).toBeVisible();
   expect(await page.evaluate(() => (window as unknown as { __lenis?: unknown }).__lenis)).toBeUndefined();
   expect(await page.evaluate(() =>
     document.documentElement.scrollWidth <= document.documentElement.clientWidth
   )).toBe(true);
-  await page.getByRole('button', { name: 'Fill 100 squares open' }).click();
-  await expect(page.getByRole('heading', { name: 'Grid Editor' })).toBeVisible();
-  await expect(page.getByLabel('Label to apply')).toBeFocused();
-  const gridPosition = await page.getByRole('heading', { name: 'Grid Editor' }).boundingBox();
-  expect(gridPosition?.y).toBeGreaterThanOrEqual(0);
-  expect(gridPosition?.y).toBeLessThan(844);
 
   const beforePageDown = await page.evaluate(() => window.scrollY);
   await page.keyboard.press('PageDown');
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(beforePageDown);
-  const beforeWheel = await page.evaluate(() => window.scrollY);
-  await page.mouse.wheel(0, 500);
-  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(beforeWheel);
 
-  expect(scheduleRequests).toBe(0);
-  await page.getByRole('button', { name: 'Change scheduled game' }).click();
-  await expect(page.getByRole('radio', { name: /DAL.*at.*WAS/i })).toBeVisible();
-  expect(scheduleRequests).toBeGreaterThan(0);
-  const requestsAfterFirstOpen = scheduleRequests;
-  await page.getByRole('button', { name: 'Close game schedule' }).click();
-  await page.getByRole('button', { name: 'Change scheduled game' }).click();
-  expect(scheduleRequests).toBe(requestsAfterFirstOpen);
-  await expect(page.getByLabel('Board Name')).toBeEnabled();
-  await page.getByRole('button', { name: 'Preview', exact: true }).click();
+  const island = await openIsland(page);
+  await island.getByRole('button', { name: 'Preview', exact: true }).click();
 
-  const preview = page.getByRole('region', { name: /QA draft board viewer/i });
+  const preview = page.getByRole('dialog', { name: 'Private preview — sharing is off' });
   await expect(preview).toBeVisible();
-  await expect(preview.locator('..')).not.toHaveClass(/pointer-events-none|opacity-50/);
-  await expect(page.getByText(/UNLOCK LIVE SCORING/i)).toBeVisible();
-  await expect(page.getByText(/Publish this board to show live scenarios/i)).toBeVisible();
-  await expect(page.getByRole('gridcell', { name: /^Unassigned/i })).toHaveCount(100);
-
-  await page.getByRole('button', { name: /Find my squares/i }).click();
-  await expect(page.getByRole('dialog', { name: /Find my squares/i })).toBeVisible();
+  await expect(preview.getByRole('region', { name: /QA draft board viewer/i })).toBeVisible();
+  await expect(preview.getByRole('gridcell', { name: /^Unassigned/i })).toHaveCount(99);
+  await expect(preview.getByRole('button', { name: 'Review and publish' })).toBeEnabled();
   expect(automaticScoreRequests).toBe(0);
 });
 
@@ -379,25 +443,22 @@ test('organizer flushes the latest draft before publishing the viewer link', asy
     return route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({ published: true, shareCode: 'ABCDEFGH', viewerUrl: '/b/ABCDEFGH' }),
+      body: JSON.stringify({ published: true, shareCode: 'ABCDEFGH', viewerUrl: '/b/ABCDEFGH', revision: 3, tier: 'free', used: 1, allowance: 1 }),
     });
   });
-  await page.route('**/rest/v1/contest_entries*', (route) => route.fulfill({
-    status: 200,
-    contentType: 'application/json',
-    body: '[]',
-  }));
-  await page.route('**/api/nfl/games?**', (route) => route.fulfill({
-    status: 200,
-    contentType: 'application/json',
-    body: JSON.stringify({ games: [scheduledGame] }),
-  }));
+  await installOrganizerSupport(page);
 
   await page.goto(`/boards/${boardId}`);
-  await page.getByRole('button', { name: 'Edit', exact: true }).last().click();
-  await page.getByLabel('Board Name').fill('Latest title');
-  await page.getByRole('button', { name: 'More options' }).click();
-  await page.getByRole('button', { name: /Publish viewer link/i }).click();
+  await expect(page.getByRole('main', { name: 'Original title workspace' })).toBeVisible();
+  await page.getByLabel('Board name').fill('Latest title');
+  await page.getByLabel('Board name').press('Enter');
+
+  const island = await openIsland(page);
+  await island.getByRole('button', { name: 'Preview', exact: true }).click();
+  await page.getByRole('button', { name: 'Review and publish' }).click();
+  const publishDialog = page.getByRole('dialog', { name: 'Publish viewer link' });
+  await expect(publishDialog).toBeVisible();
+  await publishDialog.getByRole('button', { name: 'Publish viewer link' }).click();
 
   await expect.poll(() => requestOrder).toEqual(['save', 'publish']);
   expect(savedTitle).toBe('Latest title');

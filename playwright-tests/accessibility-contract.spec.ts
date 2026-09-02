@@ -63,6 +63,21 @@ const organizerDraftBoard = {
   isDynamic: false,
 };
 
+/** Numbers not drawn yet: the draw and the reconcile checklist both live here. */
+const organizerUndrawnBoard = {
+  ...organizerDraftBoard,
+  leftAxis: Array(10).fill(null),
+  topAxis: Array(10).fill(null),
+};
+
+/** Every square assigned and both axes drawn: the publish path is open. */
+const organizerReadyBoard = {
+  leftAxis: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+  topAxis: [9, 8, 7, 6, 5, 4, 3, 2, 1, 0],
+  squares: Array.from({ length: 100 }, () => ['Mora']),
+  isDynamic: false,
+};
+
 const scheduledGame = {
   id: '401772510',
   kickoffAt: '2026-09-13T17:00:00.000Z',
@@ -115,10 +130,26 @@ const installPublishedBoard = async (page: Page, options: {
   }));
 };
 
-const installOrganizerBoard = async (page: Page, options: { board?: typeof organizerDraftBoard; revision?: number } = {}) => {
+const installOrganizerBoard = async (page: Page, options: {
+  board?: typeof organizerDraftBoard;
+  revision?: number;
+  /** Answer every save with a revision conflict, as a second session would. */
+  saveConflict?: boolean;
+} = {}) => {
   await installOrganizerSession(page);
   await page.route(`**/api/pools/${ownerId}`, async (route) => {
     if (route.request().method() === 'PUT') {
+      if (options.saveConflict) {
+        return route.fulfill({
+          status: 409,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            error: 'This board changed in another session.',
+            code: 'REVISION_CONFLICT',
+            currentRevision: (options.revision ?? 1) + 4,
+          }),
+        });
+      }
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -168,6 +199,31 @@ const installOrganizerBoard = async (page: Page, options: { board?: typeof organ
     contentType: 'application/json',
     body: JSON.stringify({ games: [scheduledGame] }),
   }));
+  await page.route('**/api/billing/status', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ tier: 'free', used: 0, allowance: 1 }),
+  }));
+  await page.route(`**/api/pools/${ownerId}/publish`, (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ published: true, shareCode: 'ABCDEFGH', viewerUrl: '/b/ABCDEFGH', revision: 3, tier: 'free', used: 1, allowance: 1 }),
+  }));
+};
+
+/**
+ * The island opens on hover on pointer devices, so a plain click can toggle it
+ * shut again. Keyboard activation is the deterministic path.
+ */
+const openIsland = async (page: Page) => {
+  const island = page.getByRole('region', { name: 'Organizer status' });
+  const toggle = island.getByRole('button', { name: /Organizer status/ });
+  if ((await toggle.getAttribute('aria-expanded')) !== 'true') {
+    await toggle.focus();
+    await page.keyboard.press('Enter');
+  }
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  return island;
 };
 
 const expectTouchTarget = async (locator: Locator) => {
@@ -260,42 +316,125 @@ test.describe('Slice 2 signed-out accessibility contract automation', () => {
     await expectTouchTarget(page.getByRole('link', { name: 'Sign in' }).first());
   });
 
-  test('organizer Fill route exposes an empty or partial assignment grid without credentials beyond mocked owner auth', async ({ page }) => {
+  test('organizer board editor exposes every square by name without credentials beyond mocked owner auth', async ({ page }) => {
     await installOrganizerBoard(page);
     await page.goto(`/boards/${ownerId}`);
-    await page.getByRole('button', { name: 'Fill 99 squares open' }).click();
-    await expect(page.getByRole('heading', { name: 'Grid Editor' })).toBeVisible();
-    await expect(page.getByText('Assign purchaser names, then run one random number draw. Publishing locks both axes.')).toBeVisible();
-    await expect(page.getByLabel('Label to apply')).toBeFocused();
-    await expect(page.getByRole('button', { name: /Square 1, assigned to Ann/i })).toBeVisible();
-    await expect(page.getByRole('button', { name: /Square 2, unassigned/i })).toBeVisible();
+    await expect(page.getByRole('main', { name: 'QA draft board workspace' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Square 1, assigned to Ann' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Square 2, unassigned' })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Square \d+, unassigned/ })).toHaveCount(99);
+
+    await page.getByRole('button', { name: 'Square 2, unassigned' }).click();
+    const square = page.getByRole('dialog', { name: 'Square 2' });
+    await expect(square).toBeVisible();
+    await expect(square.getByLabel('Name on the board')).toBeFocused();
   });
 
-  test('organizer Reconcile advisory items have an explicit v2 contract owner', async ({ page }) => {
-    test.fixme(true, 'Owner: Slice 10 organizer Reconcile checklist. Expected: advisory items for open squares, unpaid/unknown status, seller gaps, and payout/rules gaps are grouped as advisories, not blockers; hard blockers stay distinct; primary action is Continue anyway when only advisories remain. Remove when organizer_v2 Reconcile ships behind its flag.');
+  test('organizer Reconcile separates private advisories from publish blockers', async ({ page }) => {
+    await installOrganizerBoard(page, { board: organizerUndrawnBoard });
     await page.goto(`/boards/${ownerId}`);
+    await expect(page.getByRole('main', { name: 'QA draft board workspace' })).toBeVisible();
+
+    const blockers = page.getByRole('region', { name: 'Before you can publish' });
+    const advisories = page.getByRole('region', { name: 'Private follow-up' });
+
+    await expect(blockers).toContainText('Confirm that the remaining OPEN squares should stay OPEN.');
+    await expect(advisories).toContainText('OPEN squares remain. You can publish if you are okay leaving them OPEN.');
+    await expect(advisories).toContainText('Some private payment notes still need follow-up.');
+    await expect(advisories).toContainText('Some seller notes still need follow-up.');
+
+    // Advisories never masquerade as blockers, and the draw stays reachable.
+    await expect(blockers).not.toContainText('OPEN squares remain');
+    await expect(blockers).not.toContainText('still need follow-up');
+    const island = await openIsland(page);
+    await expect(island.getByRole('button', { name: 'Draw numbers' })).toBeEnabled();
   });
 
   test('organizer Draw open-square confirmation has accessible warning semantics and safe focus path', async ({ page }) => {
-    await installOrganizerBoard(page);
+    await installOrganizerBoard(page, { board: organizerUndrawnBoard });
     await page.goto(`/boards/${ownerId}`);
-    await page.getByRole('button', { name: 'Fill 99 squares open' }).click();
-    await page.getByRole('button', { name: 'Draw numbers' }).click();
+    const island = await openIsland(page);
+    await island.getByRole('button', { name: 'Draw numbers' }).click();
+
     const confirmation = page.getByRole('group', { name: /99 squares are open\. Draw anyway\?/i });
     await expect(confirmation).toBeVisible();
     await expect(confirmation).toContainText('Open squares stay marked OPEN');
-    await expect(confirmation.getByRole('button', { name: 'Keep assigning' })).toBeVisible();
-    await expect(confirmation.getByRole('button', { name: 'Draw with 99 OPEN' })).toBeVisible();
+    const keepAssigning = confirmation.getByRole('button', { name: 'Keep assigning' });
+    const drawAnyway = confirmation.getByRole('button', { name: 'Draw with 99 OPEN' });
+    await expect(keepAssigning).toBeVisible();
+    await expect(drawAnyway).toBeVisible();
+    await expectTouchTarget(keepAssigning);
+    await expectTouchTarget(drawAnyway);
+
+    await keepAssigning.focus();
+    await expect(keepAssigning).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(confirmation).toBeHidden();
   });
 
-  test('organizer Preview and Go Live dialogs have explicit v2 contract owners', async ({ page }) => {
-    test.fixme(true, 'Owner: Slice 10 organizer Preview/Publish. Expected: private preview is entered by Review and publish, publication opens a role=dialog aria-modal confirmation summarizing board, matchup, kickoff, assigned/open counts, axis digits, public/private boundary, tier allowance, and safe cancel focus-return; success shows copy link, QR, open viewer, and game-day controls. Remove when organizer_v2 Preview and Go Live dialog flow ships.');
+  test('organizer publish confirmation summarizes the board and opens on a safe cancel', async ({ page }) => {
+    await installOrganizerBoard(page, { board: organizerReadyBoard });
     await page.goto(`/boards/${ownerId}`);
+    const island = await openIsland(page);
+    await island.getByRole('button', { name: 'Preview', exact: true }).click();
+
+    const preview = page.getByRole('dialog', { name: 'Private preview — sharing is off' });
+    await expect(preview).toBeVisible();
+    await preview.getByRole('button', { name: 'Review and publish' }).click();
+
+    const publish = page.getByRole('dialog', { name: 'Publish viewer link' });
+    await expect(publish).toBeVisible();
+    await expect(publish).toHaveAttribute('aria-modal', 'true');
+    const cancel = publish.getByRole('button', { name: 'Cancel' });
+    await expect(cancel).toBeFocused();
+    await expectTouchTarget(cancel);
+
+    await expect(publish).toContainText('Board name');
+    await expect(publish).toContainText('QA draft board');
+    await expect(publish).toContainText('Matchup');
+    await expect(publish).toContainText('DAL at WAS');
+    await expect(publish).toContainText('Kickoff');
+    await expect(publish).toContainText('Squares');
+    await expect(publish).toContainText('100 assigned · 0 OPEN');
+    await expect(publish).toContainText('Top axis');
+    await expect(publish).toContainText('Side axis');
+    await expect(publish).toContainText('What becomes public');
+    await expect(publish).toContainText('What remains private');
+    await expect(publish).toContainText('0 of 1 published this season · Free');
+    await expect(publish.getByRole('button', { name: 'Publish viewer link' })).toBeEnabled();
+
+    await cancel.click();
+    await expect(publish).toBeHidden();
   });
 
-  test('organizer save conflict or error blocks progression with a live recoverable status', async ({ page }) => {
-    test.fixme(true, 'Owner: Slice 10 organizer shell backed by Slice 9 draftSaveModel. Expected: save_failed and conflicted states use role=status or alert as severity requires, name Retry/Reload latest board recovery, preserve local work, and disable Draw/Preview/Publish progression until recovery. Remove when organizer_v2 save-state header and conflict UI ship.');
+  test('organizer save conflict blocks progression with a live recoverable alert', async ({ page }) => {
+    await installOrganizerBoard(page, { board: organizerReadyBoard, saveConflict: true });
     await page.goto(`/boards/${ownerId}`);
+    await expect(page.getByRole('main', { name: 'QA draft board workspace' })).toBeVisible();
+
+    // First save fails; the second edit meets a revision that moved underneath it.
+    await page.getByLabel('Board name').fill('Conflicting title');
+    await page.getByLabel('Board name').press('Enter');
+    await expect(page.getByRole('status').filter({ hasText: 'Save failed' })).toBeVisible();
+    await page.getByLabel('Board name').fill('Conflicting title again');
+    await page.getByLabel('Board name').press('Enter');
+
+    const conflict = page.getByRole('alert').filter({ hasText: 'This board changed in another session.' });
+    await expect(conflict).toBeVisible();
+    const reload = conflict.getByRole('button', { name: 'Reload latest board' });
+    await expect(reload).toBeVisible();
+    await expectTouchTarget(reload);
+
+    // Local work survives, and publishing stays closed until the reload happens.
+    await expect(page.getByLabel('Board name')).toHaveValue('Conflicting title again');
+    await expect(page.getByRole('region', { name: 'Before you can publish' }))
+      .toContainText('This board changed in another session. Reload the latest version.');
+
+    const island = await openIsland(page);
+    await island.getByRole('button', { name: 'Preview', exact: true }).click();
+    const preview = page.getByRole('dialog', { name: 'Private preview — sharing is off' });
+    await expect(preview).toBeVisible();
+    await expect(preview.getByRole('button', { name: 'Review and publish' })).toBeDisabled();
   });
 
   test('viewer unpersonalized and personalized modes preserve structural semantics', async ({ page }) => {

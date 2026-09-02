@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Eyebrow, CapsuleButton, Sheet } from '../../../design/primitives';
+import { Eyebrow, CapsuleButton, CapsuleTag, Sheet } from '../../../design/primitives';
 import type { DraftSaveState } from '../draft/draftSaveModel';
 import type { ScheduledGame, GameState } from '../../../../types';
 import ScheduledGamePicker from '../../../../components/ScheduledGamePicker';
@@ -126,9 +126,12 @@ export default function WorkspaceHeader({
         </div>
         <CapsuleButton variant="ghost" size="md" onClick={onLogout}>Log out</CapsuleButton>
       </div>
-      <SavePill saveState={saveState} onRetry={onRetry} onReload={onReload} />
+      {isPublished
+        ? <div><CapsuleTag tone="gold">Published</CapsuleTag></div>
+        : <SavePill saveState={saveState} onRetry={onRetry} onReload={onReload} />}
       {!isPublished && (
         <Sheet open={pickerOpen} onClose={() => setPickerOpen(false)} title="Pick the game">
+          <p className="font-ui text-[14px] text-fg-2">Changing the game clears any score state on this board.</p>
           <ScheduledGamePicker
             value={game.gameExternalId ?? null}
             onChange={(picked) => {

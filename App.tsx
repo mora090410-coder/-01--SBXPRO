@@ -82,9 +82,7 @@ const App: React.FC = () => {
                 path="/dashboard"
                 element={
                   <RequireAuth>
-                    <Layout>
-                      <Dashboard />
-                    </Layout>
+                    <Dashboard />
                   </RequireAuth>
                 }
               />
@@ -92,9 +90,7 @@ const App: React.FC = () => {
                 path="/create"
                 element={
                   <RequireAuth>
-                    <Layout>
-                      <CreateContest />
-                    </Layout>
+                    <CreateContest />
                   </RequireAuth>
                 }
               />

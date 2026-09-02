@@ -10,6 +10,8 @@ export interface DrawControlProps {
   preview: boolean;
   disabled: boolean;
   onAcknowledge: () => void;
+  /** Accepts the open squares without staging a fresh draw. */
+  onAcknowledgeWithoutDraw: () => void;
   onKeepAssigning: () => void;
   onDraw: () => void;
   onCommit: () => void;
@@ -34,6 +36,7 @@ export default function DrawControl({
   preview,
   disabled,
   onAcknowledge,
+  onAcknowledgeWithoutDraw,
   onKeepAssigning,
   onCommit,
   onAgain,
@@ -69,12 +72,31 @@ export default function DrawControl({
   }
 
   if (drawn) {
+    // A square blanked after the numbers were committed reopens the open-square
+    // question. Without this prompt the only route to the answer is Replace
+    // draft draw, which also stages digits the organizer never asked for, so
+    // the question is asked here alongside the draw summary instead.
+    const heading = `${openCount} squares are open. Publish with them open?`;
     return (
-      <Glass className="flex items-center gap-3">
-        <span className="font-mono text-[14px] text-fg">Numbers set</span>
-        <CapsuleTag tone="gold">Drawn</CapsuleTag>
-        <CapsuleButton variant="ghost" onClick={onReplace} disabled={disabled}>Replace draft draw</CapsuleButton>
-      </Glass>
+      <>
+        {openCount > 0 && !acknowledged && (
+          <Glass role="group" aria-label={heading} className="flex flex-col gap-3">
+            <h2 className="font-display text-[20px] leading-[1.1] text-fg">{heading}</h2>
+            <p className="font-ui text-[14px] text-fg-2">
+              Open squares stay marked OPEN on the shared board. You can still assign them before kickoff.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <CapsuleButton variant="quiet" onClick={onKeepAssigning} disabled={disabled}>Keep assigning</CapsuleButton>
+              <CapsuleButton variant="primary" onClick={onAcknowledgeWithoutDraw} disabled={disabled}>{`Keep ${openCount} OPEN`}</CapsuleButton>
+            </div>
+          </Glass>
+        )}
+        <Glass className="flex items-center gap-3">
+          <span className="font-mono text-[14px] text-fg">Numbers set</span>
+          <CapsuleTag tone="gold">Drawn</CapsuleTag>
+          <CapsuleButton variant="ghost" onClick={onReplace} disabled={disabled}>Replace draft draw</CapsuleButton>
+        </Glass>
+      </>
     );
   }
 

@@ -18,16 +18,32 @@ const liveCopyFiles = [
   'src/features/viewer/notifications/WinnerEmailDisclosure.tsx',
   'src/features/viewer/scenarios/ScenarioDisclosure.tsx',
   'src/features/viewer/personal/YourSquaresSummary.tsx',
-  'src/features/organizer/shell/AssignmentWorkspace.tsx',
-  'src/features/organizer/shell/DrawWorkspace.tsx',
-  'src/features/organizer/shell/ViewerPreviewWorkspace.tsx',
-  'src/features/organizer/shell/CorrectionFlow.tsx',
-  'src/features/organizer/shell/TaskHeader.tsx',
-  'src/features/organizer/shell/ProgressDisclosure.tsx',
-  'src/features/organizer/shell/ReconcileChecklist.tsx',
-  'src/features/organizer/shell/GameDayControls.tsx',
-  'src/features/organizer/shell/OrganizerShell.tsx',
+  'src/features/organizer/workspace/OrganizerWorkspace.tsx',
+  'src/features/organizer/workspace/WorkspaceHeader.tsx',
+  'src/features/organizer/workspace/BoardEditor.tsx',
+  'src/features/organizer/workspace/BoardToolsCard.tsx',
+  'src/features/organizer/workspace/DrawControl.tsx',
+  'src/features/organizer/workspace/OrganizerIsland.tsx',
+  'src/features/organizer/workspace/PayoutRulesCard.tsx',
+  'src/features/organizer/workspace/PreviewSheet.tsx',
+  'src/features/organizer/workspace/PublishSheet.tsx',
+  'src/features/organizer/workspace/PublishedSheet.tsx',
+  'src/features/organizer/workspace/ReconcileCard.tsx',
+  'src/features/organizer/workspace/SquareSheet.tsx',
+  'src/features/organizer/workspace/UpgradeSheet.tsx',
+  'src/features/organizer/workspace/entryMetaService.ts',
+  'src/features/organizer/workspace/publishBoard.ts',
+  'src/features/organizer/workspace/renamePublishedSquare.ts',
+  'src/features/organizer/workspace/secureDraw.ts',
+  'src/features/organizer/workspace/useWorkspaceDraft.ts',
+  'src/features/organizer/workspace/gameday/SharePanel.tsx',
+  'src/features/organizer/workspace/gameday/ScoreAuthorityCard.tsx',
+  'src/features/organizer/workspace/gameday/CorrectionsCard.tsx',
+  'src/features/organizer/workspace/gameday/DeliveryIssuesCard.tsx',
+  'src/features/organizer/workspace/gameday/FinalRecordCard.tsx',
   'src/features/organizer/game-day/ManualScoringPanel.tsx',
+  'pages/Dashboard.tsx',
+  'pages/CreateContest.tsx',
 ] as const;
 
 const corpus = liveCopyFiles
@@ -77,9 +93,24 @@ const internalPhrases = [
   'queues verified winner notifications',
 ] as const;
 
+// One vocabulary: board, square, organizer, viewer, participant. A standalone
+// word scan over these files is impractical -- the corpus is source text, and
+// `contest`/`pool` occur legitimately as identifiers (`interface Contest`,
+// `contests.map`), as internal comments, and inside the `Run Your Pool`
+// competitor name in the SEO footer links. So the ban is pinned to the exact
+// user-facing phrases that carried the wrong vocabulary instead.
+const bannedPhrases = [
+  'League Name',
+  'League Name is required.',
+  'Failed to create contest.',
+] as const;
+
 describe('production-facing copy', () => {
   it('does not expose internal component, design, or implementation language', () => {
     for (const phrase of internalPhrases) {
+      expect(corpus, phrase).not.toContain(phrase);
+    }
+    for (const phrase of bannedPhrases) {
       expect(corpus, phrase).not.toContain(phrase);
     }
     expect(corpus).not.toMatch(/· rev \$\{save\.revision\}/);

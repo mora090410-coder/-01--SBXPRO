@@ -33,7 +33,7 @@ const upcomingGames = [{
   homeTeam: { abbr: 'WAS', name: 'Washington Commanders' },
 }];
 
-test('creation requires one linked scheduled game with no independent date input', async ({ page }) => {
+test('board creation is one screen: name, matchup, and no independent date input', async ({ page }) => {
   await installOrganizerSession(page);
   await page.route('**/api/nfl/games?**', (route) => route.fulfill({
     status: 200,
@@ -42,16 +42,36 @@ test('creation requires one linked scheduled game with no independent date input
   }));
 
   await page.goto('/create');
-  await page.getByPlaceholder('e.g. Super Bowl LIX Party').fill('Week 1 fundraiser');
-  await page.getByRole('button', { name: 'Continue' }).click();
 
   await expect(page.getByRole('heading', { name: 'Pick the game' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Continue' })).toHaveCount(0);
   await expect(page.getByText('Game date (optional)')).toHaveCount(0);
   await expect(page.getByRole('radio', { name: /DAL.*at.*WAS/i })).not.toBeChecked();
-  await expect(page.getByRole('button', { name: 'Continue' })).toBeDisabled();
+
+  await page.getByLabel('Board name').fill('Week 1 fundraiser');
+  await expect(page.getByRole('button', { name: 'Create board' })).toBeDisabled();
 
   await page.getByRole('radio', { name: /DAL.*at.*WAS/i }).check();
-  await expect(page.getByRole('button', { name: 'Continue' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Create board' })).toBeEnabled();
+});
+
+test('Create board stays disabled until both the name and the matchup are set', async ({ page }) => {
+  await installOrganizerSession(page);
+  await page.route('**/api/nfl/games?**', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ games: upcomingGames }),
+  }));
+
+  await page.goto('/create');
+  const create = page.getByRole('button', { name: 'Create board' });
+  await expect(create).toBeDisabled();
+
+  await page.getByRole('radio', { name: /DAL.*at.*WAS/i }).check();
+  await expect(create).toBeDisabled();
+
+  await page.getByLabel('Board name').fill('Week 1 fundraiser');
+  await expect(create).toBeEnabled();
 });
 
 test('hidden score-test mode requests at most five completed games', async ({ page }) => {
@@ -70,8 +90,6 @@ test('hidden score-test mode requests at most five completed games', async ({ pa
   }));
 
   await page.goto('/create?scoreTest=1');
-  await page.getByPlaceholder('e.g. Super Bowl LIX Party').fill('Completed score check');
-  await page.getByRole('button', { name: 'Continue' }).click();
 
   await scheduleRequest;
   await expect(page.getByText('Completed-game score test')).toBeVisible();
@@ -87,11 +105,9 @@ test('score-test query stays on ordinary upcoming UX without server capability',
   }));
 
   await page.goto('/create?scoreTest=1');
-  await page.getByPlaceholder('e.g. Super Bowl LIX Party').fill('Ordinary board');
-  await page.getByRole('button', { name: 'Continue' }).click();
 
-  await expect(page.getByText('Completed-game score test')).toHaveCount(0);
   await expect(page.getByRole('radio', { name: /DAL.*at.*WAS/i })).toBeVisible();
+  await expect(page.getByText('Completed-game score test')).toHaveCount(0);
 });
 
 test('matchup selection works by keyboard on a phone-sized viewport', async ({ page }) => {
@@ -105,13 +121,12 @@ test('matchup selection works by keyboard on a phone-sized viewport', async ({ p
 
   await page.goto('/create');
   await page.getByLabel('Board name').fill('Keyboard board');
-  await page.getByRole('button', { name: 'Continue' }).click();
 
   const matchup = page.getByRole('radio', { name: /DAL.*at.*WAS/i });
   await matchup.focus();
   await page.keyboard.press('Space');
 
   await expect(matchup).toBeChecked();
-  await expect(page.getByRole('button', { name: 'Continue' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Create board' })).toBeEnabled();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
 });
