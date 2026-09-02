@@ -52,4 +52,29 @@ describe('Island', () => {
     rerender(<Island label="A" placement="corner" collapsed={<span>c</span>} expanded={<span>e</span>} />);
     expect((container.firstElementChild as HTMLElement).className).toContain('bottom-6');
   });
+
+  it('closes on mouseleave only when hover opened it', () => {
+    const original = window.matchMedia;
+    window.matchMedia = vi.fn().mockImplementation((q: string) => ({
+      matches: q.includes('hover'), media: q, onchange: null,
+      addEventListener: () => {}, removeEventListener: () => {}, addListener: () => {}, removeListener: () => {}, dispatchEvent: () => false,
+    }));
+    const { container } = render(<Island label="Score" collapsed={<span>c</span>} expanded={<span>e</span>} />);
+    const section = container.firstElementChild as HTMLElement;
+    const toggle = screen.getByRole('button', { name: /Score/ });
+    fireEvent.mouseEnter(section);
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    fireEvent.mouseLeave(section);
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    fireEvent.click(toggle);
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    fireEvent.mouseLeave(section);
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    window.matchMedia = original;
+  });
+
+  it('exposes exactly one named region when open', () => {
+    render(<Island label="Board status" defaultOpen collapsed={<span>c</span>} expanded={<span>e</span>} />);
+    expect(screen.getAllByRole('region', { name: 'Board status' }).length).toBe(1);
+  });
 });

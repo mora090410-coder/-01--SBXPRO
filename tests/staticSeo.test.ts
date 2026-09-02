@@ -24,7 +24,8 @@ const publicAppPaths = (): string[] => {
     appSource.matchAll(/<Route\s+path="([^"]+)"/g),
     (match) => match[1],
   );
-  const protectedPaths = new Set(['/boards/:boardId', '/dashboard', '/create']);
+  // /design-kitchen is a temporary dev-only route (removed in redesign stage 7); never indexed.
+  const protectedPaths = new Set(['/boards/:boardId', '/dashboard', '/create', '/design-kitchen']);
 
   return literalRoutePaths.filter((path) => (
     path !== '*'

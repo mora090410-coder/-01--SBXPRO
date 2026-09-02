@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
+import React, { useCallback, useId, useRef, useState } from 'react';
 import { Ring, type RingProps } from './Ring';
 
 interface IslandProps {
@@ -25,12 +25,13 @@ export function Island({ label, collapsed, expanded, placement = 'top', defaultO
   const [internalOpen, setInternalOpen] = useState(defaultOpen);
   const isOpen = controlled ? open : internalOpen;
   const toggleRef = useRef<HTMLButtonElement>(null);
-  const hoverCapable = useRef(false);
+  const openedByHover = useRef(false);
   const regionId = useId();
 
-  useEffect(() => {
-    hoverCapable.current = typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
-  }, []);
+  const hoverCapable = () =>
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(hover: hover) and (pointer: fine)').matches;
 
   const setOpen = useCallback((next: boolean) => {
     if (!controlled) setInternalOpen(next);
@@ -40,6 +41,7 @@ export function Island({ label, collapsed, expanded, placement = 'top', defaultO
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape' && isOpen) {
       e.stopPropagation();
+      openedByHover.current = false;
       setOpen(false);
       toggleRef.current?.focus();
     }
@@ -47,10 +49,21 @@ export function Island({ label, collapsed, expanded, placement = 'top', defaultO
 
   return (
     <section
+      aria-label={label}
       className={`${PLACEMENT[placement]} z-40 max-w-[calc(100vw-24px)]`}
       onKeyDown={onKeyDown}
-      onMouseEnter={() => { if (hoverCapable.current && !controlled) setOpen(true); }}
-      onMouseLeave={() => { if (hoverCapable.current && !controlled) setOpen(false); }}
+      onMouseEnter={() => {
+        if (hoverCapable() && !controlled && !isOpen) {
+          openedByHover.current = true;
+          setOpen(true);
+        }
+      }}
+      onMouseLeave={() => {
+        if (hoverCapable() && !controlled && openedByHover.current) {
+          openedByHover.current = false;
+          setOpen(false);
+        }
+      }}
     >
       <div
         className="bg-chyron text-broadcast-white rounded-capsule shadow-[var(--g-shadow)] border border-white/10 overflow-hidden transition-[border-radius] duration-[var(--g-dur-spring)] ease-[var(--g-ease-state)]"
@@ -62,7 +75,7 @@ export function Island({ label, collapsed, expanded, placement = 'top', defaultO
           type="button"
           aria-expanded={isOpen}
           aria-controls={regionId}
-          onClick={() => setOpen(!isOpen)}
+          onClick={() => { openedByHover.current = false; setOpen(!isOpen); }}
           className="flex items-center gap-4 h-14 px-5 w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-inset"
         >
           <span className="sr-only">{label}</span>
@@ -71,8 +84,6 @@ export function Island({ label, collapsed, expanded, placement = 'top', defaultO
         {isOpen ? (
           <div
             id={regionId}
-            role="region"
-            aria-label={label}
             className="px-5 pb-5 pt-1 animate-[sheet-rise_var(--g-dur-spring)_var(--g-ease-state)]"
           >
             {expanded}
