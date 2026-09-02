@@ -93,6 +93,7 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
 
     const [adminStartTab] = useState<'overview' | 'edit'>('overview');
     const [isPreviewMode, setIsPreviewMode] = useState(() => localStorage.getItem('gridone_preview_mode') === 'true');
+    useEffect(() => { try { localStorage.removeItem('gridone_preview_mode'); } catch {} }, []);
 
     const publicSelectionShareCode = routeShareCode || (!requiresAuthForRoute ? shareCode : null);
     const selectionStorageKey = publicSelectionShareCode

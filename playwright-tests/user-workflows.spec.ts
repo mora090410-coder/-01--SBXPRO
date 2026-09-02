@@ -173,14 +173,14 @@ test('published viewer renders the board and persists its canonical square selec
   await page.getByLabel('Name used on board').press('Enter');
 
   await expect(page.getByText('1 square', { exact: true })).toBeVisible();
-  await expect(page.getByRole('gridcell', { name: /^Ann,/ })).toHaveClass(/(?:^|\s)ring-2 ring-inset ring-action(?:\s|$)/);
-  await expect(page.getByRole('gridcell', { name: /^Anna,/ })).not.toHaveClass(/(?:^|\s)ring-2 ring-inset ring-action(?:\s|$)/);
+  await expect(page.getByRole('gridcell', { name: /^Ann,/ })).toHaveClass(/(?:^|\s)ring-2 ring-inset ring-tone-cardinal(?:\s|$)/);
+  await expect(page.getByRole('gridcell', { name: /^Anna,/ })).not.toHaveClass(/(?:^|\s)ring-2 ring-inset ring-tone-cardinal(?:\s|$)/);
   await expect(page.getByText(/Quarter-winner email for Ann/i)).toBeVisible();
 
   await page.reload();
   await expect(page.getByText('1 square', { exact: true })).toBeVisible();
-  await expect(page.getByRole('gridcell', { name: /^Ann,/ })).toHaveClass(/(?:^|\s)ring-2 ring-inset ring-action(?:\s|$)/);
-  await expect(page.getByRole('gridcell', { name: /^Anna,/ })).not.toHaveClass(/(?:^|\s)ring-2 ring-inset ring-action(?:\s|$)/);
+  await expect(page.getByRole('gridcell', { name: /^Ann,/ })).toHaveClass(/(?:^|\s)ring-2 ring-inset ring-tone-cardinal(?:\s|$)/);
+  await expect(page.getByRole('gridcell', { name: /^Anna,/ })).not.toHaveClass(/(?:^|\s)ring-2 ring-inset ring-tone-cardinal(?:\s|$)/);
   await expect(page.getByText(/Quarter-winner email for Ann/i)).toBeVisible();
 });
 
@@ -286,7 +286,7 @@ test('draft organizer preview stays fully visible and interactive before activat
   await expect(page.getByLabel('Board Name')).toBeEnabled();
   await page.getByRole('button', { name: 'Preview', exact: true }).click();
 
-  const preview = page.getByRole('main', { name: /QA draft board viewer/i });
+  const preview = page.getByRole('region', { name: /QA draft board viewer/i });
   await expect(preview).toBeVisible();
   await expect(preview.locator('..')).not.toHaveClass(/pointer-events-none|opacity-50/);
   await expect(page.getByText(/UNLOCK LIVE SCORING/i)).toBeVisible();

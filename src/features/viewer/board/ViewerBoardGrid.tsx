@@ -22,7 +22,8 @@ const stateClass = (cell: ViewerBoardCellModel) => {
   if (states.includes('corrected') && states.includes('current')) return 'bg-cardinal text-broadcast-white ring-2 ring-inset ring-gold';
   if (states.includes('corrected')) return 'bg-cardinal text-broadcast-white';
   if (states.includes('current')) return 'bg-gold text-ink font-medium';
-  if (states.includes('selected')) return 'bg-panel-hover text-fg ring-2 ring-inset ring-action';
+  if (states.includes('selected') && states.includes('resolved')) return 'bg-panel text-fg border border-gold ring-2 ring-inset ring-tone-cardinal';
+  if (states.includes('selected')) return 'bg-panel-hover text-fg ring-2 ring-inset ring-tone-cardinal';
   if (states.includes('resolved')) return 'bg-panel text-fg border border-gold';
   if (states.includes('open')) return 'bg-transparent text-fg-3';
   return 'bg-panel text-fg';
@@ -92,7 +93,7 @@ const ViewerBoardGrid: React.FC<ViewerBoardGridProps> = ({
 
   const fitGrid = React.useCallback(() => {
     const available = viewportRef.current?.clientWidth || 760;
-    setZoom(clamp(available / 760, 0.5, 1));
+    setZoom(clamp(available / 786, 0.5, 1));
   }, []);
 
   React.useLayoutEffect(() => {
@@ -190,10 +191,11 @@ const ViewerBoardGrid: React.FC<ViewerBoardGridProps> = ({
                     data-row-index={cell.rowIndex}
                     data-col-index={cell.colIndex}
                     tabIndex={focus.row === cell.rowIndex && focus.col === cell.colIndex ? 0 : -1}
-                    className={`relative h-14 rounded-cell p-1 text-center align-middle font-ui text-[12px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-action ${stateClass(cell)}`}
+                    className={`group relative h-14 rounded-cell p-1 text-center align-middle font-ui text-[12px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-action ${stateClass(cell)}`}
                     onFocus={() => setFocus({ row: cell.rowIndex, col: cell.colIndex })}
                   >
-                    <span className="flex h-full min-h-11 items-center justify-center">{cell.displayText}</span>
+                    <span className="flex h-full min-h-11 items-center justify-center font-medium">{cell.displayText}</span>
+                    <span aria-hidden="true" className="pointer-events-none absolute left-1/2 top-full z-40 mt-1 hidden -translate-x-1/2 whitespace-nowrap rounded-control bg-chyron px-2 py-1 font-ui text-[12px] text-broadcast-white shadow-[var(--g-shadow)] group-hover:block group-focus-within:block">{cell.ariaName}</span>
                     {cell.states.includes('current') && <span className={`absolute right-1 top-1 font-mono text-[10px] ${cell.states.includes('corrected') ? 'text-gold' : 'text-ink'}`} aria-hidden="true">NOW</span>}
                     {cell.states.includes('corrected') && <span className="absolute bottom-1 right-1 font-mono text-[10px] text-broadcast-white" aria-hidden="true">C</span>}
                   </td>

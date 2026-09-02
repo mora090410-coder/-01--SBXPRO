@@ -119,6 +119,15 @@ describe('ViewerShell', () => {
 
     rerender(<ViewerShell game={game} board={{ ...board, participants: [] }} live={live()} liveStatus="LIVE" isSynced highlights={{ quarterWinners: {}, currentLabel: '' }} winnerHistory={[]} pendingMilestones={[]} selectedPlayer="Carrie Moss" onClearPlayer={vi.fn()} onFindSquares={vi.fn()} highlightedCoords={null} onScenarioFocus={vi.fn()} shareCode="ABCDEFGH" servicesEnabled organizerPreview={false} />);
     expect(screen.queryByRole('form', { name: 'winner email' })).toBeNull();
+
+    rerender(<ViewerShell game={game} board={{ ...board, participants: [{ id: 'first', displayName: 'Carrie Moss', publicLabel: 'Carrie' }, { id: 'second', displayName: 'Carrie Moss', publicLabel: 'Carrie 2' }] }} live={live()} liveStatus="LIVE" isSynced highlights={{ quarterWinners: {}, currentLabel: '' }} winnerHistory={[]} pendingMilestones={[]} selectedPlayer="Carrie Moss" onClearPlayer={vi.fn()} onFindSquares={vi.fn()} highlightedCoords={null} onScenarioFocus={vi.fn()} shareCode="ABCDEFGH" servicesEnabled organizerPreview={false} />);
+    expect(screen.queryByRole('form', { name: 'winner email' })).toBeNull();
+  });
+
+  it('renders a region, not a nested main, when used inside the organizer preview', () => {
+    renderShell({ organizerPreview: true });
+    expect(screen.queryByRole('main')).toBeNull();
+    expect(screen.getByRole('region', { name: 'GridOne Bowl viewer' })).toBeInTheDocument();
   });
 
   it('uses randomized axis digits for View on board focus coordinates', () => {

@@ -55,11 +55,13 @@ const ViewerShell: React.FC<ViewerShellProps> = ({
     onScenarioFocus(coords);
   };
 
+  const MainTag: 'section' | 'main' = organizerPreview ? 'section' : 'main';
+
   return (
     <Base kind="dark">
       <ViewerIsland game={game} board={board} live={live} liveStatus={liveStatus} isSynced={isSynced} selectedPlayer={selectedPlayer} yourSquares={yourSquares} winsNow={winsNow} />
-      <main
-        className="mx-auto grid w-full max-w-6xl gap-10 px-4 pt-20 pb-16 md:px-6 lg:grid-cols-[minmax(320px,440px)_1fr]"
+      <MainTag
+        className={`mx-auto grid w-full max-w-6xl gap-10 px-4 ${live ? 'pt-20' : 'pt-6'} pb-16 md:px-6 lg:grid-cols-[minmax(320px,440px)_1fr]`}
         aria-label={`${game.title || 'GridOne board'} viewer`}
       >
         <div data-testid="viewer-first-viewport" className="flex min-w-0 flex-col gap-8">
@@ -99,7 +101,7 @@ const ViewerShell: React.FC<ViewerShellProps> = ({
           )}
           <BoardDetailsDisclosure game={game} board={board} winnerHistory={winnerHistory} final={false} />
         </section>
-      </main>
+      </MainTag>
     </Base>
   );
 };

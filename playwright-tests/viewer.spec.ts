@@ -101,14 +101,16 @@ test.describe('viewer shell', () => {
 
     const firstViewport = page.getByTestId('viewer-first-viewport');
     const findButtonBox = await firstViewport.getByRole('button', { name: 'Find my squares' }).boundingBox();
-    expect(findButtonBox?.y ?? 845).toBeLessThan(844);
+    expect((findButtonBox?.y ?? 0) + (findButtonBox?.height ?? 845)).toBeLessThanOrEqual(844);
     const statusBox = await firstViewport.getByRole('status').first().boundingBox();
-    expect(statusBox?.y ?? 845).toBeLessThan(844);
+    expect((statusBox?.y ?? 0) + (statusBox?.height ?? 845)).toBeLessThanOrEqual(844);
 
     const islandToggle = page.getByRole('button', { name: /^Score/ });
     await expect(islandToggle).toBeVisible();
     await islandToggle.click();
-    await expect(page.getByText('Score updates about every minute').first()).toBeVisible();
+    const scoreRegion = page.getByRole('region', { name: 'Score', exact: true });
+    await expect(scoreRegion).toBeVisible();
+    await expect(islandToggle).toHaveAttribute('aria-expanded', 'true');
 
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
     expect(overflow).toBe(false);

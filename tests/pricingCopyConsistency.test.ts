@@ -51,6 +51,7 @@ describe('launch pricing copy', () => {
     const payoutSurfaces = [
       read('components/AdminPanel.tsx'),
       read('src/features/viewer/shell/ViewerShell.tsx'),
+      read('src/features/viewer/details/BoardDetailsDisclosure.tsx'),
       read('hooks/usePoolData.ts'),
     ].join('\n');
 

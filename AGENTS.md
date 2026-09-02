@@ -33,10 +33,10 @@ Use `docs/REFACTOR_LOG.md` as the append-only execution record for every refacto
 ## Architecture and feature seams
 
 - Do not move the whole app into `src/` before the feature seams in the implementation plan exist and pass pilot gates.
-- New v2 work belongs behind independently reversible `viewer_v2` or `organizer_v2` flags. The homepage has been unflagged (live for all users) since 2026-09-01.
+- New v2 work belongs behind an independently reversible `organizer_v2` flag. The homepage has been unflagged (live for all users) since 2026-09-01, and the viewer now lives unflagged in `src/features/viewer/` as of 2026-09-02.
 - Prefer feature-local components, hooks, services, and types. Keep global primitives only when at least two real feature consumers share behavior.
 - Browser and server clients are separate security boundaries. Never move service-role, Stripe-secret, scoring-provider, email, cron, or notification secrets into browser code.
-- Do not add behavior to `components/AdminPanel.tsx` or `components/GameDayHorizon.tsx`; extract tested seams according to the plan.
+- Do not add behavior to `components/AdminPanel.tsx`; extract tested seams according to the plan.
 
 ## Editing discipline
 
