@@ -1,5 +1,5 @@
 import React from 'react';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import type { BoardData, EntryMeta, GameState } from '../../types';
 
@@ -484,6 +484,42 @@ describe('OrganizerWorkspace acknowledgement gate', () => {
     expect(lastBoard(onApply).allowOpenSquares).toBe(true);
     expect(screen.getByRole('button', { name: 'Use these numbers' })).toBeInTheDocument();
   });
+
+  it('records the acknowledgement on the board when the draw is committed with open squares', async () => {
+    const { onApply } = renderWorkspace({ board: boardWithAssignments(40) });
+
+    expandIsland();
+    fireEvent.click(screen.getByRole('button', { name: 'Draw numbers' }));
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Draw with 60 OPEN' }));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Use these numbers' }));
+    });
+
+    const board = lastBoard(onApply);
+    expect(board.allowOpenSquares).toBe(true);
+    expect(board.topAxis.every((digit) => typeof digit === 'number')).toBe(true);
+  });
+
+  it('acknowledges a square blanked after the draw without staging a new draw', async () => {
+    const board: BoardData = {
+      ...boardWithAssignments(40),
+      topAxis: [3, 1, 4, 0, 5, 9, 2, 6, 8, 7],
+      leftAxis: [7, 8, 6, 2, 9, 5, 0, 4, 1, 3],
+    };
+    const { onApply } = renderWorkspace({ board });
+
+    expect(screen.getByRole('group', { name: '60 squares are open. Publish with them open?' })).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Keep 60 OPEN' }));
+    });
+
+    expect(lastBoard(onApply).allowOpenSquares).toBe(true);
+    expect(screen.queryByRole('button', { name: 'Use these numbers' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Replace draft draw' })).toBeInTheDocument();
+  });
 });
 
 describe('OrganizerWorkspace error alerts', () => {
@@ -631,6 +667,29 @@ describe('OrganizerWorkspace published boards', () => {
 
     expect(enableManualScoringOnServer).toHaveBeenCalledWith('pool-1');
     expect(await screen.findByText('Manual scoring is on. Enter the score, then publish it.')).toBeInTheDocument();
+  });
+
+  it('keeps the quarters seeded from the snapshot and does not reload them away', async () => {
+    const scoreSnapshot = {
+      leftScore: 14,
+      topScore: 3,
+      quarterScores: { Q1: { left: 7, top: 3 }, Q2: { left: 7, top: 0 }, Q3: { left: 0, top: 0 }, Q4: { left: 0, top: 0 }, OT: { left: 0, top: 0 } },
+      clock: '12:00',
+      period: 3,
+      state: 'in' as const,
+      detail: '',
+      isOvertime: false,
+    };
+    const { onReload } = renderPublished({ game: { ...game, scoreSnapshot } as GameState });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Manual' }));
+    });
+
+    const panel = screen.getByText(/Enter each quarter's points/).parentElement!;
+    const quarters = within(panel).getAllByRole('spinbutton').map((input) => (input as HTMLInputElement).value);
+    expect(quarters).toEqual(['7', '3', '7', '0', '0', '0', '0', '0', '0', '0']);
+    expect(onReload).not.toHaveBeenCalled();
   });
 
   it('publishes a milestone correction from the side rail', async () => {

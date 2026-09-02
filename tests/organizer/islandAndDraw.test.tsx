@@ -111,6 +111,7 @@ describe('DrawControl', () => {
     preview: false,
     disabled: false,
     onAcknowledge: vi.fn(),
+    onAcknowledgeWithoutDraw: vi.fn(),
     onKeepAssigning: vi.fn(),
     onDraw: vi.fn(),
     onCommit: vi.fn(),

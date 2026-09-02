@@ -294,6 +294,13 @@ export default function OrganizerWorkspace({
     startPreview();
   };
 
+  // A square blanked after the draw reopens the open-square question. The
+  // organizer answers it in place: no new digits are staged, only the
+  // acknowledgement the publish gate is waiting on.
+  const acknowledgeOpenSquaresOnly = () => {
+    setBoard((current) => ({ ...current, allowOpenSquares: true }));
+  };
+
   const cancelDraw = () => {
     setDrawPreview(null);
     setDrawRequested(false);
@@ -307,6 +314,7 @@ export default function OrganizerWorkspace({
       topAxis: top,
       leftAxis: left,
       isDynamic: false,
+      allowOpenSquares: openCount > 0,
       leftAxisByQuarter: undefined,
       topAxisByQuarter: undefined,
     }));
@@ -589,7 +597,9 @@ export default function OrganizerWorkspace({
         const seed = seedManualScoreFromSnapshot(current.scoreSnapshot ?? liveData);
         return { ...current, useManualScores: true, scoreSnapshot: null, manualQuarterScores: seed.manualQuarterScores, manualPeriod: seed.manualPeriod, manualGameState: seed.manualGameState };
       });
-      await onReload?.();
+      // Deliberately no reload: the seeded quarters live only in the local
+      // draft until they are published, and a published board never goes
+      // dirty, so re-adopting the server game here would wipe them back to 0.
       setScoreSaveStatus('idle');
       setNote('Manual scoring is on. Enter the score, then publish it.');
     } catch (error: any) {
@@ -879,7 +889,8 @@ export default function OrganizerWorkspace({
                 preview={Boolean(drawPreview)}
                 disabled={conflicted}
                 onAcknowledge={acknowledgeOpenSquares}
-                onKeepAssigning={cancelDraw}
+                onAcknowledgeWithoutDraw={acknowledgeOpenSquaresOnly}
+                onKeepAssigning={() => { cancelDraw(); scrollToBoard(); }}
                 onDraw={startPreview}
                 onCommit={commitDraw}
                 onAgain={startPreview}

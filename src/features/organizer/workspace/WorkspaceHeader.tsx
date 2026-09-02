@@ -131,6 +131,7 @@ export default function WorkspaceHeader({
         : <SavePill saveState={saveState} onRetry={onRetry} onReload={onReload} />}
       {!isPublished && (
         <Sheet open={pickerOpen} onClose={() => setPickerOpen(false)} title="Pick the game">
+          <p className="font-ui text-[14px] text-fg-2">Changing the game clears any score state on this board.</p>
           <ScheduledGamePicker
             value={game.gameExternalId ?? null}
             onChange={(picked) => {

@@ -136,6 +136,59 @@ describe('ScoreAuthorityCard', () => {
     expect(screen.getByText('14 – 7')).toBeVisible();
     expect(screen.getByText('Every published board gets the full game-day experience.')).toBeVisible();
   });
+
+  it('shows the score source and the retrieved time under the numeral', () => {
+    const retrievedAt = new Date('2026-09-13T18:12:00Z');
+    const liveData: LiveGameData = {
+      leftScore: 14,
+      topScore: 7,
+      quarterScores: { Q1: { left: 7, top: 0 }, Q2: { left: 7, top: 7 }, Q3: { left: 0, top: 0 }, Q4: { left: 0, top: 0 }, OT: { left: 0, top: 0 } },
+      clock: '12:00',
+      period: 2,
+      state: 'in',
+      detail: '',
+      isOvertime: false,
+      sourceName: 'ESPN',
+      retrievedAt: retrievedAt.toISOString(),
+      freshness: 'fresh',
+    };
+    render(
+      <ScoreAuthorityCard
+        game={baseGame({ useManualScores: false })}
+        liveData={liveData}
+        scoreSaveStatus="idle"
+        isActivated={false}
+        onEnableAutomaticScoring={vi.fn()}
+        onEnableManualScoring={vi.fn()}
+        onUpdateManualGameState={vi.fn()}
+        onUpdateManualPeriod={vi.fn()}
+        onUpdateManualQuarter={vi.fn()}
+        onSaveManualScore={vi.fn()}
+      />,
+    );
+
+    const clock = retrievedAt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    expect(screen.getByText(`ESPN · Checked ${clock}`)).toBeVisible();
+  });
+
+  it('says the score is unavailable in words when there is no snapshot', () => {
+    render(
+      <ScoreAuthorityCard
+        game={baseGame({ useManualScores: false })}
+        liveData={null}
+        scoreSaveStatus="idle"
+        isActivated={false}
+        onEnableAutomaticScoring={vi.fn()}
+        onEnableManualScoring={vi.fn()}
+        onUpdateManualGameState={vi.fn()}
+        onUpdateManualPeriod={vi.fn()}
+        onUpdateManualQuarter={vi.fn()}
+        onSaveManualScore={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('Score unavailable · Checked time unavailable')).toBeVisible();
+  });
 });
 
 describe('CorrectionsCard', () => {
