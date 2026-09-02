@@ -12,7 +12,6 @@ import { WinnerHighlights } from '../types';
 import { SAMPLE_BOARD } from '../constants';
 
 import AdminPanel from './AdminPanel';
-import GameDayHorizon from './GameDayHorizon';
 import ViewerShell from '../src/features/viewer/shell/ViewerShell';
 import OrganizerShell from '../src/features/organizer/shell/OrganizerShell';
 import ErrorBoundary from './ErrorBoundary';
@@ -26,6 +25,7 @@ import FindSquaresModal from './board/FindSquaresModal';
 import { calculateWinnerHighlights } from '../utils/winnerLogic';
 import { distinctAssignedNames } from '../utils/playerNameMatching';
 import { resolveFeatureFlags } from '../utils/featureFlags';
+import { Base, CapsuleButton, Eyebrow } from '../src/design/primitives';
 
 // Custom Hooks
 import { usePoolData, INITIAL_GAME } from '../hooks/usePoolData';
@@ -35,7 +35,6 @@ import { useBoardActions } from '../hooks/useBoardActions';
 
 const envFlagConfig = () => ({
     flags: {
-        viewer_v2: import.meta.env.VITE_GRIDONE_VIEWER_V2,
         organizer_v2: import.meta.env.VITE_GRIDONE_ORGANIZER_V2,
     },
 });
@@ -121,7 +120,6 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
         query: window.location.search,
         routeIntent: isReadOnlyViewerRoute ? 'read_only_preview' : 'production_mutation',
     });
-    const viewerV2Enabled = featureFlags.flags.viewer_v2;
     const organizerV2Enabled = Boolean(isOwner && featureFlags.flags.organizer_v2);
 
     // 5. Effects
@@ -148,9 +146,9 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                     clock: '2:31',
                     period: 4,
                     state: 'in',
-                    detail: 'Synthetic demonstration score',
+                    detail: 'Sample score',
                     isOvertime: false,
-                    sourceName: 'Demonstration fixture',
+                    sourceName: 'Sample score',
                     retrievedAt: new Date().toISOString(),
                     staleAfter: new Date(Date.now() + 3_600_000).toISOString(),
                     freshness: 'fresh',
@@ -244,12 +242,12 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
     const renderMainContent = (previewMode = false) => (
         <div className="flex-1 min-h-0">
             {isLocked && !previewMode ? (
-                <section className="gdh-unavailable" role="status">
-                    <span className="gdh-kicker">Viewer link unavailable</span>
-                    <h1>This board is not published yet.</h1>
-                    <p>The organizer can still preview it. Viewers will see the board here after it is unlocked and published.</p>
-                </section>
-            ) : viewerV2Enabled ? (
+                <Base kind="dark"><main className="mx-auto max-w-[640px] px-6 py-20 flex flex-col gap-4" role="status">
+                    <Eyebrow>Viewer link unavailable</Eyebrow>
+                    <h1 className="font-display text-[34px] leading-[1.05] text-fg">This board is not published yet.</h1>
+                    <p className="font-ui text-[17px] text-fg-2">The organizer can still preview it. Viewers will see the board here after it is unlocked and published.</p>
+                </main></Base>
+            ) : (
                     <ViewerShell
                         game={game}
                         board={board}
@@ -268,26 +266,7 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                         shareCode={routeShareCode || shareCode}
                         servicesEnabled={boardServicesEnabled}
                         organizerPreview={previewMode && isOwner}
-                    />
-                ) : (
-                    <GameDayHorizon
-                        game={game}
-                        board={board}
-                        live={liveData}
-                        liveStatus={liveStatus}
-                        isSynced={isSynced}
-                        highlights={highlights}
-                        winnerHistory={liveWinnerHistory}
-                        pendingMilestones={livePendingMilestones}
-                        selectedPlayer={selectedPlayer}
-                        onClearPlayer={() => setPlayerSelection({ scope: selectionScope, displayName: '' })}
-                        onFindSquares={() => setShowFindSquaresModal(true)}
-                        highlightedCoords={highlightedCoords}
-                        onScenarioFocus={setHighlightedCoords}
-                        locked={isLocked}
-                        shareCode={routeShareCode || shareCode}
-                        servicesEnabled={boardServicesEnabled}
-                        organizerPreview={previewMode && isOwner}
+                        onShare={activePoolId && isActivated ? () => setShowShareModal(true) : undefined}
                     />
                 )}
         </div>
@@ -300,19 +279,17 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
 
     if (!loadingPool && urlPoolId && poolError) {
         return (
-            <main className="oa-root gdh-root min-h-[100dvh] bg-ink text-broadcast-white grid place-items-center px-5">
-                <section className="gdh-unavailable max-w-2xl" role="alert">
-                    <span className="gdh-kicker">Board unavailable</span>
-                    <h1>This link does not open a published GridOne board.</h1>
-                    <p>{poolError}</p>
-                    <button type="button" className="oa-btn oa-btn-primary mt-6" onClick={() => navigate('/')}>Go to GridOne</button>
-                </section>
-            </main>
+            <Base kind="dark"><main className="mx-auto max-w-[640px] px-6 py-20 flex flex-col gap-4" role="alert">
+                <Eyebrow>Board unavailable</Eyebrow>
+                <h1 className="font-display text-[34px] leading-[1.05] text-fg">This link does not open a published GridOne board.</h1>
+                <p className="font-ui text-[17px] text-fg-2">{poolError}</p>
+                <CapsuleButton onClick={() => navigate('/')}>Go to GridOne</CapsuleButton>
+            </main></Base>
         );
     }
 
     return (
-        <div className="oa-root gdh-root min-h-[100dvh] w-full bg-ink flex flex-col text-broadcast-white">
+        <div className="min-h-[100dvh] w-full flex flex-col bg-ground text-fg" data-base="dark">
             {game.scoreTestMode && <SyntheticScoreTestBanner />}
 
             {showShareModal && (
@@ -325,27 +302,29 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
             {(demoMode || !loadingPool) && !isCommissionerMode && (
                 <div className="flex-1 flex flex-col relative z-50 w-full max-w-[1440px] mx-auto min-h-0">
                     {demoMode && (
-                        <aside className="mx-4 mt-4 flex flex-wrap items-center justify-between gap-3 border border-gold bg-gold/10 p-3" aria-label="Demo board notice">
-                            <p><strong>Demo board — sample names and synthetic score.</strong> This is a sample board. Ready to run yours?</p>
+                        <aside className="mx-4 mt-4 flex flex-wrap items-center justify-between gap-3 rounded-card border border-hairline bg-panel px-4 py-3" aria-label="Demo board notice">
+                            <p className="font-ui text-[15px] text-fg"><span className="font-medium">Demo board — sample names and scores.</span> This is a sample board. Ready to run yours?</p>
                             <div className="flex flex-wrap gap-2">
-                                <button type="button" className="oa-btn oa-btn-primary" onClick={() => navigate('/create')}>Create your free board</button>
-                                <button type="button" className="oa-btn" onClick={() => navigate('/')}>How GridOne works</button>
+                                <CapsuleButton onClick={() => navigate('/create')}>Create your free board</CapsuleButton>
+                                <CapsuleButton variant="quiet" onClick={() => navigate('/')}>How GridOne works</CapsuleButton>
                             </div>
                         </aside>
                     )}
-                    <div className="flex-shrink-0 z-50 p-4 md:py-6">
-                        <BoardHeader
-                            game={game}
-                            isOwner={!!isOwner}
-                            activePoolId={activePoolId}
-                            isActivated={isActivated}
-                            isSynced={isSynced}
-                            isPreviewMode={isPreviewMode}
-                            onTogglePreview={handleTogglePreview}
-                            onAdminStartTab={setAdminStartTab}
-                            onShareClick={() => setShowShareModal(true)}
-                        />
-                    </div>
+                    {isOwner && !isPreviewMode && (
+                        <div className="flex-shrink-0 z-50 p-4 md:py-6">
+                            <BoardHeader
+                                game={game}
+                                isOwner={!!isOwner}
+                                activePoolId={activePoolId}
+                                isActivated={isActivated}
+                                isSynced={isSynced}
+                                isPreviewMode={isPreviewMode}
+                                onTogglePreview={handleTogglePreview}
+                                onAdminStartTab={setAdminStartTab}
+                                onShareClick={() => setShowShareModal(true)}
+                            />
+                        </div>
+                    )}
                     {renderMainContent()}
                 </div>
             )}

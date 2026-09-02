@@ -1,4 +1,4 @@
-export const FEATURE_FLAG_NAMES = ['viewer_v2', 'organizer_v2'] as const;
+export const FEATURE_FLAG_NAMES = ['organizer_v2'] as const;
 
 export type FeatureFlagName = (typeof FEATURE_FLAG_NAMES)[number];
 export type FeatureFlagState = Record<FeatureFlagName, boolean>;
@@ -32,7 +32,6 @@ type CohortConfig = {
 const MAX_ALLOWLIST_ENTRIES = 100;
 const MAX_IDENTIFIER_LENGTH = 128;
 const DEFAULT_FLAGS: FeatureFlagState = {
-  viewer_v2: false,
   organizer_v2: false,
 };
 
@@ -95,7 +94,6 @@ export function resolveFeatureFlags(input: FeatureFlagResolutionInput = {}): Fea
   return {
     flags,
     variants: {
-      viewer_v2: getStableVariantLabel('viewer_v2', flags.viewer_v2),
       organizer_v2: getStableVariantLabel('organizer_v2', flags.organizer_v2),
     },
     queryOverridesIgnored,

@@ -1,10 +1,7 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
-import type { BoardData, WinnerHighlights } from '../types';
 import RequireAuth from '../components/auth/RequireAuth';
-import PlayerFilter from '../components/PlayerFilter';
-import BoardGrid from '../components/BoardGrid';
 import ShareModal from '../components/board/ShareModal';
 import Paid from '../pages/Paid';
 
@@ -28,20 +25,6 @@ vi.mock('../services/supabase', () => ({
         },
     },
 }));
-
-const boardWithNames = (): BoardData => {
-    const squares = Array.from({ length: 100 }, () => [] as string[]);
-    squares[0] = ['Ann'];
-    squares[1] = ['Anna'];
-    return {
-        leftAxis: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-        topAxis: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-        squares,
-        isDynamic: false,
-    };
-};
-
-const highlights: WinnerHighlights = { quarterWinners: {}, currentLabel: '' };
 
 afterEach(() => {
     vi.useRealTimers();
@@ -71,65 +54,6 @@ describe('customer flow regressions', () => {
         );
 
         expect(screen.getByText('/login?mode=signup&returnTo=%2Fcreate%3FscoreTest%3D1')).toBeInTheDocument();
-    });
-
-    it('counts and highlights Ann without matching Anna', () => {
-        const board = boardWithNames();
-        const { rerender } = render(
-            <PlayerFilter board={board} selected="Ann" setSelected={() => undefined} />,
-        );
-        expect(screen.getByText('1 SQUARES')).toBeInTheDocument();
-
-        rerender(
-            <BoardGrid
-                board={board}
-                highlights={highlights}
-                live={null}
-                selectedPlayer="Ann"
-                leftTeamName="Away"
-                topTeamName="Home"
-            />,
-        );
-        expect(screen.getByRole('cell', { name: /^Ann,/ })).toHaveClass('ring-cardinal');
-        expect(screen.getByRole('cell', { name: /^Anna,/ })).toHaveClass('opacity-40');
-    });
-
-    it('rerenders board axis labels when only the matchup names change', () => {
-        const board = boardWithNames();
-        const props = {
-            board,
-            highlights,
-            live: null,
-            selectedPlayer: '',
-        };
-        const { rerender } = render(
-            <BoardGrid {...props} leftTeamName="Dallas" topTeamName="Washington" />,
-        );
-        expect(screen.getByText('Washington')).toBeInTheDocument();
-
-        rerender(<BoardGrid {...props} leftTeamName="Chicago" topTeamName="Green Bay" />);
-        expect(screen.getByText('Green Bay')).toBeInTheDocument();
-        expect(screen.queryByText('Washington')).not.toBeInTheDocument();
-    });
-
-    it('renders published empty cells as accessible OPEN inventory without changing draft cells', () => {
-        const board = boardWithNames();
-        const props = {
-            board,
-            highlights,
-            live: null,
-            selectedPlayer: '',
-            leftTeamName: 'Away',
-            topTeamName: 'Home',
-        };
-        const { rerender } = render(<BoardGrid {...props} />);
-        expect(screen.getAllByRole('cell', { name: /^Unassigned square,/ })).toHaveLength(98);
-        expect(screen.queryByText('OPEN')).not.toBeInTheDocument();
-
-        rerender(<BoardGrid {...props} showOpenSquares />);
-        const openCells = screen.getAllByRole('cell', { name: /^Open square,/ });
-        expect(openCells).toHaveLength(98);
-        openCells.forEach((cell) => expect(cell).toHaveTextContent('OPEN'));
     });
 
     it('does not claim a link was copied when clipboard permission is denied', async () => {

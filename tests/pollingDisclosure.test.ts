@@ -18,10 +18,10 @@ describe('launch polling decision', () => {
   });
 
   it('discloses the polling cadence on the viewer score surface', () => {
-    const horizon = source('components/GameDayHorizon.tsx');
+    const scoreModel = source('src/features/viewer/score/viewerScoreModel.ts');
     const comparison = source('pages/RunYourPoolAlternative.tsx');
 
-    expect(horizon).toContain('Score updates about every minute');
+    expect(scoreModel).toContain('Score updates about every minute');
     expect(comparison).toContain('Updates about every minute with source and freshness shown');
     expect(comparison).not.toContain('Updates instantly on every device');
     expect(comparison).not.toContain('The Real-Time Scenario Engine');

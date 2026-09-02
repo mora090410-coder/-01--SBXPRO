@@ -129,7 +129,7 @@ describe('ViewerBoardGrid Slice 7', () => {
     expect(scrollTo).toHaveBeenCalledTimes(2);
   });
 
-  it('ViewerShell uses the v2 viewer grid and leaves legacy BoardGrid dynamic quarter controls absent from viewer_v2', () => {
+  it('ViewerShell uses the viewer grid and leaves legacy dynamic quarter controls absent', () => {
     render(
       <ViewerShell
         game={game}
