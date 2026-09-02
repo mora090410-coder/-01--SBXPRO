@@ -1,10 +1,13 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
 import { BoardFragment } from '../../src/features/homepage/artifacts/BoardFragment';
 import { HeroViewerCard } from '../../src/features/homepage/artifacts/HeroViewerCard';
 import { OrganizerCard } from '../../src/features/homepage/artifacts/OrganizerCard';
 import { ScoreMoment } from '../../src/features/homepage/artifacts/ScoreMoment';
+import { demoLive, demoWinnerSquares } from '../../src/features/homepage/demoData';
+import { ParentMoments } from '../../src/features/homepage/sections/ParentMoments';
 
 describe('BoardFragment', () => {
   it('shows the winning cell in gold with a descriptive label', () => {
@@ -43,5 +46,19 @@ describe('OrganizerCard', () => {
     expect(container.querySelector('[data-base="cream"]')).not.toBeNull();
     expect(screen.getByText('83 filled · 17 open · 6 unpaid')).toBeInTheDocument();
     expect(screen.getAllByRole('img', { name: /percent|drawn/i }).length).toBe(3);
+  });
+});
+
+describe('ParentMoments next scores', () => {
+  it('lists only scores that land on the named winner\'s squares', () => {
+    render(<MemoryRouter><ParentMoments /></MemoryRouter>);
+    const list = screen.getByRole('heading', { name: 'What score wins next?' }).parentElement!.parentElement!.querySelector('ul')!;
+    const rows = Array.from(list.querySelectorAll('li')).map((li) => li.textContent ?? '');
+    expect(rows.length).toBe(3);
+    for (const row of rows) {
+      const [, left, top] = row.match(/KC (\d+) · PHI (\d+)/) ?? [];
+      expect(demoWinnerSquares).toContainEqual({ left: Number(left) % 10, top: Number(top) % 10 });
+    }
+    expect(demoLive.period).toBe(3);
   });
 });
