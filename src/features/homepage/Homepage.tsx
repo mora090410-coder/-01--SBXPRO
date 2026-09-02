@@ -9,13 +9,13 @@ import { ScoreSection } from './sections/ScoreSection';
 export default function Homepage() {
   return (
     <Base kind="dark" className="overflow-x-hidden">
-      <div data-testid="homepage" className="mx-auto max-w-[1200px]">
+      <main data-testid="homepage" className="mx-auto max-w-[1200px]">
         <Hero />
         <ScoreSection />
         <ParentMoments />
         <OrganizerSection />
         <PriceAndClose />
-      </div>
+      </main>
     </Base>
   );
 }

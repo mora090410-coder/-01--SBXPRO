@@ -57,14 +57,18 @@ export function PriceAndClose() {
         <div className="flex flex-col divide-y divide-hairline border-y border-hairline">
           {faq.map((item) => (
             <details key={item.q} className="group py-2">
-              <summary className="min-h-11 flex items-center cursor-pointer font-ui text-[17px] text-fg list-none">{item.q}</summary>
+              <summary className="min-h-11 flex items-center justify-between gap-4 cursor-pointer font-ui text-[17px] text-fg list-none [&::-webkit-details-marker]:hidden">
+                <span>{item.q}</span>
+                <span aria-hidden="true" className="font-mono text-[17px] text-fg-3 group-open:hidden">+</span>
+                <span aria-hidden="true" className="font-mono text-[17px] text-fg-3 hidden group-open:inline">−</span>
+              </summary>
               <p className="pb-4 font-ui text-[15px] leading-[1.5] text-fg-2">{item.a}</p>
             </details>
           ))}
         </div>
       </section>
 
-      <footer className="px-6 py-12 md:px-12 border-t border-hairline flex flex-col gap-8">
+      <footer className="px-6 py-12 md:px-12 border-t border-hairline flex flex-col gap-8" role="contentinfo">
         <div className="flex flex-col gap-3">
           <Eyebrow>Guides</Eyebrow>
           <ul className="grid gap-x-8 gap-y-1 sm:grid-cols-2 md:grid-cols-3">

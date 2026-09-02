@@ -62,4 +62,11 @@ describe('Homepage', () => {
     const { container } = renderPage();
     expect(container.textContent).not.toMatch(/\b(seamless|effortless|unlock|supercharge|elevate|powerful|robust|beta|synthetic|fallback|read-only|grounded|native|canonical|provenance|freshness|entitlement)\b/i);
   });
+
+  it('exposes main and contentinfo landmarks and a visible FAQ affordance', () => {
+    renderPage();
+    expect(screen.getByRole('main')).toBeInTheDocument();
+    expect(screen.getByRole('contentinfo')).toBeInTheDocument();
+    expect(screen.getAllByText('+').length).toBe(4);
+  });
 });
