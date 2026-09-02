@@ -1,7 +1,7 @@
 ---
 version: alpha
 name: GridOne
-description: Game-Day Horizon — a precise phase-driven system for trustworthy football-squares setup and game-day viewing.
+description: Broadcast Glass — quiet, physical, few clicks. Dark spotlight for game day, warm cream for setup.
 colors:
   primary: "#8F1D2C"
   primary-deep: "#6E1622"
@@ -11,42 +11,45 @@ colors:
   neutral-quiet: "#DEE0E1"
   ink: "#0E0F12"
   surface-dark: "#16181D"
+  ground-dark: "#0B0C0F"
+  ground-cream: "#F5F1EA"
   live: "#22C55E"
 typography:
   display:
-    fontFamily: Archivo
-    fontSize: 3rem
-    fontWeight: 800
+    fontFamily: Instrument Serif
+    fontSize: 3.5rem
+    fontWeight: 400
     lineHeight: 1
     letterSpacing: "-0.01em"
   heading:
-    fontFamily: Archivo
-    fontSize: 2rem
-    fontWeight: 800
-    lineHeight: 1.05
+    fontFamily: Geist
+    fontSize: 1.5rem
+    fontWeight: 500
+    lineHeight: 1.15
     letterSpacing: "-0.01em"
   body:
-    fontFamily: Archivo
+    fontFamily: Geist
     fontSize: 1.0625rem
     fontWeight: 400
     lineHeight: 1.5
     letterSpacing: 0em
   label:
-    fontFamily: Archivo
-    fontSize: 0.8125rem
-    fontWeight: 700
+    fontFamily: Geist Mono
+    fontSize: 0.75rem
+    fontWeight: 400
     lineHeight: 1
-    letterSpacing: 0.08em
+    letterSpacing: 0.12em
   data:
-    fontFamily: Chivo Mono
+    fontFamily: Geist Mono
     fontSize: 1rem
-    fontWeight: 600
-    lineHeight: 1.2
+    fontWeight: 500
+    lineHeight: 1
     letterSpacing: 0em
 rounded:
-  control: 8px
-  surface: 12px
-  grid: 0px
+  control: 12px
+  surface: 20px
+  capsule: 999px
+  grid: 4px
 spacing:
   xs: 4px
   sm: 8px
@@ -55,347 +58,106 @@ spacing:
   xl: 32px
   2xl: 48px
 components:
-  button-primary:
+  button-primary-dark:
     backgroundColor: "{colors.accent}"
     textColor: "{colors.ink}"
-    typography: "{typography.label}"
-    rounded: "{rounded.control}"
+    typography: "{typography.body}"
+    rounded: "{rounded.capsule}"
     padding: 14px
-  button-primary-hover:
-    backgroundColor: "{colors.accent-deep}"
-    textColor: "{colors.ink}"
-    rounded: "{rounded.control}"
-  button-cardinal:
+  button-primary-cream:
     backgroundColor: "{colors.primary}"
     textColor: "{colors.neutral}"
-    typography: "{typography.label}"
-    rounded: "{rounded.control}"
+    typography: "{typography.body}"
+    rounded: "{rounded.capsule}"
     padding: 14px
-  button-cardinal-hover:
-    backgroundColor: "{colors.primary-deep}"
-    textColor: "{colors.neutral}"
-    rounded: "{rounded.control}"
-  surface-quiet:
-    backgroundColor: "{colors.neutral-quiet}"
-    textColor: "{colors.ink}"
-    rounded: "{rounded.surface}"
-    padding: 16px
-  instrument-dark:
+  glass-panel:
     backgroundColor: "{colors.surface-dark}"
     textColor: "{colors.neutral}"
     rounded: "{rounded.surface}"
+    padding: 20px
+  island:
+    backgroundColor: "{colors.surface-dark}"
+    textColor: "{colors.neutral}"
+    rounded: "{rounded.capsule}"
     padding: 16px
   status-live:
     backgroundColor: "{colors.live}"
     textColor: "{colors.ink}"
     typography: "{typography.label}"
-    rounded: "{rounded.grid}"
+    rounded: "{rounded.capsule}"
     padding: 8px
   input:
-    backgroundColor: "{colors.neutral}"
-    textColor: "{colors.ink}"
+    backgroundColor: "{colors.surface-dark}"
+    textColor: "{colors.neutral}"
     typography: "{typography.body}"
-    rounded: "{rounded.control}"
+    rounded: "{rounded.capsule}"
     padding: 14px
 ---
 
-# GridOne Design System
+# GridOne Design System — Broadcast Glass
 
-## Direction contract
+Normative contract. Implementation lives in `src/design/tokens.css` and `src/design/primitives/`. Mapping in `docs/DESIGN_TOKENS.md`. Full rationale in `docs/superpowers/specs/2026-09-01-broadcast-glass-redesign-design.md`.
 
-**THESIS:** Game day is a sequence of confidence states, not a dashboard. GridOne turns setup, number draw, pregame, live quarters, and Final into named horizons whose light and hierarchy make the board's state unmistakable.
+## Thesis
 
-**OWN-WORLD:** Cardinal, gold, cool white, newsprint, and ink move through matte horizontal fields. A narrow horizon line marks the active phase. Controls are precise slabs with quiet key lines; data sits in tabular instrument typography.
+Game day should feel like a broadcast graphic on a quiet phone: one number that matters, glass over a dark field, nothing to click twice. Setup should feel like a sheet of warm paper: everything editable in place, progress visible in one glance.
 
-**STORY:** The organizer moves **Fill → Reconcile → Draw → Preview → Go Live**. The viewer arrives inside the current game phase and immediately sees My Squares, who wins now, and what score makes them win next.
+## Two bases, one palette
 
-**FIRST VIEWPORT:** One dominant state field, one active horizon, one primary action, and the board or personal game state as the artifact—not a card grid.
+- **Dark** (viewer, homepage, article pages): ground `#0B0C0F`, one cardinal spotlight behind the hero artifact, glass panels (white 6%, hairline white 10%, blur 20px). Gold is the only action color. Cardinal appears in the glow, the brand mark, and destructive confirmations with explicit text.
+- **Cream** (organizer workspace, dashboard): ground `#F5F1EA`, cards white 70% with ink hairline 8%. Cardinal is the action color. Gold marks committed and settled states only.
+- Live green means an in-progress NFL game and nothing else.
+- No state relies on color alone.
 
-**FORM:** Game-Day Horizon, selected from the stagecraft cyclorama direction. Phase changes are the composition and the motion system; light is information.
+## Type
 
-## Creative north star
+- Display: Instrument Serif. Hero headlines and board names only.
+- Interface: Geist 400/500; 600 only for the single primary action.
+- Data and eyebrow: Geist Mono, tabular. Large numerals dim their secondary segment.
+- Essential text ≥ 14px. Grid-cell labels are the precision exception and carry accessible full labels.
 
-A theater cyclorama makes time and atmosphere legible without adding objects. GridOne applies that discipline to a board lifecycle. The surface moves from quiet setup light through the cardinal tension of the draw, pregame stillness, active live color, and the gold-white clarity of a settled result.
+## Shape
 
-This is not a gradient aesthetic. It is a **phase system**:
-
-- Every horizon is named in text.
-- Every phase has a semantic state and action.
-- Color, luminance, typography, and motion change together.
-- A still or reduced-motion surface remains completely understandable.
-
-The product must feel engineered and calm at the level of leading consumer platforms: minimal decisions per screen, immediate feedback, exceptionally clear state, generous touch geometry, and no ornamental control.
-
-## The phase sequence
-
-### 1. Fill — working daylight
-
-- Ground: broadcast white and newsprint.
-- Cardinal appears as a thin horizon/ruler and active selection.
-- The board is the dominant working surface.
-- Remaining squares and assignment counts stay visible as a finite inventory.
-- The primary action advances to Reconcile only when the board has meaningful data.
-
-### 2. Reconcile — late daylight
-
-- Ground remains light, with cardinal bands gathering at the lower horizon.
-- Exceptions lead: unassigned, unpaid, duplicates, and missing participant detail.
-- The surface narrows decisions rather than exposing the full editor again.
-- “Ready for draw” is a factual checklist, not a celebration.
-
-### 3. Draw — cardinal horizon
-
-- Cardinal becomes the dominant field.
-- Gold is reserved for the commit action and the revealed settled digits.
-- The random draw is previewed, then explicitly committed.
-- The UI explains that publication locks the result and records the draw.
-- Motion is ceremonial but brief: digits resolve in place; no slot-machine treatment.
-
-### 4. Preview — pregame dusk
-
-- Ink/chyron becomes the field with a low cardinal horizon and cool-white content.
-- The exact public phone view is the artifact.
-- Draft/private status is unmistakable.
-- The primary action is Unlock or Publish; secondary action returns to correction.
-
-### 5. Go Live / Pregame — night field
-
-- A calm ink field carries the board before kickoff.
-- Cardinal marks team/board identity.
-- Live green does not appear until the game is actually in progress.
-- Automatic beta source and freshness are explicit even before a score exists.
-
-### 6. Live — active horizon
-
-- The board or personal viewer summary sits against a controlled ink-to-cardinal horizon.
-- Live green is a small redundant signal paired with “LIVE.”
-- Score authority states plainly that viewer updates arrive about every minute; never imply instant or realtime delivery.
-- Scores and current-quarter scenarios are the highest-contrast instruments.
-- The background never competes with names or numbers.
-
-### 7. Final — day wash
-
-- The surface resolves to broadcast white with a gold horizon.
-- Completed winners and final score become stable record, not animation.
-- Gold marks settled milestones; it never becomes general decoration.
-- Archive and share actions are quiet and secondary.
-
-## Palette rules
-
-### Preserved palette
-
-- **Cardinal `#8F1D2C`:** identity and gathering tension. It can own full fields during Draw and active game bands.
-- **Cardinal deep `#6E1622`:** depth between opaque phase planes.
-- **Gold `#FFC72C`:** commitment and resolved outcome.
-- **Gold deep `#E0A600`:** legible gold-state text or pressed commitment.
-- **Broadcast white `#EFF0F1`:** working daylight and Final clarity.
-- **Newsprint `#DEE0E1`:** quiet structure and incomplete inventory.
-- **Night `#0E0F12` / Chyron `#16181D`:** Pregame/Live fields and instrument slabs.
-- **Live green `#22C55E`:** active game only.
-
-### Non-negotiable meanings
-
-- Live green never means generic success, saved, paid, valid, or positive.
-- Gold never means “interesting”; it means committed or settled.
-- Error uses cardinal plus explicit language and iconography, never color alone.
-- Paid/unpaid cannot rely on green/red alone.
-- Phase changes remain legible without color.
-
-### Horizon rendering
-
-Phase changes use opaque palette fields and a narrow, solid horizon rule:
-
-- The horizon belongs to the page-scale phase, never to an individual button or card.
-- It uses only documented palette colors.
-- It never reduces text contrast.
-- Gradients, glass blur, and glow are not part of the component or horizon language.
-- Fine grain may provide subtle structure only when it remains opaque and non-essential.
-
-## Typography
-
-Typography behaves like cues and instruments.
-
-- **Display/cue:** a distinctive narrow grotesk with an engineered, staged presence. Archivo may remain during implementation only if its width-axis result reaches the visual bar; otherwise replace it with a more characterful production-ready variable face.
-- **Body/control:** a highly legible workhorse grotesk. It must remain calm at small sizes and large-text settings.
-- **Data:** Chivo Mono or an equivalent tabular mono for scores, clocks, axis digits, counts, prices, and square coordinates.
-
-Rules:
-
-- Scores, clocks, counts, coordinates, dates, and prices use tabular numerals.
-- Cue labels are short, uppercase, and never replace explanatory text.
-- Body copy is sentence case and direct.
-- The smallest meaningful mobile text is 12 CSS pixels; participant cells use reduced names plus accessible full detail.
-- One dominant statement per viewport. Do not build simultaneous headline competitions.
-
-## Composition
-
-### One horizon, one artifact, one action
-
-Every primary surface has:
-
-1. A named current phase.
-2. One dominant artifact: board, reconciliation list, draw, public preview, personal viewer summary, or final record.
-3. One primary next action.
-
-Secondary controls recede into contextual menus or the next phase. Repeated equal-weight cards are prohibited.
-
-### Organizer topology
-
-The organizer experience is a persistent five-cue sequence:
-
-`FILL — RECONCILE — DRAW — PREVIEW — GO LIVE`
-
-- The cue strip shows current, complete, blocked, and upcoming states.
-- It remains reachable without becoming a giant stepper.
-- The current phase owns the page; other phases do not expose their controls early.
-- Autosave, last saved time, and errors stay adjacent to the artifact.
-- Dangerous correction after publication is a separate, explicit recovery path.
-
-### Viewer topology
-
-Phone-first order:
-
-1. Matchup, period, score authority, and freshness.
-2. My Squares / Find My Squares.
-3. Current winner and personalized next-score scenarios.
-4. Full board.
-5. Completed winners and published board details.
-
-Desktop may place personal summary and full board side by side, but reading order remains the same.
-
-### Full board
-
-- The 10×10 board is a navigable instrument, not a shrunk poster.
-- Mobile uses an explicit pan/zoom viewport, sticky axes, reset control, and orientation cue.
-- Cells expose privacy-reduced display text by default.
-- Tap, focus, or search reveals the full organizer-entered display name.
-- Winning state uses gold plus a milestone label and accessible description.
-
-## Components
-
-### Phase cue strip
-
-- Named phase, status, concise blocker/next fact.
-- Current phase uses the active horizon line.
-- Completed phases use text/icon state, never generic green.
-
-### Primary action
-
-- One per phase.
-- Opaque gold on ink for commitment or cardinal/white when progressing without commitment.
-- Keeps the short uppercase cue treatment at 700 weight, `0.05em` tracking, and `14px 26px` padding.
-- Minimum 44×44 CSS pixels.
-- Label describes the outcome: “Review assignments,” “Commit number draw,” “Publish viewer link.”
-
-### Supporting actions
-
-- Secondary, ghost, and tertiary controls use sentence case, 600 weight, no added tracking, and `13px 20px` padding.
-- They keep the same 44×44 minimum target, visible focus rule, and existing semantic hover colors.
-- Repeated support controls must remain visually quieter than the one primary action.
-
-### Radius system
-
-- Controls use `--gridone-radius-control: 8px`.
-- Slabs, cards, dialogs, panels, and the sticky organizer header use `--gridone-radius-surface: 12px`.
-- The 10×10 grid frame, cells, and axis headers use `--gridone-radius-grid: 0px`.
-- The grid stays sharp on purpose: it is the product's precision instrument and should visibly contrast with the softened application chrome.
-
-### Inputs
-
-- Inputs use the warm opaque mix `newsprint 40% / white 60%`.
-- Resting boundaries use ink at 55%, the verified value that clears 3:1 on every input host surface. The originally proposed 24% value measured only 1.71:1 and is not permitted.
-- Focus uses a full 2px cardinal boundary plus a supplemental 3px cardinal-at-20% halo.
-- Placeholder text uses ink at 60% with full opacity; labels remain visible and persistent.
-- Disabled controls keep ink text, switch to newsprint, and add a dashed boundary instead of relying on opacity.
-- Errors pair a cardinal boundary with an icon, explicit text, `aria-invalid`, and an associated description.
-
-### Instrument slab
-
-- Opaque night or broadcast-white plane.
-- One-pixel key line or phase edge.
-- Used for score, clock, source, freshness, and compact control clusters.
-- Not repeated into a card grid.
-
-### Dialog
-
-- True semantic dialog with title, description, initial focus, focus containment, Escape, and focus return.
-- High-stakes dialogs name what changes and what remains recoverable.
-- Uses the one raised elevation while retaining its key-line boundary.
-- Never use browser `alert` or `confirm` for product actions.
-
-### Elevation
-
-- `--gridone-elevation-raised` is the only elevation token.
-- It applies only to modal dialogs, the sticky organizer header, and the floating Find/zoom/reset board controls.
-- The board, phase horizons, normal-flow slabs, cards, and panels never receive elevation.
-- Every raised element keeps a key-line boundary so high-contrast or reduced-transparency modes remain legible without the shadow.
-
-### What we deliberately did not do
-
-- No pills.
-- No gradients.
-- No blur or translucent content surfaces.
-- No multi-level shadow scale.
-
-### Status
-
-Every async surface supports:
-
-- Idle
-- Working
-- Succeeded with durable result
-- Failed with human explanation and recovery
-- Stale when prior data remains visible
-
-Status text and recovery stay near the affected object.
+Controls 12px. Cards, sheets, glass 20px. Buttons, tags, chips, island: capsule. Grid cells 4px.
 
 ## Motion
 
-Motion is stage cueing:
+State ease 200ms `cubic-bezier(0.2, 0, 0, 1)`. Soft spring ~450ms, no overshoot, for island, sheet, shared-element moves, and the draw. Reduced motion collapses both to a 120ms fade. Routes never hard-swap.
 
-- Phase changes raise or lower the horizon and change luminance.
-- Scores roll or crossfade within fixed tabular width.
-- Winning squares receive one decisive gold wipe.
-- Number draw resolves with controlled sequential timing and a final lock.
-- The landing may scrub through the full game-day light sequence.
-- Organizer tasks never wait for decorative motion.
+## The Island
 
-Reduced motion:
+Capsule hugging the top edge on phone, bottom-right on desktop. Collapsed: rings or score. Expanded on tap or hover: full state and exactly one primary action. Always dark. Keyboard operable; Escape collapses. The island's outer `<section>` is the single named landmark (present even when collapsed); the expanded content is an unnamed region referenced by aria-controls.
 
-- Uses discrete named phase cuts.
-- Keeps every score, winner, source, and sequence state visible.
-- Removes scrub dependency, parallax, cursor effects, and spatial drift.
+Score freshness is information, not decoration: viewer updates arrive about every minute, and the island's expanded state always shows the source and the retrieved time. Never imply realtime delivery.
 
-## Accessibility and performance
+## Anti-slop rules
 
-- WCAG AA contrast at actual rendered size.
-- 44×44 minimum targets and visible focus on every interactive control.
-- Complete keyboard equivalence for board, scenarios, dialogs, and navigation.
-- No critical meaning by color or motion alone.
-- Live-region announcements are reserved for material score/milestone changes, not every poll.
-- The game-day viewer must remain useful on a constrained mobile connection.
-- Phase light is CSS/SVG first; no WebGL requirement.
-- Large marketing motion loads outside the critical viewer path.
+1. The product is the hero image. No illustrations, stock, or abstract 3D.
+2. Asymmetric, left-anchored layouts on desktop. Centered only on single-column phone.
+3. One spotlight per page, behind the artifact.
+4. Hierarchy from scale contrast, not card count. No three-up feature rows.
+5. Real numbers and real team names everywhere, including empty states.
+6. Icons almost never. When required: one set, one stroke weight, 16px, muted.
+7. Copy is short, specific, occasionally dry. Banned: seamless, effortless, unlock, supercharge, elevate, powerful, robust.
+8. No purple, no multi-color gradients, no corner glows, no uniform radius on every element.
 
-## Imagery
+## Accessibility
 
-GridOne should rarely need photography. The product artifact is the board.
-
-- Use full-fidelity synthetic boards labeled as demonstrations.
-- Real screenshots become proof only after real product state exists.
-- Do not add stadium stock photography, football clip art, team trademarks, trophy icons, or AI-generated crowds.
-- Fine atmospheric grain and horizon light may be authored as lightweight procedural assets.
+- Text contrast meets WCAG AA at rendered size on both bases; glass panels are checked against their real blurred backdrop, not a flat swatch.
+- Every tap target is at least 44×44px. Grid cells are the precision exception and expose a full accessible label.
+- Everything works with keyboard alone: island, sheet, capsule inputs, board navigation. Escape closes the topmost layer and returns focus.
+- Live score changes and phase changes are announced through a polite live region; nothing critical is conveyed by color, motion, or hover alone.
+- Reduced motion is honored everywhere (see Motion).
 
 ## Absolute bans
 
-- Generic dashboard card grids
-- Glassmorphism, floating translucent panels, glow as structure
-- Pills, gradients, blur, and multi-level elevation scales
-- Decorative sports imagery and betting visual language
-- Green for generic success
-- Gold as general emphasis
-- Hidden score source/freshness
-- Hover-only meaning
-- Tiny full-name cells as the primary mobile solution
-- Invented payout, customer, performance, or fundraising claims
-- UI vocabulary that drifts among board/pool/contest/player/guest
+- No invented payout, customer, fundraising, or guarantee claims. GridOne never collects square money, holds a pot, or pays winners, and every surface that mentions money says so.
+- One vocabulary: board, square, organizer, viewer, participant. Never pool, contest, player, or guest in product copy.
+- Score source and retrieved time are never hidden while a score is shown.
+- No hover-only meaning. No color-only state.
+- No tiny full-name cells as the primary phone board; the personal summary and Find My Squares come first.
+
+## Deliberate exceptions
+
+- The island renders dark on the cream base; it is a broadcast object.
+- Pills are the default for actions, tags, and inputs. The former pill prohibition is withdrawn.

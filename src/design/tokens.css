@@ -1,0 +1,95 @@
+/* Broadcast Glass tokens. Single source of truth. See DESIGN.md. */
+
+:root {
+  /* Locked palette */
+  --g-cardinal: #8F1D2C;
+  --g-cardinal-deep: #6E1622;
+  --g-gold: #FFC72C;
+  --g-gold-deep: #E0A600;
+  --g-live: #22C55E;
+  --g-ink: #0E0F12;
+  --g-chyron: #16181D;
+  --g-white: #EFF0F1;
+  --g-newsprint: #DEE0E1;
+
+  /* Shape */
+  --g-radius-control: 12px;
+  --g-radius-card: 20px;
+  --g-radius-capsule: 999px;
+  --g-radius-cell: 4px;
+
+  /* Type */
+  --g-font-display: "Instrument Serif", "Iowan Old Style", Georgia, serif;
+  --g-font-ui: "Geist", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Helvetica, Arial, sans-serif;
+  --g-font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* Motion */
+  --g-ease-state: cubic-bezier(0.2, 0, 0, 1);
+  --g-dur-state: 200ms;
+  --g-dur-spring: 450ms;
+  --g-dur-reduced: 120ms;
+
+  /* Glass */
+  --g-blur: 20px;
+
+  /* Tone fallbacks for tags rendered outside a Base; each base overrides. */
+  --g-tone-gold: var(--g-gold);
+  --g-tone-live: var(--g-live);
+  --g-tone-cardinal: var(--g-cardinal);
+}
+
+/* Dark base: viewer and homepage. Gold is the only action color. */
+[data-base="dark"] {
+  color-scheme: dark;
+  --g-ground: #0B0C0F;
+  --g-panel: rgba(255, 255, 255, 0.06);
+  --g-panel-hover: rgba(255, 255, 255, 0.08);
+  --g-hairline: rgba(255, 255, 255, 0.10);
+  --g-text: var(--g-white);
+  --g-text-2: rgba(239, 240, 241, 0.60);
+  --g-text-3: rgba(239, 240, 241, 0.58);
+  --g-action: var(--g-gold);
+  --g-action-hover: var(--g-gold-deep);
+  --g-action-text: var(--g-ink);
+  --g-shadow: 0 24px 48px rgba(0, 0, 0, 0.45);
+  --g-glow: color-mix(in srgb, var(--g-cardinal) 55%, transparent);
+  --g-tone-gold: var(--g-gold);
+  --g-tone-live: var(--g-live);
+  --g-tone-cardinal: #F2B8C0;
+}
+
+/* Cream base: organizer. Cardinal is the action color. */
+[data-base="cream"] {
+  color-scheme: light;
+  --g-ground: #F5F1EA;
+  --g-panel: rgba(255, 255, 255, 0.70);
+  --g-panel-hover: rgba(255, 255, 255, 0.85);
+  --g-hairline: rgba(14, 15, 18, 0.08);
+  --g-text: var(--g-ink);
+  --g-text-2: rgba(14, 15, 18, 0.60);
+  --g-text-3: rgba(14, 15, 18, 0.62);
+  --g-action: var(--g-cardinal);
+  --g-action-hover: var(--g-cardinal-deep);
+  --g-action-text: #FFFFFF;
+  --g-shadow: 0 24px 48px rgba(14, 15, 18, 0.06);
+  --g-glow: color-mix(in srgb, var(--g-gold) 30%, transparent);
+  --g-tone-gold: #6B5000;
+  --g-tone-live: #0F5A2A;
+  --g-tone-cardinal: var(--g-cardinal);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --g-dur-state: var(--g-dur-reduced);
+    --g-dur-spring: var(--g-dur-reduced);
+  }
+}
+
+@keyframes sheet-rise {
+  from { transform: translateY(24px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+@keyframes sheet-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
