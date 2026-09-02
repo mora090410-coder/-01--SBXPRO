@@ -64,7 +64,7 @@ export function CapsuleInput({ label, hideLabel = false, trailing, className = '
       <div className="flex items-center gap-2">
         <input
           id={inputId}
-          className="flex-1 h-12 px-5 rounded-capsule bg-panel border border-hairline text-fg text-[16px] font-ui placeholder:text-fg-3 outline-none transition-[border-color,background-color] duration-[var(--g-dur-state)] ease-[var(--g-ease-state)] focus-visible:border-action focus-visible:bg-panel-hover focus-visible:ring-2 focus-visible:ring-action/40"
+          className="min-w-0 w-full flex-1 h-12 px-5 rounded-capsule bg-panel border border-hairline text-fg text-[16px] font-ui placeholder:text-fg-3 outline-none transition-[border-color,background-color] duration-[var(--g-dur-state)] ease-[var(--g-ease-state)] focus-visible:border-action focus-visible:bg-panel-hover focus-visible:ring-2 focus-visible:ring-action/40"
           {...rest}
         />
         {trailing}

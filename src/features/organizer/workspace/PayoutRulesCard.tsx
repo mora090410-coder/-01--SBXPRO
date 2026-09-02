@@ -35,7 +35,7 @@ export default function PayoutRulesCard({ descriptions, status, disabled = false
   return (
     <Glass padding="lg" className="flex flex-col gap-4">
       <Eyebrow>Payout rules</Eyebrow>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 [&>*]:min-w-0">
         {FIELDS.map(({ key, label }) => (
           <CapsuleInput
             key={key}
