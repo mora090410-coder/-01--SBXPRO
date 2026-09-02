@@ -26,6 +26,11 @@ describe('open-square organizer UI contract', () => {
     expect(workspaceSource).toContain('onAssignOpenSquares');
   });
 
+  it.skip('rejects edits to published occupied cells and explains why (enabled in stage 5b when the workspace gains its game-day side)', () => {
+    expect(workspaceSource).toContain('Published assignments cannot be changed. Select OPEN squares only.');
+    expect(workspaceSource).toContain('canAssignOpenSquares');
+  });
+
   it('enables late fill only before kickoff on a published board with open inventory', () => {
     const kickoffAt = '2026-09-13T17:00:00.000Z';
     expect(publishedOpenSquaresAreAssignable({
