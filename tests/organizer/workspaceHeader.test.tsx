@@ -37,4 +37,46 @@ describe('WorkspaceHeader', () => {
     expect(screen.queryByRole('button', { name: 'Change game' })).toBeNull();
     expect(screen.getByRole('textbox', { name: 'Board name' })).toHaveAttribute('readonly');
   });
+
+  it('resyncs the title when game.title changes and the input is not focused', () => {
+    const { rerender } = render(<WorkspaceHeader {...base} saveState={{ status: 'clean', revision: 1 }} />);
+    const input = screen.getByRole('textbox', { name: 'Board name' }) as HTMLInputElement;
+    expect(input.value).toBe('Lincoln Softball');
+    rerender(<WorkspaceHeader {...base} game={{ ...game, title: 'Updated Title' }} saveState={{ status: 'clean', revision: 1 }} />);
+    expect(input.value).toBe('Updated Title');
+  });
+
+  it('commits the title once on Enter and does not commit again on the resulting blur', () => {
+    const onTitleChange = vi.fn();
+    render(<WorkspaceHeader {...base} onTitleChange={onTitleChange} saveState={{ status: 'clean', revision: 1 }} />);
+    const input = screen.getByRole('textbox', { name: 'Board name' });
+    fireEvent.change(input, { target: { value: 'New Title' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    fireEvent.blur(input);
+    expect(onTitleChange).toHaveBeenCalledTimes(1);
+    expect(onTitleChange).toHaveBeenCalledWith('New Title');
+  });
+
+  it('shows a recovered draft status instead of Saved', () => {
+    render(<WorkspaceHeader {...base} saveState={{ status: 'recovered', revision: 1 }} />);
+    expect(screen.getByRole('status')).toHaveTextContent('Recovered draft · review before publishing');
+    expect(screen.queryByText('Saved')).toBeNull();
+  });
+
+  it('uses 44px touch targets for Retry, Reload latest board, and Change game', () => {
+    const { rerender } = render(<WorkspaceHeader {...base} saveState={{ status: 'save_failed', revision: 1 }} />);
+    const retry = screen.getByRole('button', { name: 'Retry' });
+    expect(retry.className).toContain('h-11');
+    expect(retry.className).not.toContain('h-8');
+
+    rerender(<WorkspaceHeader {...base} saveState={{ status: 'conflicted', revision: 1 }} />);
+    const reload = screen.getByRole('button', { name: 'Reload latest board' });
+    expect(reload.className).toContain('h-11');
+    expect(reload.className).not.toContain('h-8');
+
+    rerender(<WorkspaceHeader {...base} saveState={{ status: 'clean', revision: 1 }} />);
+    const changeGame = screen.getByRole('button', { name: 'Change game' });
+    expect(changeGame.className).toContain('h-11');
+    expect(changeGame.className).not.toContain('h-8');
+  });
 });

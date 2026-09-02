@@ -59,15 +59,29 @@ export function useWorkspaceDraft({
     }
   }, []);
 
-  // Adopt server-provided state whenever nothing local is pending or in flight.
+  // Keep saveStateRef in lockstep with every state transition. React state
+  // updates are only reflected in saveStateRef.current once a render has
+  // committed, which can lag behind synchronous code (e.g. flush()'s drain
+  // loop) that needs to observe the outcome of a save immediately.
+  const updateSaveState = useCallback((updater: (current: DraftSaveState) => DraftSaveState) => {
+    const next = updater(saveStateRef.current);
+    saveStateRef.current = next;
+    setSaveState(next);
+    return next;
+  }, []);
+
+  // Adopt server-provided state whenever nothing local is pending, in flight,
+  // failed, or conflicted. A failed/conflicted save represents local work
+  // that hasn't been reconciled yet -- overwriting it with fresh props would
+  // silently discard the user's edits.
   useEffect(() => {
     const status = saveStateRef.current.status;
-    const pending = status === 'dirty' || status === 'saving';
+    const pending = status === 'dirty' || status === 'saving' || status === 'save_failed' || status === 'conflicted';
     if (pending) return;
     setLocalGame(game);
     setLocalBoard(board);
     latestData.current = { game, board };
-    setSaveState(clean(revision));
+    updateSaveState(() => clean(revision));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [game, board, revision]);
 
@@ -75,16 +89,18 @@ export function useWorkspaceDraft({
     if (inFlightRef.current) return inFlightRef.current;
     if (saveStateRef.current.status !== 'dirty') return;
 
-    const expectedRevision = saveStateRef.current.revision;
-    // The `revision` prop only catches up once the caller re-renders after
-    // its own onSave resolves, so our local saveState.revision can already
-    // be ahead of the prop. Use the higher of the two as the "known good"
-    // baseline: a genuine external conflict is a prop value that overtakes
-    // that baseline, not merely a prop that hasn't caught up yet.
-    const baselineRevision = Math.max(expectedRevision, revisionRef.current);
-    const started = startDraftSave(saveStateRef.current, { expectedRevision });
-    setSaveState(started);
-    saveStateRef.current = started;
+    // Pre-flight conflict check: compare the live prop revision against the
+    // local baseline (saveState.revision), so a revision that moved during
+    // the debounce window -- someone else's change landing -- is caught as
+    // a conflict before we ever call onSave. The `revision` prop only
+    // catches up once the caller re-renders after its own onSave resolves,
+    // so it can still trail our local baseline right after we advance it
+    // ourselves; that lag is not a conflict, so only a prop that has moved
+    // *past* the baseline counts as one.
+    const localBaseline = saveStateRef.current.revision;
+    const expectedRevision = revisionRef.current > localBaseline ? revisionRef.current : localBaseline;
+    const baselineRevision = localBaseline;
+    const started = updateSaveState(() => startDraftSave(saveStateRef.current, { expectedRevision }));
     if (started.status !== 'saving') return;
 
     editedDuringSaveRef.current = false;
@@ -93,7 +109,7 @@ export function useWorkspaceDraft({
     const run = (async () => {
       try {
         await onSave(payload);
-        setSaveState((current) => {
+        updateSaveState((current) => {
           if (current.status !== 'saving') return current;
           const serverRevision = Math.max(revisionRef.current, current.localRevision ?? current.revision);
           return acknowledgeRemoteSave(current, { serverRevision });
@@ -101,7 +117,7 @@ export function useWorkspaceDraft({
       } catch (error) {
         const revisionMoved = revisionRef.current > baselineRevision;
         const message = error instanceof Error ? error.message : 'save_failed';
-        setSaveState((current) => {
+        updateSaveState((current) => {
           if (current.status !== 'saving') return current;
           if (revisionMoved) {
             return {
@@ -118,7 +134,7 @@ export function useWorkspaceDraft({
         inFlightRef.current = null;
         if (editedDuringSaveRef.current) {
           editedDuringSaveRef.current = false;
-          setSaveState((current) => (current.status === 'clean' ? markDraftDirty(current) : current));
+          updateSaveState((current) => (current.status === 'clean' ? markDraftDirty(current) : current));
           scheduleSave();
         }
       }
@@ -149,7 +165,7 @@ export function useWorkspaceDraft({
       return;
     }
 
-    setSaveState((current) => (current.status === 'dirty' ? current : markDraftDirty({ status: 'clean', revision: current.revision })));
+    updateSaveState((current) => (current.status === 'dirty' ? current : markDraftDirty({ status: 'clean', revision: current.revision })));
     scheduleSave();
   }, [isPublished, onApply, scheduleSave]);
 
@@ -172,26 +188,31 @@ export function useWorkspaceDraft({
     } else if (inFlightRef.current) {
       await inFlightRef.current;
     }
+    // An edit can land while the save above was in flight, coalescing into
+    // a fresh dirty state once it settles. Keep saving until nothing new
+    // has landed, so callers awaiting flush() see every queued edit through.
+    while (saveStateRef.current.status === 'dirty') {
+      clearTimer();
+      await runSave();
+    }
   }, [clearTimer, runSave]);
 
   const retry = useCallback(async () => {
     if (saveStateRef.current.status !== 'save_failed') return;
     const current = saveStateRef.current;
-    const dirty: DraftSaveState = {
+    updateSaveState(() => ({
       status: 'dirty',
       revision: current.revision,
       localRevision: current.localRevision ?? current.revision + 1,
       canPublish: false,
-    };
-    setSaveState(dirty);
-    saveStateRef.current = dirty;
+    }));
     await runSave();
   }, [runSave]);
 
   const reloadLatest = useCallback(async () => {
     clearTimer();
     await onReload?.();
-    setSaveState(clean(revisionRef.current));
+    updateSaveState(() => clean(revisionRef.current));
   }, [clearTimer, onReload]);
 
   useEffect(() => {

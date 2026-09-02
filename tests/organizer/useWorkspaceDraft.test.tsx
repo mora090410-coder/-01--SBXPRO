@@ -69,4 +69,76 @@ describe('useWorkspaceDraft', () => {
     expect(result.current.saveState.status).toBe('clean');
     vi.useRealTimers();
   });
+
+  it('runs a pre-flight conflict check against the live revision before calling onSave', async () => {
+    vi.useFakeTimers();
+    const onSave = vi.fn(async () => {});
+    const { result, rerender } = renderHook(
+      (props: { revision: number }) => useWorkspaceDraft({ game, board, revision: props.revision, isPublished: false, onSave, debounceMs: 800 }),
+      { initialProps: { revision: 1 } },
+    );
+    act(() => result.current.setGame((g) => ({ ...g, title: 'x' })));
+    expect(result.current.saveState.status).toBe('dirty');
+    rerender({ revision: 2 });
+    await act(async () => { vi.advanceTimersByTime(800); });
+    expect(onSave).not.toHaveBeenCalled();
+    expect(result.current.saveState.status).toBe('conflicted');
+    vi.useRealTimers();
+  });
+
+  it('never clobbers a failed local draft when props update with an equivalent object', async () => {
+    vi.useFakeTimers();
+    const onSave = vi.fn().mockRejectedValueOnce(new Error('nope'));
+    const { result, rerender } = renderHook(
+      (props: { board: BoardData }) => useWorkspaceDraft({ game, board: props.board, revision: 1, isPublished: false, onSave, debounceMs: 10 }),
+      { initialProps: { board } },
+    );
+    act(() => result.current.setGame((g) => ({ ...g, title: 'edited' })));
+    await act(async () => { vi.advanceTimersByTime(10); });
+    expect(result.current.saveState.status).toBe('save_failed');
+    const equivalentBoard: BoardData = { ...board, squares: board.squares.map((s) => [...s]) };
+    rerender({ board: equivalentBoard });
+    expect(result.current.saveState.status).toBe('save_failed');
+    expect(result.current.game.title).toBe('edited');
+    vi.useRealTimers();
+  });
+
+  it('flush drains a coalesced edit made during an in-flight save', async () => {
+    let resolveFirst: () => void = () => {};
+    let calls = 0;
+    const onSave = vi.fn((_data: { game: GameState; board: BoardData }) => {
+      calls += 1;
+      if (calls === 1) return new Promise<void>((resolve) => { resolveFirst = resolve; });
+      return Promise.resolve();
+    });
+    const { result } = renderHook(() => useWorkspaceDraft({ game, board, revision: 1, isPublished: false, onSave, debounceMs: 800 }));
+    act(() => result.current.setGame((g) => ({ ...g, title: 'first' })));
+    let flushPromise!: Promise<void>;
+    act(() => { flushPromise = result.current.flush(); });
+    expect(onSave).toHaveBeenCalledTimes(1);
+    act(() => result.current.setGame((g) => ({ ...g, title: 'second' })));
+    resolveFirst();
+    await act(async () => { await flushPromise; });
+    expect(onSave).toHaveBeenCalledTimes(2);
+    expect(onSave.mock.calls[1][0].game.title).toBe('second');
+    expect(result.current.saveState.status).toBe('clean');
+  });
+
+  it('reloadLatest clears a conflicted state back to clean at the new revision', async () => {
+    vi.useFakeTimers();
+    const onSave = vi.fn(async () => {});
+    const onReload = vi.fn(async () => {});
+    const { result, rerender } = renderHook(
+      (props: { revision: number }) => useWorkspaceDraft({ game, board, revision: props.revision, isPublished: false, onSave, onReload, debounceMs: 800 }),
+      { initialProps: { revision: 1 } },
+    );
+    act(() => result.current.setGame((g) => ({ ...g, title: 'x' })));
+    rerender({ revision: 2 });
+    await act(async () => { vi.advanceTimersByTime(800); });
+    expect(result.current.saveState.status).toBe('conflicted');
+    await act(async () => { await result.current.reloadLatest(); });
+    expect(result.current.saveState.status).toBe('clean');
+    expect(result.current.saveState.revision).toBe(2);
+    vi.useRealTimers();
+  });
 });

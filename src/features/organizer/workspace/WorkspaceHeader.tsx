@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Eyebrow, CapsuleButton, Sheet } from '../../../design/primitives';
 import type { DraftSaveState } from '../draft/draftSaveModel';
 import type { ScheduledGame, GameState } from '../../../../types';
@@ -37,22 +37,23 @@ function SavePill({ saveState, onRetry, onReload }: { saveState: DraftSaveState;
       return (
         <div role="alert" className="flex items-center gap-2 font-mono text-[12px] text-tone-cardinal">
           <span>This board changed in another session.</span>
-          <CapsuleButton variant="quiet" size="md" className="h-8 px-3 text-[12px]" onClick={onReload}>Reload latest board</CapsuleButton>
+          <CapsuleButton variant="quiet" size="md" onClick={onReload}>Reload latest board</CapsuleButton>
         </div>
       );
     case 'save_failed':
       return (
         <div role="status" className="flex items-center gap-2 font-mono text-[12px] text-tone-cardinal">
           <span>Save failed</span>
-          <CapsuleButton variant="quiet" size="md" className="h-8 px-3 text-[12px]" onClick={onRetry}>Retry</CapsuleButton>
+          <CapsuleButton variant="quiet" size="md" onClick={onRetry}>Retry</CapsuleButton>
         </div>
       );
     case 'saving':
       return <div role="status" className="font-mono text-[12px] text-fg-3">Saving…</div>;
     case 'dirty':
       return <div role="status" className="font-mono text-[12px] text-fg-3">Unsaved changes</div>;
-    case 'clean':
     case 'recovered':
+      return <div role="status" className="font-mono text-[12px] text-fg-3">Recovered draft · review before publishing</div>;
+    case 'clean':
     default:
       return <div role="status" className="font-mono text-[12px] text-fg-3">Saved</div>;
   }
@@ -70,12 +71,24 @@ export default function WorkspaceHeader({
 }: WorkspaceHeaderProps) {
   const [title, setTitle] = useState(game.title);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const lastCommitted = useRef(game.title);
+
+  // Resync from props when the input isn't focused -- otherwise a server
+  // round-trip (or a sibling update) would clobber what the user is typing.
+  useEffect(() => {
+    if (document.activeElement !== inputRef.current) {
+      setTitle(game.title);
+      lastCommitted.current = game.title;
+    }
+  }, [game.title]);
 
   const commitTitle = () => {
     const trimmed = title.trim();
     if (isPublished) return;
-    if (trimmed !== game.title) {
+    if (trimmed !== lastCommitted.current) {
       onTitleChange(trimmed);
+      lastCommitted.current = trimmed;
     }
   };
 
@@ -85,6 +98,7 @@ export default function WorkspaceHeader({
         <div className="flex-1 min-w-0">
           <Eyebrow>{isPublished ? 'Published board' : 'Organizer'}</Eyebrow>
           <input
+            ref={inputRef}
             aria-label="Board name"
             className="font-display text-[34px] md:text-[44px] leading-[1.05] bg-transparent border-0 p-0 w-full text-fg focus:outline-none focus-visible:ring-2 focus-visible:ring-action rounded-control"
             value={title}
@@ -95,6 +109,7 @@ export default function WorkspaceHeader({
               if (e.key === 'Enter') {
                 e.preventDefault();
                 commitTitle();
+                inputRef.current?.blur();
               }
             }}
           />
@@ -103,7 +118,7 @@ export default function WorkspaceHeader({
               {game.leftAbbr} at {game.topAbbr} · {formatKickoff(game)}
             </p>
             {!isPublished && (
-              <CapsuleButton variant="ghost" size="md" className="h-8 px-2 text-[13px]" onClick={() => setPickerOpen(true)}>
+              <CapsuleButton variant="ghost" size="md" onClick={() => setPickerOpen(true)}>
                 Change game
               </CapsuleButton>
             )}
