@@ -1,0 +1,38 @@
+import React from 'react';
+import { Eyebrow, Glass, Numeral } from '../../../../design/primitives';
+import type { WinnerResolution } from '../../../../../types';
+import { buildResolvedMilestoneRows } from '../../../viewer/milestones/milestoneViewModel';
+
+export interface FinalRecordCardProps {
+  winnerHistory: WinnerResolution[];
+}
+
+/** The locked record shown once the game reaches its final state: milestones, winners, and a path to the next board. */
+export default function FinalRecordCard({ winnerHistory }: FinalRecordCardProps) {
+  const rows = buildResolvedMilestoneRows(winnerHistory);
+  return (
+    <Glass padding="lg" className="flex flex-col gap-4 border-gold/40">
+      <Eyebrow>Final record</Eyebrow>
+      <h2 className="oa-headline text-2xl text-fg">This board is locked as the Final record.</h2>
+      <p className="font-ui text-[15px] text-fg-2">
+        Scores, winners, OPEN outcomes, and public corrections stay visible for trust. Regular setup editing is closed; create another board for the next fundraiser or game.
+      </p>
+      {rows.length > 0 && (
+        <ul className="flex flex-col gap-2">
+          {rows.map((row) => (
+            <li key={row.label} className="flex items-center justify-between gap-3 font-ui text-[14px] text-fg-2">
+              <span>{row.label} · {row.openSquare ? 'Open square' : row.name}</span>
+              <Numeral value={row.digits} size="sm" />
+            </li>
+          ))}
+        </ul>
+      )}
+      <a
+        href="/create"
+        className="inline-flex items-center justify-center gap-2 self-start rounded-capsule bg-action px-5 h-11 font-ui text-[15px] font-semibold leading-none text-action-text transition-colors hover:bg-action-hover"
+      >
+        Create another board
+      </a>
+    </Glass>
+  );
+}

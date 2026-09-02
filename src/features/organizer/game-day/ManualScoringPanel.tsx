@@ -1,4 +1,5 @@
 import type { GameState } from '../../../../types';
+import { CapsuleButton, Glass } from '../../../design/primitives';
 import {
   MANUAL_SCORE_PERIODS,
   manualPeriodForState,
@@ -34,13 +35,13 @@ export const ManualScoringPanel = ({
 }: ManualScoringPanelProps) => {
   if (!isActivated) {
     return (
-      <div className="border border-gold bg-gold/20 p-5 text-ink">
+      <Glass padding="lg">
         <p className="oa-slab mb-2 text-cardinal">Ready when the board goes live</p>
         <h5 className="oa-headline !text-2xl">Every published board gets the full game-day experience.</h5>
         <p className="oa-body mt-3 text-sm text-ink/70">
           Keep building and previewing for free. After you publish, the score, winner emails, QR code, and public board link are ready for game day.
         </p>
-      </div>
+      </Glass>
     );
   }
 
@@ -55,20 +56,22 @@ export const ManualScoringPanel = ({
     <>
       <div className="flex items-center justify-between mb-4">
         <h5 className="text-xs font-bold text-ink/50 uppercase tracking-widest">Live Scoring</h5>
-        <div className="flex rounded-control bg-newsprint p-1 border border-newsprint">
-          <button
+        <div className="flex gap-2">
+          <CapsuleButton
+            type="button"
+            variant={!game.useManualScores ? 'primary' : 'quiet'}
             onClick={onEnableAutomaticScoring}
-            className={`min-h-11 px-3 py-2 rounded-control text-[11px] font-bold transition-all ${!game.useManualScores ? 'bg-broadcast-white text-ink' : 'text-ink/50 hover:text-ink'}`}
           >
             Auto
-          </button>
-          <button
+          </CapsuleButton>
+          <CapsuleButton
+            type="button"
+            variant={game.useManualScores ? 'primary' : 'quiet'}
             onClick={onEnableManualScoring}
             disabled={scoreSaveStatus === 'saving'}
-            className={`min-h-11 px-3 py-2 rounded-control text-[11px] font-bold transition-all ${game.useManualScores ? 'bg-broadcast-white text-ink' : 'text-ink/50 hover:text-ink'}`}
           >
             Manual
-          </button>
+          </CapsuleButton>
         </div>
       </div>
 
@@ -86,7 +89,7 @@ export const ManualScoringPanel = ({
                   id="manual-game-status"
                   value={manualState}
                   onChange={(e) => onUpdateManualGameState(e.target.value as ManualGameState)}
-                  className="w-full oa-input appearance-none text-ink"
+                  className="w-full rounded-control bg-panel border border-hairline h-11 px-4 font-ui text-[16px] appearance-none text-ink"
                 >
                   <option value="pre">Scheduled</option>
                   <option value="in">In progress</option>
@@ -103,7 +106,7 @@ export const ManualScoringPanel = ({
                   value={manualPeriod}
                   onChange={(e) => onUpdateManualPeriod(parseInt(e.target.value))}
                   disabled={manualState !== 'in'}
-                  className="w-full oa-input appearance-none text-ink"
+                  className="w-full rounded-control bg-panel border border-hairline h-11 px-4 font-ui text-[16px] appearance-none text-ink"
                 >
                   {manualState === 'pre' && (
                     <option value={0}>Not started</option>
@@ -133,14 +136,14 @@ export const ManualScoringPanel = ({
                   min={0}
                   value={game.manualQuarterScores?.[q]?.left ?? 0}
                   onChange={(e) => onUpdateManualQuarter(q, 'left', sanitizeManualScoreInput(parseInt(e.target.value) || 0))}
-                  className="w-full oa-input text-center"
+                  className="w-full rounded-control bg-panel border border-hairline h-11 px-4 font-ui text-[16px] text-center"
                 />
                 <input
                   type="number"
                   min={0}
                   value={game.manualQuarterScores?.[q]?.top ?? 0}
                   onChange={(e) => onUpdateManualQuarter(q, 'top', sanitizeManualScoreInput(parseInt(e.target.value) || 0))}
-                  className="w-full oa-input text-center"
+                  className="w-full rounded-control bg-panel border border-hairline h-11 px-4 font-ui text-[16px] text-center"
                 />
               </div>
             ))}
