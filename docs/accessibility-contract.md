@@ -58,6 +58,8 @@ Do not claim formal conformance until the complete public and organizer processe
 - Visual order and DOM/reading order match.
 - Icon-only controls have durable accessible names.
 - Demonstration/synthetic data is identified in visible and accessible text.
+- Every site route (homepage, articles hub, guides, legal, login, 404) renders one `banner` header carrying the `GridOne` wordmark link and the signed-out `Sign in` (or signed-in `Your boards` / `Log out`) control, one `main`, and one `contentinfo` footer listing the guides, `All guides`, `Sign in`, `Privacy`, and `Terms`. Focused, short-lived routes (checkout return, 404) may omit the footer but never the header or `main`.
+- The wordmark and the header sign-in control are the first two tab stops and both render a visible focus ring.
 
 ## Keyboard and focus
 
@@ -101,6 +103,15 @@ The 10×10 viewer and organizer boards are composite interactive data grids, not
 - Bulk assignment controls operate on the explicit selected set.
 - Edit/details opens a semantic dialog and returns focus to the originating cell.
 - Published/correction mode communicates which cells are immutable, OPEN-fillable, or correction-eligible.
+
+### Organizer selection mode (range assignment)
+
+- A single toolbar button toggles the mode and reads `Select squares` / `Done selecting` with `aria-pressed` reflecting the state.
+- Only in selection mode do the squares expose `aria-pressed`; outside it the attribute is absent so a square is not mistaken for a toggle.
+- `Space` on a focused square toggles it; `Shift` with click or `Space` extends the rectangular block from the last anchor.
+- The inline apply bar is a `group` named `Assign selected squares`, announces `{n} selected` in a polite live region, and carries labelled `Name for these squares` and `Sold by (optional)` inputs, a `Payment` radiogroup (`Not asked yet` / `Unpaid` / `Paid`), `Apply to {n}`, and `Clear selection`.
+- `Escape` on a square or inside the bar leaves selection mode; whenever the selection empties, focus returns to the toggle rather than being stranded.
+- A published board accepts only OPEN squares into a selection; sold squares stay disabled and the onscreen help says so.
 
 The implementation may use a semantic HTML table with managed roving focus or a valid ARIA grid. It must not duplicate conflicting table/grid roles.
 

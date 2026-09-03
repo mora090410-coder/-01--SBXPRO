@@ -330,6 +330,51 @@ test.describe('Slice 2 signed-out accessibility contract automation', () => {
     await expect(square.getByLabel('Name on the board')).toBeFocused();
   });
 
+  test('organizer range assignment selects a block, labels it once, and leaves on Escape', async ({ page }) => {
+    await installOrganizerBoard(page);
+    await page.goto(`/boards/${ownerId}`);
+    await expect(page.getByRole('main', { name: 'QA draft board workspace' })).toBeVisible();
+
+    const toggle = page.getByRole('button', { name: 'Select squares' });
+    await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+    await toggle.click();
+    const doneSelecting = page.getByRole('button', { name: 'Done selecting' });
+    await expect(doneSelecting).toHaveAttribute('aria-pressed', 'true');
+
+    // Two single picks, then a shift-click that fills the block up to square 4.
+    await page.getByRole('button', { name: 'Square 2, unassigned' }).click();
+    await page.getByRole('button', { name: 'Square 3, unassigned' }).click();
+    await page.getByRole('button', { name: 'Square 4, unassigned' }).click({ modifiers: ['Shift'] });
+
+    for (const label of ['Square 2, unassigned', 'Square 3, unassigned', 'Square 4, unassigned']) {
+      await expect(page.getByRole('button', { name: label })).toHaveAttribute('aria-pressed', 'true');
+    }
+    await expect(page.getByRole('button', { name: 'Square 5, unassigned' })).toHaveAttribute('aria-pressed', 'false');
+
+    const bar = page.getByRole('group', { name: 'Assign selected squares' });
+    await expect(bar).toBeVisible();
+    await expect(bar).toContainText('3 selected');
+    await expect(bar.getByLabel('Sold by (optional)')).toBeVisible();
+    await expect(bar.getByRole('radiogroup', { name: 'Payment' })).toBeVisible();
+    await expect(bar.getByRole('radio', { name: 'Not asked yet' })).toHaveAttribute('aria-checked', 'true');
+
+    await bar.getByLabel('Name for these squares').fill('Dana');
+    await bar.getByRole('button', { name: 'Apply to 3' }).click();
+
+    for (const index of [2, 3, 4]) {
+      await expect(page.getByRole('button', { name: `Square ${index}, assigned to Dana` })).toBeVisible();
+    }
+    await expect(bar).toBeHidden();
+
+    // Escape on a square leaves selection mode; the cells drop pressed state.
+    await page.getByRole('button', { name: 'Square 6, unassigned' }).focus();
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('button', { name: 'Select squares' })).toHaveAttribute('aria-pressed', 'false');
+    await expect
+      .poll(() => page.getByRole('button', { name: 'Square 6, unassigned' }).getAttribute('aria-pressed'))
+      .toBeNull();
+  });
+
   test('organizer Reconcile separates private advisories from publish blockers', async ({ page }) => {
     await installOrganizerBoard(page, { board: organizerUndrawnBoard });
     await page.goto(`/boards/${ownerId}`);
