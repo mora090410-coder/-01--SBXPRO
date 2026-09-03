@@ -21,6 +21,11 @@ export interface BoardEditorProps {
   onSelectSquare: (index: number) => void;
   /** Draft only: paste a newline-separated name list into the first open cells. */
   onPasteNames?: (names: string[]) => void;
+  /**
+   * Bumped by the workspace after a range apply settles. Any change moves focus
+   * back to the select-mode toggle so a failed apply does not strand focus.
+   */
+  focusToggleSignal?: number;
 }
 
 const AXIS_CELL = 'flex items-center justify-center min-h-11 h-11 bg-chyron text-gold font-mono text-[13px] rounded-cell';
@@ -47,6 +52,7 @@ export default function BoardEditor({
   onToggleSelectMode,
   onSelectSquare,
   onPasteNames,
+  focusToggleSignal = 0,
 }: BoardEditorProps) {
   const [pasteValue, setPasteValue] = useState('');
   // The corner a shift-click or a drag measures its block from.
@@ -54,11 +60,16 @@ export default function BoardEditor({
   const dragRef = useRef<{ anchor: number; base: Selection; moved: boolean } | null>(null);
   // A keyboard Space already toggled; swallow the click the browser sends next.
   const keyToggledRef = useRef(false);
+  // CapsuleButton does not forward a ref, so focus is taken through the row.
+  const toolbarRef = useRef<HTMLDivElement | null>(null);
+  const previousSelectionSize = useRef(selection.size);
+  const firstFocusSignal = useRef(focusToggleSignal);
 
   const topDigits = drawPreview ? drawPreview.top : board.topAxis;
   const leftDigits = drawPreview ? drawPreview.left : board.leftAxis;
 
   useEffect(() => {
+    keyToggledRef.current = false;
     if (!selectMode) {
       anchorRef.current = null;
       dragRef.current = null;
@@ -68,6 +79,25 @@ export default function BoardEditor({
     window.addEventListener('pointerup', end);
     return () => window.removeEventListener('pointerup', end);
   }, [selectMode]);
+
+  const focusToggle = () => {
+    toolbarRef.current?.querySelector('button')?.focus();
+  };
+
+  // The bar unmounts when the selection empties -- after Apply, Clear
+  // selection, or Done selecting -- so focus goes back to the toggle.
+  useEffect(() => {
+    const previous = previousSelectionSize.current;
+    previousSelectionSize.current = selection.size;
+    if (previous > 0 && selection.size === 0) focusToggle();
+  }, [selection]);
+
+  // A failed apply leaves the selection standing; the workspace bumps this so
+  // focus still lands somewhere the organizer can act from.
+  useEffect(() => {
+    if (focusToggleSignal === firstFocusSignal.current) return;
+    focusToggle();
+  }, [focusToggleSignal]);
 
   const flushPasteValue = (value: string) => {
     if (!onPasteNames) return;
@@ -110,21 +140,50 @@ export default function BoardEditor({
     toggleCell(index, event.shiftKey);
   };
 
-  const onCellPointerDown = (index: number) => {
+  const onCellPointerDown = (index: number, event: React.PointerEvent<HTMLButtonElement>) => {
     if (!selectMode) return;
+    // Touch gives the cell implicit pointer capture, which would send every
+    // later pointermove to that one cell and kill the drag.
+    try {
+      event.currentTarget.releasePointerCapture?.(event.pointerId);
+    } catch {
+      // No capture to release; the drag works either way.
+    }
     dragRef.current = { anchor: index, base: selection, moved: false };
   };
 
-  const onCellPointerEnter = (index: number, event: React.PointerEvent<HTMLButtonElement>) => {
+  const extendDrag = (index: number) => {
     const drag = dragRef.current;
-    if (!selectMode || !drag) return;
+    if (!drag) return;
+    drag.moved = true;
+    anchorRef.current = index;
+    onSelectionChange(addRange(drag.base, drag.anchor, index));
+  };
+
+  const onCellPointerEnter = (index: number, event: React.PointerEvent<HTMLButtonElement>) => {
+    if (!selectMode || !dragRef.current) return;
+    if (event.pointerType === 'touch') return;
     if ((event.buttons & 1) === 0) {
       dragRef.current = null;
       return;
     }
-    drag.moved = true;
-    anchorRef.current = index;
-    onSelectionChange(addRange(drag.base, drag.anchor, index));
+    extendDrag(index);
+  };
+
+  // Touch never fires pointerenter on the cells the finger passes over, so the
+  // grid hit-tests the point itself.
+  const onGridPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!selectMode || !dragRef.current) return;
+    if (event.pointerType !== 'touch' && (event.buttons & 1) === 0) {
+      dragRef.current = null;
+      return;
+    }
+    if (event.pointerType !== 'touch') return;
+    const under = document.elementFromPoint(event.clientX, event.clientY);
+    const cell = under?.closest?.('[data-cell-index]');
+    const raw = cell?.getAttribute('data-cell-index');
+    if (raw === null || raw === undefined) return;
+    extendDrag(Number(raw));
   };
 
   const onCellKeyDown = (index: number, event: React.KeyboardEvent<HTMLButtonElement>) => {
@@ -158,8 +217,13 @@ export default function BoardEditor({
           placeholder="Paste one name per line"
         />
       )}
-      <div className="flex flex-wrap items-center gap-2">
-        <CapsuleButton variant="quiet" aria-pressed={selectMode} onClick={onToggleSelectMode}>
+      <div ref={toolbarRef} className="flex flex-wrap items-center gap-2">
+        <CapsuleButton
+          variant="quiet"
+          aria-pressed={selectMode}
+          disabled={isPublished && !canAssignOpenSquares}
+          onClick={onToggleSelectMode}
+        >
           {selectMode ? 'Done selecting' : 'Select squares'}
         </CapsuleButton>
       </div>
@@ -167,8 +231,10 @@ export default function BoardEditor({
         <div className="min-w-[640px]">
           <Glass padding="md">
             <div
+              data-testid="board-grid"
               className="grid gap-1"
               style={{ gridTemplateColumns: 'repeat(11, minmax(44px, 1fr))' }}
+              onPointerMove={onGridPointerMove}
             >
               <div className={AXIS_CELL} aria-hidden="true" />
               {topDigits.map((digit, colIndex) => (
@@ -193,19 +259,22 @@ export default function BoardEditor({
                     const openClasses = 'bg-transparent border border-dashed border-hairline text-fg-3';
                     const assignedClasses = 'bg-panel text-fg';
                     const highlightClasses = highlightOpen && isOpen ? 'ring-2 ring-tone-cardinal' : '';
-                    const selectedClasses = selected ? 'ring-2 ring-tone-cardinal bg-tone-cardinal/10' : '';
+                    // The offset ring reads as "picked by me", distinct from the
+                    // flush highlight-open ring on the same colour.
+                    const selectedClasses = selected ? 'ring-2 ring-tone-cardinal ring-offset-2 ring-offset-ground bg-tone-cardinal/10' : '';
                     return (
                       <button
                         key={index}
                         type="button"
+                        data-cell-index={index}
                         aria-label={label}
                         aria-pressed={selectMode ? selection.has(index) : undefined}
                         disabled={disabled}
                         onClick={(event) => onCellClick(index, event)}
-                        onPointerDown={() => onCellPointerDown(index)}
+                        onPointerDown={(event) => onCellPointerDown(index, event)}
                         onPointerEnter={(event) => onCellPointerEnter(index, event)}
                         onKeyDown={(event) => onCellKeyDown(index, event)}
-                        className={`flex min-h-11 flex-col items-center justify-center gap-0.5 rounded-cell px-1 py-1 font-ui text-[12px] transition-[background-color] duration-[var(--g-dur-state)] ease-[var(--g-ease-state)] disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action ${isOpen ? openClasses : assignedClasses} ${highlightClasses} ${selectedClasses}`.trim()}
+                        className={`flex min-h-11 flex-col items-center justify-center gap-0.5 rounded-cell px-1 py-1 font-ui text-[12px] transition-[background-color] duration-[var(--g-dur-state)] ease-[var(--g-ease-state)] disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action ${selectMode ? 'touch-none' : ''} ${isOpen ? openClasses : assignedClasses} ${highlightClasses} ${selectedClasses}`.trim()}
                       >
                         {!isOpen && <span className="line-clamp-2 text-center leading-tight">{name}</span>}
                         {paid && <span className="font-mono text-[10px] text-fg-2">paid</span>}

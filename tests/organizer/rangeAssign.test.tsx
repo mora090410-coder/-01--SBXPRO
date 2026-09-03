@@ -16,13 +16,19 @@ const board = (filled: number[] = []): BoardData => ({
 
 interface HarnessProps {
   isPublished?: boolean;
+  canAssignOpenSquares?: boolean;
   filled?: number[];
   onApply?: (input: RangeAssignInput) => void;
 }
 
-function Harness({ isPublished = false, filled = [], onApply = () => {} }: HarnessProps) {
+function Harness({ isPublished = false, canAssignOpenSquares, filled = [], onApply = () => {} }: HarnessProps) {
   const [selectMode, setSelectMode] = useState(false);
   const [selection, setSelection] = useState<Selection>(() => new Set<number>());
+  const toggleSelectMode = () => setSelectMode((current) => {
+    if (current) setSelection(new Set<number>());
+    return !current;
+  });
+  const namedCount = [...selection].filter((index) => filled.includes(index)).length;
   return (
     <>
       <BoardEditor
@@ -32,23 +38,22 @@ function Harness({ isPublished = false, filled = [], onApply = () => {} }: Harne
         drawPreview={null}
         highlightOpen={false}
         isPublished={isPublished}
-        canAssignOpenSquares={isPublished}
+        canAssignOpenSquares={canAssignOpenSquares ?? isPublished}
         selectMode={selectMode}
         selection={selection}
         onSelectionChange={setSelection}
-        onToggleSelectMode={() => setSelectMode((current) => {
-          if (current) setSelection(new Set<number>());
-          return !current;
-        })}
+        onToggleSelectMode={toggleSelectMode}
         onSelectSquare={vi.fn()}
       />
       {selectMode && selection.size > 0 && (
         <RangeAssignBar
           count={selection.size}
+          namedCount={namedCount}
           isPublished={isPublished}
           busy={false}
           onApply={onApply}
           onClear={() => setSelection(new Set<number>())}
+          onExitSelectMode={toggleSelectMode}
         />
       )}
     </>
@@ -102,6 +107,31 @@ describe('BoardEditor select mode', () => {
     expect(screen.queryByRole('group', { name: 'Assign selected squares' })).not.toBeInTheDocument();
   });
 
+  it('drag across a block works on touch, where the cells never get pointerenter', () => {
+    render(<Harness />);
+    enterSelectMode();
+    const from = cell(1);
+    const to = cell(2);
+    // jsdom has no layout, so the hit test is stubbed onto the document.
+    const original = (document as any).elementFromPoint;
+    (document as any).elementFromPoint = vi.fn(() => to);
+    try {
+      fireEvent.pointerDown(from, { pointerType: 'touch', pointerId: 7 });
+      fireEvent.pointerMove(screen.getByTestId('board-grid'), { pointerType: 'touch', pointerId: 7, clientX: 60, clientY: 60 });
+      fireEvent.pointerUp(window);
+    } finally {
+      (document as any).elementFromPoint = original;
+    }
+    expect(pressedCells()).toHaveLength(2);
+    expect(cell(1)).toHaveAttribute('aria-pressed', 'true');
+    expect(cell(2)).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('published without late fill: select mode is not offered', () => {
+    render(<Harness isPublished canAssignOpenSquares={false} />);
+    expect(screen.getByRole('button', { name: 'Select squares' })).toBeDisabled();
+  });
+
   it('published: sold squares cannot be selected', () => {
     render(<Harness isPublished filled={[0]} />);
     enterSelectMode();
@@ -149,6 +179,23 @@ describe('RangeAssignBar', () => {
     expect(screen.getByText('Only OPEN squares can be selected. Sold squares and axis digits do not change.')).toBeInTheDocument();
   });
 
+  it('warns how many selected squares already carry a name', () => {
+    render(<Harness filled={[0]} />);
+    enterSelectMode();
+    fireEvent.click(screen.getByRole('button', { name: 'Square 1, assigned to Ann R.' }));
+    fireEvent.click(cell(2));
+    expect(screen.getByText('1 of these already have a name. Apply replaces them.')).toBeInTheDocument();
+  });
+
+  it('Escape inside the bar leaves select mode', () => {
+    render(<Harness />);
+    enterSelectMode();
+    fireEvent.click(cell(1));
+    fireEvent.keyDown(screen.getByLabelText('Name for these squares'), { key: 'Escape' });
+    expect(screen.queryByRole('group', { name: 'Assign selected squares' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Select squares' })).toHaveAttribute('aria-pressed', 'false');
+  });
+
   it('clears the selection and closes the bar', () => {
     render(<Harness />);
     enterSelectMode();
@@ -156,5 +203,7 @@ describe('RangeAssignBar', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Clear selection' }));
     expect(screen.queryByRole('group', { name: 'Assign selected squares' })).not.toBeInTheDocument();
     expect(cell(1)).toHaveAttribute('aria-pressed', 'false');
+    // The bar the organizer was standing in is gone: focus goes back to the toggle.
+    expect(screen.getByRole('button', { name: 'Done selecting' })).toHaveFocus();
   });
 });

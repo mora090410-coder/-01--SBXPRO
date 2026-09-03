@@ -12,10 +12,14 @@ export interface RangeAssignInput {
 
 export interface RangeAssignBarProps {
   count: number;
+  /** How many of the selected squares already carry a name. */
+  namedCount?: number;
   isPublished: boolean;
   busy: boolean;
   onApply: (input: RangeAssignInput) => void;
   onClear: () => void;
+  /** Escape inside the bar leaves select mode, same as Escape on a square. */
+  onExitSelectMode?: () => void;
 }
 
 const PAID_OPTIONS: { value: Paid; label: string; tone: 'neutral' | 'cardinal' | 'gold' }[] = [
@@ -43,7 +47,15 @@ function focusIsKeyboard(): boolean {
 }
 
 /** Inline bar for labelling every selected square at once. */
-export default function RangeAssignBar({ count, isPublished, busy, onApply, onClear }: RangeAssignBarProps) {
+export default function RangeAssignBar({
+  count,
+  namedCount = 0,
+  isPublished,
+  busy,
+  onApply,
+  onClear,
+  onExitSelectMode,
+}: RangeAssignBarProps) {
   const [name, setName] = useState('');
   const [seller, setSeller] = useState('');
   const [paid, setPaid] = useState<Paid>('unknown');
@@ -66,8 +78,19 @@ export default function RangeAssignBar({ count, isPublished, busy, onApply, onCl
   };
 
   return (
-    <Glass role="group" aria-label="Assign selected squares" className="flex flex-col gap-4">
-      <Eyebrow>{count} selected</Eyebrow>
+    <Glass
+      role="group"
+      aria-label="Assign selected squares"
+      className="flex flex-col gap-4"
+      onKeyDown={(event) => {
+        if (event.key !== 'Escape' || !onExitSelectMode) return;
+        event.preventDefault();
+        onExitSelectMode();
+      }}
+    >
+      <div aria-live="polite">
+        <Eyebrow>{count} selected</Eyebrow>
+      </div>
       <CapsuleInput
         label="Name for these squares"
         autoFocus={autoFocusName}
@@ -99,6 +122,11 @@ export default function RangeAssignBar({ count, isPublished, busy, onApply, onCl
             ))}
           </div>
         </div>
+      )}
+      {!isPublished && namedCount > 0 && (
+        <p className="font-ui text-[14px] text-tone-cardinal">
+          {namedCount} of these already have a name. Apply replaces them.
+        </p>
       )}
       <p className="font-ui text-[14px] text-fg-2">{isPublished ? PUBLISHED_HELP : DRAFT_HELP}</p>
       <div className="flex flex-wrap gap-2">

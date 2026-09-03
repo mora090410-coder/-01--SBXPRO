@@ -795,6 +795,56 @@ describe('OrganizerWorkspace range assignment', () => {
     expect(screen.getByRole('group', { name: 'Assign selected squares' })).toBeInTheDocument();
   });
 
+  it('keeps an existing payment record when the payment radio is left untouched', async () => {
+    renderWorkspace({ entryMeta: { 0: paidMeta(0), 1: paidMeta(1) } });
+
+    enterSelectMode();
+    selectCell(1);
+    selectCell(2);
+    typeName('Dana P.');
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Apply to 2' }));
+    });
+
+    const [, metas] = (saveEntryMetaBatch as any).mock.calls[0];
+    expect(metas.map((meta: EntryMeta) => meta.paid_status)).toEqual(['paid', 'paid']);
+    expect(metas.map((meta: EntryMeta) => meta.seller_label)).toEqual(['Coach Lee', 'Coach Lee']);
+  });
+
+  it('warns before replacing names and says how many it replaced, in the status region', async () => {
+    renderWorkspace({ board: boardWithAssignments(2) });
+
+    enterSelectMode();
+    fireEvent.click(screen.getByRole('button', { name: 'Square 1, assigned to Ann R.' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Square 3, unassigned' }));
+    expect(screen.getByText('1 of these already have a name. Apply replaces them.')).toBeInTheDocument();
+
+    typeName('Dana Prince');
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Apply to 2' }));
+    });
+
+    const status = await screen.findByText('Assigned 2 squares to Dana Prince. Replaced 1 existing names.');
+    expect(status).toHaveAttribute('role', 'status');
+  });
+
+  it('published: says the names landed when only the notes fail, and drops the selection', async () => {
+    (saveEntryMetaBatch as any).mockRejectedValueOnce(new Error('network down'));
+    const onAssignOpenSquares = vi.fn(async (_squares: string[][]) => undefined);
+    renderWorkspace({ board: drawnBoard(99), isPublished: true, shareCode: 'abc123', onAssignOpenSquares });
+
+    enterSelectMode();
+    selectCell(100);
+    typeName('Dana Prince');
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Apply to 1' }));
+    });
+
+    expect(onAssignOpenSquares).toHaveBeenCalledTimes(1);
+    expect(await screen.findByRole('alert')).toHaveTextContent('Squares assigned. Seller and payment notes were not saved.');
+    expect(screen.queryByRole('group', { name: 'Assign selected squares' })).not.toBeInTheDocument();
+  });
+
   it('drops the selection when select mode is left', () => {
     renderWorkspace();
 

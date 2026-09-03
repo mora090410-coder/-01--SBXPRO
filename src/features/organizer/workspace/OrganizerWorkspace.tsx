@@ -90,6 +90,7 @@ const RENAME_FAILED = 'The name could not be changed. The board still shows the 
 const UNTITLED_WORKSPACE = 'Untitled board workspace';
 const SQUARE_META_FAILED = 'Square details were not saved. The name is on the board; try saving the details again.';
 const RANGE_ASSIGN_FAILED = 'Could not assign those squares. Nothing changed.';
+const RANGE_META_FAILED = 'Squares assigned. Seller and payment notes were not saved.';
 const CLEAR_META_FAILED = 'The private notes were not cleared. Try again.';
 const PAYOUT_FAILED = 'Prize notes were not saved. Try again.';
 
@@ -205,6 +206,9 @@ export default function OrganizerWorkspace({
   const [selectMode, setSelectMode] = useState(false);
   const [selection, setSelection] = useState<Selection>(() => new Set<number>());
   const [rangeBusy, setRangeBusy] = useState(false);
+  // Bumped once a range apply settles so BoardEditor can take focus back even
+  // when the apply failed and the selection is still standing.
+  const [rangeFocusSignal, setRangeFocusSignal] = useState(0);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [publishOpen, setPublishOpen] = useState(false);
   const [publishPending, setPublishPending] = useState(false);
@@ -374,6 +378,15 @@ export default function OrganizerWorkspace({
 
   const clearSelection = () => setSelection(new Set<number>());
 
+  // How many selected squares an apply would overwrite. The bar warns first.
+  const selectedNamedCount = useMemo(() => {
+    let count = 0;
+    selection.forEach((index) => {
+      if ((board.squares[index]?.length ?? 0) > 0) count += 1;
+    });
+    return count;
+  }, [selection, board.squares]);
+
   /**
    * One name, one seller, and one payment state across every selected square.
    * The payment state is always written -- `unknown` is the honest "not asked
@@ -397,13 +410,20 @@ export default function OrganizerWorkspace({
       const existing = entryMeta[index];
       return {
         cell_index: index,
-        paid_status: input.paid,
+        // `unknown` is the untouched default of the radio group, not a
+        // decision: it must never erase a payment record already on file.
+        paid_status: input.paid === 'unknown' ? existing?.paid_status ?? 'unknown' : input.paid,
         notify_opt_in: existing?.notify_opt_in ?? false,
         contact_type: existing?.contact_type ?? null,
         contact_value: existing?.contact_value ?? null,
-        seller_label: input.seller || existing?.seller_label || null,
+        seller_label: input.seller.trim() || existing?.seller_label || null,
       };
     });
+
+    const replaced = ok.filter((index) => (previousSquares[index]?.length ?? 0) > 0).length;
+    const successNote = replaced === 0
+      ? `Assigned ${ok.length} squares to ${name}.`
+      : `Assigned ${ok.length} squares to ${name}. Replaced ${replaced} existing names.`;
 
     setRangeBusy(true);
     setAlert(null);
@@ -411,20 +431,33 @@ export default function OrganizerWorkspace({
       if (isPublished) {
         await onAssignOpenSquares(nextSquares);
         await onReload?.();
+        if (activePoolId) {
+          try {
+            await saveEntryMetaBatch(activePoolId, metas);
+            metas.forEach((meta) => onEntryMetaChange(meta));
+          } catch {
+            // The names are live on the published board: rolling back is not
+            // an option, so say exactly what did and did not save.
+            clearSelection();
+            setAlert(RANGE_META_FAILED);
+            return;
+          }
+        }
       } else {
         setBoard((current) => ({ ...current, squares: nextSquares }));
-      }
-      if (activePoolId) {
-        await saveEntryMetaBatch(activePoolId, metas);
-        metas.forEach((meta) => onEntryMetaChange(meta));
+        if (activePoolId) {
+          await saveEntryMetaBatch(activePoolId, metas);
+          metas.forEach((meta) => onEntryMetaChange(meta));
+        }
       }
       clearSelection();
-      setNote(`Assigned ${ok.length} squares to ${name}.`);
+      setNote(successNote);
     } catch {
       if (!isPublished) setBoard((current) => ({ ...current, squares: previousSquares }));
       setAlert(RANGE_ASSIGN_FAILED);
     } finally {
       setRangeBusy(false);
+      setRangeFocusSignal((current) => current + 1);
     }
   };
 
@@ -907,14 +940,17 @@ export default function OrganizerWorkspace({
                 onSelectionChange={setSelection}
                 onToggleSelectMode={toggleSelectMode}
                 onSelectSquare={setSelectedSquare}
+                focusToggleSignal={rangeFocusSignal}
               />
               {selectMode && selection.size > 0 && (
                 <RangeAssignBar
                   count={selection.size}
+                  namedCount={selectedNamedCount}
                   isPublished
                   busy={rangeBusy}
                   onApply={(input) => void applyRange(input)}
                   onClear={clearSelection}
+                  onExitSelectMode={toggleSelectMode}
                 />
               )}
             </section>
@@ -962,6 +998,9 @@ export default function OrganizerWorkspace({
       <main aria-label={mainLabel} className="mx-auto max-w-7xl px-4 pt-6 pb-24 lg:pt-8">
         {header}
         {alertRegion}
+        {/* The island prefers a blocker over its note, and saving is dirty the
+            instant a range lands, so the confirmation lives here in the flow. */}
+        {note ? <p role="status" className="mt-4 font-ui text-[15px] text-fg-2">{note}</p> : null}
         <div className="mt-8 grid min-w-0 gap-8 lg:grid-cols-[minmax(0,1fr)_360px] [&>*]:min-w-0">
           <section id="workspace-board" aria-label="Board" className="flex min-w-0 max-w-full flex-col gap-4">
             {(drawRequested || drawPreview || axesCommitted) && (
@@ -996,14 +1035,17 @@ export default function OrganizerWorkspace({
               onToggleSelectMode={toggleSelectMode}
               onSelectSquare={setSelectedSquare}
               onPasteNames={pasteNames}
+              focusToggleSignal={rangeFocusSignal}
             />
             {selectMode && selection.size > 0 && (
               <RangeAssignBar
                 count={selection.size}
+                namedCount={selectedNamedCount}
                 isPublished={false}
                 busy={rangeBusy}
                 onApply={(input) => void applyRange(input)}
                 onClear={clearSelection}
+                onExitSelectMode={toggleSelectMode}
               />
             )}
           </section>
