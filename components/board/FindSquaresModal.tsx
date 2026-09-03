@@ -32,7 +32,7 @@ const FindSquaresModal: React.FC<FindSquaresModalProps> = ({ board, selectedPlay
 
     return (
         <div data-base="dark">
-            <Sheet open onClose={onClose} title="Find my squares">
+            <Sheet open onClose={onClose} title="Find my squares" layer="raised">
                 <form onSubmit={submit} className="flex items-end gap-2">
                     <CapsuleInput
                         id="viewer-player-search"

@@ -1,292 +1,209 @@
 # GridOne Accessibility and Inclusive-Use Contract
 
 **Status:** Product, design, and release authority
-**Date:** 2026-08-20
 **Standard baseline:** WCAG 2.2 Level AA
-**Primary references:** W3C WCAG 2.2 Recommendation; WAI-ARIA Authoring Practices grid and modal-dialog patterns
+**Executable half:** `playwright-tests/accessibility-contract.spec.ts`
+**References:** W3C WCAG 2.2; WAI-ARIA Authoring Practices, grid and modal-dialog patterns
 
 ## Conformance posture
 
-GridOne targets WCAG 2.2 Level AA across complete user processes—not isolated components.
+GridOne targets WCAG 2.2 Level AA across complete user processes, not isolated components. The product adopts stricter internal requirements where game-day conditions justify them — notably 44×44 CSS-pixel controls, which is above WCAG's minimum target-size criterion.
 
-The product adopts stricter internal requirements where game-day conditions justify them, including 44×44 CSS-pixel controls even though WCAG’s minimum target-size criterion can be smaller.
+Automated tooling cannot prove conformance. Release evidence combines the Playwright contract spec, semantic queries in the unit suite, assistive-technology review, and human task testing. Do not claim formal conformance until the complete public and organizer processes have been evaluated and known exceptions documented.
 
-Automated tooling cannot prove conformance. Release evidence combines deterministic checks, browser automation, assistive-technology review, and human task testing.
-
-Do not claim formal conformance until the complete public and organizer processes have been evaluated and known exceptions documented.
+Every requirement below that is written as an assertion is asserted somewhere in `playwright-tests/accessibility-contract.spec.ts`. If a requirement is not testable there, it is marked as a manual gate.
 
 ## Complete processes in scope
 
-### Organizer
+**Organizer:** sign in and sign up · create draft · fill and edit assignments · block selection and assignment · reconcile and acknowledge open squares · draw and commit axes · preview · publish and checkout · recover a save conflict · operate manual scoring · correct published labels and milestones · review the Final record.
 
-- Sign up/sign in
-- Create draft
-- Fill and edit assignments
-- Reconcile and acknowledge open squares
-- Draw and commit axes
-- Preview
-- Go Live/checkout when applicable
-- Recover save conflict/failure
-- Operate manual scoring
-- Correct published labels/milestones
-- Review Final record
+**Viewer:** open a published link · understand score authority and freshness · find my squares · read personal coordinates, current result, and scenarios · inspect the exact grid · verify winner email · understand pending, resolved, corrected, and OPEN results · use the Final record.
 
-### Viewer
+**Supporting:** homepage and demo · dashboard · articles, terms, privacy · invalid, unpublished, deleted, offline, and error states.
 
-- Open published link
-- Understand score authority/freshness
-- Find My Squares
-- Read personal coordinates/current status/scenarios
-- Inspect exact grid
-- Verify winner email
-- Understand pending/resolved/corrected/OPEN results
-- Use Final record
+## Site landmarks
 
-### Supporting
+Every site route — homepage, articles hub, guides, legal, login, 404 — renders, via `src/features/site/`:
 
-- Homepage and demo
-- Dashboard
-- Terms/Privacy/articles
-- Invalid/unpublished/deleted/offline/error states
+- one `banner` header carrying the `GridOne` wordmark link and the signed-out `Sign in` control (or the signed-in `Your boards` / `Log out` controls);
+- one `main`;
+- one `contentinfo` footer listing the guides, `All guides`, `Sign in`, `Privacy`, and `Terms`.
+
+Focused, short-lived routes (the checkout return, 404) may omit the footer but never the header or `main`. The wordmark and the header sign-in control are the first two tab stops and both render a visible focus ring. The homepage `Sign in` link meets the 44×44 target contract.
 
 ## Semantic structure
 
-- One descriptive page title and one `h1` per primary route state.
-- Landmarks represent header/navigation/main/footer and complementary regions intentionally.
-- Heading order reflects hierarchy and never exists only for styling.
-- Lists, tables, definitions, forms, and status messages use native semantics before ARIA.
-- Visual order and DOM/reading order match.
+- One descriptive page title and exactly one `h1` per primary route state. The homepage has one `h1`; the viewer's `h1` is carried by `ScoreInstrument` (an `h2` inside organizer preview, where the shell is a `section`, not a `main`).
+- The viewer `main` is named `{board title} viewer`; the organizer `main` is named `{board title} workspace`.
+- Landmarks are intentional. Heading order reflects hierarchy and never exists only for styling.
+- Native semantics before ARIA: lists, tables, forms, `role="status"`, `role="alert"`.
+- Visual order matches DOM and reading order.
 - Icon-only controls have durable accessible names.
-- Demonstration/synthetic data is identified in visible and accessible text.
-- Every site route (homepage, articles hub, guides, legal, login, 404) renders one `banner` header carrying the `GridOne` wordmark link and the signed-out `Sign in` (or signed-in `Your boards` / `Log out`) control, one `main`, and one `contentinfo` footer listing the guides, `All guides`, `Sign in`, `Privacy`, and `Terms`. Focused, short-lived routes (checkout return, 404) may omit the footer but never the header or `main`.
-- The wordmark and the header sign-in control are the first two tab stops and both render a visible focus ring.
+- Demonstration data is identified in visible and accessible text — the `/demo` route announces itself in its `h1` (`Demo: …`) and in body text.
 
 ## Keyboard and focus
 
-- Every function available to pointer/touch is available to keyboard.
+- Every function available to pointer or touch is available to keyboard.
 - No positive `tabindex`.
-- Focus order follows task order.
-- Focus is visible, meets rendered contrast, and is not obscured by sticky/floating elements.
-- Route and major state transitions place focus intentionally at the new task heading or result.
-- Programmatic scroll never moves focus to a hidden or offscreen element.
-- Skip/bypass links are available where repeated navigation would burden the process.
-- Focus does not become trapped outside a true modal dialog.
+- Focus order follows task order and is always visible; the app-wide rule is a 3px outline that inverts to gold on dark and cardinal grounds (`src/index.css`), and Broadcast Glass primitives manage their own equivalent ring.
+- Route and major state transitions place focus at the new task heading or result.
+- Programmatic scroll never moves focus to a hidden or offscreen element. `View on board` and `Center selected square` move the viewport, not focus, until explicitly activated.
+- Focus is never trapped outside a true modal dialog.
+- Forced-colors mode preserves focus indicators and boundaries; the spec checks a focused field under forced colors.
 
 ## Board interaction pattern
 
-The 10×10 viewer and organizer boards are composite interactive data grids, not 100 independent page tab stops.
+The 10×10 viewer and organizer boards are composite interactive grids, not 100 independent page tab stops.
 
-### Common grid behavior
+### Common
 
-- `Tab` enters the grid once at the current/selected/first meaningful cell.
-- Only one cell is in the page tab sequence at a time.
-- Arrow keys move one cell in the corresponding direction.
-- `Home` / `End` move to first/last cell in the row.
-- `Control+Home` / `Control+End` move to first/last board cell.
-- Moving focus scrolls the cell into view without losing top/side orientation.
-- Row/column headers name top and side digits/teams.
-- Cell accessible name includes assignment/open state, coordinate, top/side digits, and winner/correction state when applicable.
-- Selected cells expose `aria-selected=true` or equivalent selected semantics.
-- Focus, personal selection, current result, and resolved winner remain visually and semantically distinguishable.
+- `Tab` enters the grid once, at the current, selected, or first meaningful cell. **Exactly one cell is in the page tab sequence at a time** — asserted.
+- Arrow keys move one cell. `Home` / `End` move to the first/last cell in the row.
+- Moving focus scrolls the cell into view without losing top/side orientation; the axes are sticky.
+- Row and column headers name the team and digit.
+- A cell's accessible name includes assignment or OPEN state, coordinate, and both digits — e.g. `Ann, coordinate row 1 column 1, top digit 0, side digit 0`.
+- Focus, personal selection, current result (`NOW`), and resolved winner remain visually and semantically distinguishable — never by color alone.
 
 ### Viewer grid
 
-- `Enter` or `Space` opens/reveals full cell details when needed.
-- Escape closes detail and returns focus to the originating cell.
-- `Center selected` moves viewport and focus only after explicit activation.
-- Read-only status is conveyed; viewer grid never implies editability.
+- Read-only. The grid never implies editability.
+- `Board controls` group: `Zoom in`, `Zoom out`, `Fit`, `Current zoom`, `Center selected square`, `Center current result`.
 
 ### Organizer assignment grid
 
-- `Space` toggles the focused square’s selection.
-- Shift-modified directional selection may extend a range only when implemented consistently and documented onscreen.
-- Bulk assignment controls operate on the explicit selected set.
-- Edit/details opens a semantic dialog and returns focus to the originating cell.
-- Published/correction mode communicates which cells are immutable, OPEN-fillable, or correction-eligible.
+- Every square has a durable name: `Square {n}, unassigned` or `Square {n}, assigned to {name}` — all 100 addressable by name, asserted.
+- Activating a square opens the dialog `Square {n}` with initial focus on `Name on the board`, and returns focus to the originating cell on close.
+- On a published board, only OPEN squares are editable; sold squares are disabled and the onscreen help says so.
 
 ### Organizer selection mode (range assignment)
 
-- A single toolbar button toggles the mode and reads `Select squares` / `Done selecting` with `aria-pressed` reflecting the state.
-- Only in selection mode do the squares expose `aria-pressed`; outside it the attribute is absent so a square is not mistaken for a toggle.
-- `Space` on a focused square toggles it; `Shift` with click or `Space` extends the rectangular block from the last anchor.
-- The inline apply bar is a `group` named `Assign selected squares`, announces `{n} selected` in a polite live region, and carries labelled `Name for these squares` and `Sold by (optional)` inputs, a `Payment` radiogroup (`Not asked yet` / `Unpaid` / `Paid`), `Apply to {n}`, and `Clear selection`.
+- One toolbar button toggles the mode, reading `Select squares` / `Done selecting`, with `aria-pressed` reflecting the state.
+- Only in selection mode do the squares expose `aria-pressed`; outside it the attribute is absent, so a square is not mistaken for a toggle.
+- `Space` or click on a focused square toggles it; `Shift` with click or `Space` extends the rectangular block from the last anchor. A non-selected square in range keeps `aria-pressed="false"`.
+- The inline apply bar is a `group` named `Assign selected squares`. It announces `{n} selected` in a polite live region and carries labelled `Name for these squares` and `Sold by (optional)` inputs, a `Payment` radiogroup (`Not asked yet` checked by default / `Unpaid` / `Paid`), `Apply to {n}`, and `Clear selection`. Applying renames every selected square and hides the bar.
 - `Escape` on a square or inside the bar leaves selection mode; whenever the selection empties, focus returns to the toggle rather than being stranded.
-- A published board accepts only OPEN squares into a selection; sold squares stay disabled and the onscreen help says so.
 
-The implementation may use a semantic HTML table with managed roving focus or a valid ARIA grid. It must not duplicate conflicting table/grid roles.
+The implementation may use a semantic table with managed roving focus or a valid ARIA grid. It must not duplicate conflicting table and grid roles.
 
 ## Touch and pointer
 
-- Primary controls and board controls are at least 44×44 CSS pixels.
-- Dense grid cells may be smaller visually because the board is a precision instrument, but the selected-detail and pan/zoom controls provide accessible touch interaction.
+- Primary controls and board controls are at least 44×44 CSS pixels — asserted on the organizer status toggle, the homepage `Create your free board` / `See a live board` / `Sign in` controls, and the sign-in form's submit.
+- Dense grid cells may be smaller because the board is a precision instrument; the selected-detail sheet and the pan/zoom controls carry the accessible touch interaction.
 - No essential action depends on hover.
 - Tap, drag/pan, and scroll gestures do not conflict with page scrolling.
-- Gesture-only behavior has visible controls or equivalent alternatives.
-- Pointer cancellation prevents destructive/action commitment on pointer-down.
+- Gesture-only behavior has an equivalent visible control.
+- Destructive actions never commit on pointer-down.
 
-## Dialogs, sheets, and menus
+## Dialogs and sheets
 
-Modal dialogs follow WAI-ARIA APG behavior:
+Modal dialogs follow the WAI-ARIA dialog pattern:
 
-- `role=dialog` or appropriate native equivalent
-- `aria-modal=true` only when outside content is actually inert
-- Visible title connected by `aria-labelledby`
-- Description only when concise; structured content remains navigable
-- Initial focus selected by task and risk
-- Tab/Shift+Tab contained
-- Escape closes unless closure would violate an explicitly explained critical process
-- Visible close/cancel action
-- Focus returns to trigger or logical next workflow element
+- a real `role="dialog"` with `aria-modal="true"` only when outside content is genuinely inert;
+- a visible title connected by `aria-labelledby` — `Find my squares`, `Square {n}`, `Private preview — sharing is off`, `Publish viewer link`, `Published`, `Choose a plan`;
+- initial focus chosen by task and risk;
+- `Tab` / `Shift+Tab` contained — asserted on the find-my-squares dialog, where tabbing past the last name in the browse list reaches `Close`;
+- `Escape` closes unless closure would violate an explicitly explained critical process;
+- a visible close or cancel action;
+- focus returns to the trigger.
 
-For irreversible, payment, publication, deletion, and public-correction dialogs, initial focus lands on the least destructive safe action unless a different choice is demonstrably safer.
+For irreversible, payment, publication, deletion, and public-correction dialogs, **initial focus lands on the least destructive safe action.** Asserted: `Publish viewer link` opens with `Cancel` focused; the open-square draw confirmation puts focus on `Keep assigning`.
 
-Menus use actual menu behavior only when they need menu semantics. Ordinary lists of actions may remain buttons/links without fake menu roles.
+Ordinary lists of actions stay buttons and links. Do not invent menu roles.
 
 ## Forms and validation
 
 - Every input has a persistent visible label.
-- Required/optional state is stated in text.
-- Instructions precede the field or are programmatically associated.
-- Errors identify the field, explain the problem, and suggest recovery.
-- `aria-invalid` and `aria-describedby` connect field errors.
-- Submit failure preserves entered values when safe.
-- Password managers and `autocomplete` are supported.
-- Authentication does not require memory puzzles or transcription-only challenges.
-- Checkout, publication, correction, and deletion provide review/confirmation appropriate to consequence.
-- Error summaries move focus only after failed submission and link to affected fields where several errors exist.
+- Required and optional state is stated in text (`Sold by (optional)`).
+- Errors identify the field, explain the problem, and suggest recovery. Asserted on the auth form: a `role="alert"` with `id="auth-error"` reading `No account found or incorrect password. Create one?` or `Passwords do not match`; the offending fields carry `aria-invalid="true"` and `aria-describedby="auth-error"`.
+- The error is words, not a wordless icon — the alert contains zero `svg` children.
+- Fields render a real boundary (`border-top-style: solid`), not a placeholder-only affordance.
+- Submit failure preserves entered values.
+- `autocomplete` and password managers are supported. Authentication requires no memory puzzle or transcription challenge.
+- Checkout, publication, correction, and deletion provide review appropriate to their consequence — the publish dialog summarizes board name, matchup, kickoff, square counts, both axes, what becomes public, what remains private, and the season entitlement before the confirming button.
 
 ## Status, live regions, and score updates
 
 Use live regions sparingly.
 
-Announce:
+**Announce:** save failed, recovered, or conflicted; publication succeeded or failed; score authority changed; a material score or period change while the viewer is open; milestone pending, resolved, or corrected; notification verification and delivery results.
 
-- save failed/recovered/conflicted;
-- publication succeeded/failed;
-- score authority changed;
-- material score/period change when user is on the viewer;
-- milestone pending/resolved/corrected;
-- notification verification/delivery result.
+**Do not announce:** every background poll; an unchanged freshness timestamp; every autosave cycle; decorative animation.
 
-Do not announce:
+Asserted: the viewer score region is `role="status"` and names its authority (`Offline · last known`, `Stale · last known`, `Refreshing`, `Manual score · Entered by the organizer`, `Final`) alongside the standing disclosure `Score updates about every minute`. The organizer save state announces `Save failed` as a `status`, and the revision conflict `This board changed in another session.` as an `alert` carrying `Reload latest board`.
 
-- every background poll;
-- unchanged freshness timestamps;
-- every autosave start/success keystroke cycle;
-- decorative animation.
+## Blockers versus advisories
 
-Announcements use concise text and do not interrupt typing unless the event is urgent and destructive.
+A blocker and an advisory must never look or sound alike. The organizer's `Before you can publish` region contains only hard blockers; `Private follow-up` contains only advisories. Asserted: OPEN-square and payment/seller follow-up text appears in the advisory region and **not** in the blocker region, and the island's `Draw numbers` stays enabled while only advisories remain.
 
 ## Color and contrast
 
-- Normal text meets at least 4.5:1.
-- Large text meets at least 3:1.
-- Essential UI boundaries, focus, and meaningful graphics meet at least 3:1 against adjacent colors.
-- Disabled-state meaning is not expressed by low opacity alone.
-- Live, selected, current winner, resolved winner, OPEN, stale, error, and corrected states include text/icon/state semantics.
+- Normal text meets 4.5:1; large text 3:1; essential boundaries, focus, and meaningful graphics 3:1 against adjacent colors. `tests/design/contrast.test.ts` checks the token pairs in `src/design/tokens.css`.
+- Disabled meaning is never expressed by low opacity alone.
+- Live, selected, current winner, resolved winner, OPEN, stale, error, and corrected states all carry text or state semantics in addition to color.
 - Forced-colors mode preserves boundaries, focus, and state.
-- Formal `DESIGN.md` lint supplements but does not replace rendered contrast testing.
+- `npm run design:lint` supplements rendered contrast testing; it does not replace it.
 
 ## Reflow, zoom, and text
 
-- At 320 CSS pixels, the page has no horizontal overflow except inside the intentional board viewport.
-- At 400% browser zoom, content reflows without loss of information or function; the board remains in its controlled viewport.
-- At 200% text scaling, controls, errors, dialogs, and sticky regions remain usable.
-- Long participant, organization, board, team, and correction text wraps or truncates with an accessible full-value path.
-- Sticky headers/controls do not obscure focused content.
-- Orientation works in portrait and landscape where supported.
+- At 320 and 390 CSS pixels the page has no horizontal overflow outside the intentional board viewport — asserted at both widths.
+- At 400% browser zoom, content reflows without loss of information or function; the board stays in its controlled viewport.
+- At 200% text scaling, controls, errors, dialogs, and sticky regions remain usable (manual gate).
+- Long participant, organization, board, team, and correction text wraps or truncates with an accessible path to the full value.
+- Sticky headers and the status islands never obscure focused content.
 
 ## Motion and sensory safety
 
-- `prefers-reduced-motion` removes nonessential transforms, wipes, parallax, ticker movement, score rolls, and cinematic choreography.
-- Reduced motion preserves content and state.
-- No content flashes above safe thresholds.
-- Motion is interruptible and never required to progress.
-- Optional brand film is skippable and outside critical product paths.
-- Autoplaying sound is prohibited.
+- `prefers-reduced-motion` removes non-essential transforms, parallax, score rolls, and cinematic choreography; `src/design/primitives/motion.ts` collapses every duration to `--g-dur-reduced`.
+- Reduced motion preserves all content and state — asserted: with reduced motion forced, the homepage `Scores update themselves.` heading and `Create your free board` link and the viewer's `Find my squares` button all remain reachable.
+- No content flashes above safe thresholds. Motion is interruptible and never required to progress. No autoplaying sound.
 
 ## Loading, stale, offline, and recovery
 
-- Loading state does not expose stale data as current.
-- Valid last-known score remains visible with stale/offline label and timestamp.
+- A loading state never presents stale data as current.
+- A valid last-known score stays visible with its stale or offline label and timestamp, and states `Using the last-known score checked … until scoring reconnects.`
 - Errors are specific to the affected object and retain recoverable work.
-- Offline/failure states do not remove the exact published board when it remains locally/server available.
-- Save conflicts block progression until resolved.
-- Public invalid/unpublished/deleted states never render a plausible empty board.
+- Save conflicts block progression until resolved — `Review and publish` is disabled while the conflict stands, and the organizer's typed value survives.
+- Invalid, unpublished, or deleted public states never render a plausible empty board.
 
 ## Content and cognition
 
-- Use canonical Board/Organizer/Viewer/Purchaser/Square/Axis digits/Publish language.
-- One concept has one name.
+- Canonical vocabulary: Board, Organizer, Viewer, Purchaser, Square, Axis digits, Publish. One concept, one name.
 - Phase and status labels use plain language before technical explanation.
-- Primary action describes its result.
+- A primary action describes its result (`Publish viewer link`, `Publish manual score`, `Publish correction and email both people`, `Draw with {n} OPEN`).
 - Advisories do not masquerade as blockers.
 - Error and recovery copy avoids blame.
 - Time, price, allowance, score authority, and irreversible consequences are explicit.
+- The viewer uses no "me" language before a name is selected.
 
 ## Automated gate
 
-Implementation plan must add accessibility automation without treating it as complete coverage.
+Required on every release:
 
-Required:
+- semantic queries in the unit suite — role, label, and text, never class names or test ids where a role exists;
+- `npx playwright test --project=chromium`, which runs `accessibility-contract.spec.ts` over the signed-out auth errors, homepage, demo, published viewer, organizer draft workspace, selection mode, Reconcile, Draw, Preview and Publish, save conflict, viewer authority states, the find-my-squares dialog, board keyboard navigation, 320/390 reflow, reduced motion, and forced colors;
+- zero critical or serious violations from the axe pass, unless an explicit, time-bounded, documented exception is approved;
+- `npm run design:lint`.
 
-- semantic queries in component tests;
-- automated accessibility scan on representative rendered routes/states;
-- zero critical/serious violations unless an explicit time-bounded exception is approved;
-- focus order/dialog/grid keyboard browser tests;
-- rendered target-size and overflow assertions;
-- reduced-motion and forced-colors checks where automation is reliable;
-- Chromium and WebKit browser projects; add Firefox before whole-app release unless a documented environment blocker remains.
-
-Representative automated states:
-
-- signed-out login/signup errors;
-- empty/partial organizer Fill;
-- Reconcile advisory items;
-- Draw confirmation;
-- Preview and Go Live dialogs;
-- save conflict/error;
-- viewer unpersonalized/personalized;
-- stale/offline/manual;
-- Find My Squares dialog;
-- board keyboard navigation;
-- pending/corrected/OPEN/Final record.
+Add Firefox and WebKit runs before a whole-app release unless a documented environment blocker remains.
 
 ## Manual and assistive-technology gate
 
-Before whole-app release:
+Before a whole-app release:
 
-- VoiceOver + Safari on macOS/iOS-class behavior
-- NVDA + Chrome or Firefox on Windows when available
-- Keyboard-only complete organizer and viewer processes
-- Touch phone process at representative narrow viewport
-- 200% text and 400% zoom
-- Reduced motion
-- Forced colors/high contrast where available
+- VoiceOver with Safari on macOS and iOS;
+- NVDA with Chrome or Firefox on Windows where available;
+- keyboard-only completion of the organizer and viewer processes end to end;
+- the touch phone process at a representative narrow viewport;
+- 200% text and 400% zoom;
+- reduced motion;
+- forced colors / high contrast.
 
 If a platform cannot be tested, disclose the gap. Do not imply coverage.
 
 ## Usability evidence
 
-Moderated baseline includes disabled/inclusive-use scenarios where practical:
-
-- keyboard-only organizer assignment;
-- low-vision zoom/reflow;
-- screen-reader viewer identity and board navigation;
-- motor-control touch targets;
-- cognitive clarity for score authority and recovery.
-
-Do not recruit token participants solely to claim inclusion. Record actual tasks, barriers, and fixes.
+The moderated baseline includes inclusive-use scenarios where practical: keyboard-only organizer assignment, low-vision zoom and reflow, screen-reader viewer identity and board navigation, motor-control touch targets, and cognitive clarity for score authority and recovery. Do not recruit token participants to claim inclusion. Record the actual tasks, barriers, and fixes.
 
 ## Per-slice definition of done
 
-A UI slice is not complete until:
-
-- semantics and names are correct;
-- keyboard/touch/pointer paths work;
-- focus and dialogs recover correctly;
-- phone, zoom, long content, loading, error, stale/offline, and success states are checked as applicable;
-- automated scans and focused tests pass;
-- rendered evidence is inspected;
-- new exceptions are documented with owner and removal condition;
-- the complete journey remains intact.
+A UI slice is not complete until semantics and accessible names are correct; keyboard, touch, and pointer paths work; focus and dialogs recover correctly; phone, zoom, long-content, loading, error, stale/offline, and success states are checked as applicable; the automated gates pass; the rendered result is inspected; any new exception is documented with an owner and a removal condition; and the complete journey still works.

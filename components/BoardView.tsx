@@ -305,10 +305,6 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
         <div className="min-h-[100dvh] w-full flex flex-col bg-ground text-fg" data-base="dark">
             {game.scoreTestMode && <SyntheticScoreTestBanner />}
 
-            {showShareModal && (
-                <ShareModal shareUrl={shareUrl} onClose={() => setShowShareModal(false)} />
-            )}
-
             {loadingPool && urlPoolId && <FullScreenLoading />}
 
             {/* Demo mode never loads a pool, so loadingPool stays true there */}
@@ -325,6 +321,10 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                     )}
                     {renderMainContent()}
                 </div>
+            )}
+
+            {showShareModal && (
+                <ShareModal shareUrl={shareUrl} onClose={() => setShowShareModal(false)} />
             )}
 
             {showFindSquaresModal && (

@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ScheduledGame } from '../types';
+import { CapsuleButton } from '../src/design/primitives';
 
 export interface ScheduledGamePickerProps {
     value: string | null;
@@ -108,7 +109,7 @@ export const ScheduledGamePicker: React.FC<ScheduledGamePickerProps> = ({
             <div className={`space-y-3 ${className}`} aria-live="polite" aria-busy="true">
                 <span className="sr-only">Loading NFL games</span>
                 {[0, 1, 2].map(item => (
-                    <div key={item} className="h-[78px] border border-newsprint bg-newsprint/60 animate-pulse" />
+                    <div key={item} className="h-[78px] rounded-card border border-hairline bg-panel animate-pulse" />
                 ))}
             </div>
         );
@@ -116,21 +117,21 @@ export const ScheduledGamePicker: React.FC<ScheduledGamePickerProps> = ({
 
     if (error) {
         return (
-            <div className={`border border-cardinal bg-cardinal-subtle p-5 ${className}`} role="alert">
-                <p className="oa-slab text-cardinal mb-2">Schedule unavailable</p>
-                <p className="oa-body text-sm text-ink/70 mb-4">{error}</p>
-                <button type="button" onClick={retry} className="oa-btn oa-btn-ghost">Retry</button>
+            <div className={`rounded-card border border-hairline bg-panel p-5 ${className}`} role="alert">
+                <p className="font-ui text-[15px] font-semibold text-tone-cardinal mb-2">Schedule unavailable</p>
+                <p className="font-ui text-[14px] text-fg-2 mb-4">{error}</p>
+                <CapsuleButton variant="quiet" onClick={retry}>Retry</CapsuleButton>
             </div>
         );
     }
 
     if (games.length === 0) {
         return (
-            <div className={`border border-ink bg-newsprint p-5 ${className}`} role="status">
-                <p className="oa-slab text-ink mb-2">
+            <div className={`rounded-card border border-hairline bg-panel p-5 ${className}`} role="status">
+                <p className="font-ui text-[15px] font-semibold text-fg mb-2">
                     {scope === 'completed' ? 'No completed games found' : 'No upcoming games found'}
                 </p>
-                <p className="oa-body text-sm text-ink/65">
+                <p className="font-ui text-[14px] text-fg-2">
                     {scope === 'completed'
                         ? 'There are no recent final games available for score testing.'
                         : 'The next NFL schedule has not been posted yet. Try again when games are announced.'}
@@ -143,16 +144,16 @@ export const ScheduledGamePicker: React.FC<ScheduledGamePickerProps> = ({
         <div className={`space-y-6 ${className}`}>
             {groups.map(([label, groupGames]) => (
                 <fieldset key={label} className="space-y-2">
-                    <legend className="oa-slab text-ink/55 mb-3">{label}</legend>
+                    <legend className="font-mono uppercase text-[12px] leading-none tracking-[0.12em] text-fg-3 mb-3">{label}</legend>
                     {groupGames.map(game => {
                         const selected = value === game.id;
                         return (
                             <label
                                 key={game.id}
-                                className={`grid grid-cols-[auto_1fr_auto] items-center gap-4 min-h-[76px] border p-4 cursor-pointer transition-colors focus-within:outline focus-within:outline-4 focus-within:outline-cardinal ${
+                                className={`grid grid-cols-[auto_1fr_auto] items-center gap-4 min-h-[76px] rounded-card border p-4 cursor-pointer transition-colors duration-[var(--g-dur-state)] ease-[var(--g-ease-state)] focus-within:ring-2 focus-within:ring-action ${
                                     selected
-                                        ? 'border-cardinal bg-cardinal text-broadcast-white'
-                                        : 'border-ink bg-broadcast-white hover:bg-newsprint'
+                                        ? 'border-action bg-panel-hover'
+                                        : 'border-hairline bg-panel hover:bg-panel-hover'
                                 } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                             >
                                 <input
@@ -162,17 +163,17 @@ export const ScheduledGamePicker: React.FC<ScheduledGamePickerProps> = ({
                                     checked={selected}
                                     disabled={disabled}
                                     onChange={() => onChange(game)}
-                                    className="h-5 w-5 accent-current"
+                                    className="h-5 w-5 accent-action"
                                 />
                                 <span className="min-w-0">
-                                    <span className="oa-slab block leading-tight">
-                                        {game.awayTeam.abbr} <span className={selected ? 'text-broadcast-white/65' : 'text-ink/45'}>at</span> {game.homeTeam.abbr}
+                                    <span className="block font-ui text-[16px] font-medium text-fg leading-tight">
+                                        {game.awayTeam.abbr} <span className="text-fg-3">at</span> {game.homeTeam.abbr}
                                     </span>
-                                    <span className={`oa-body text-sm block truncate ${selected ? 'text-broadcast-white/75' : 'text-ink/60'}`}>
+                                    <span className="block truncate font-ui text-[14px] text-fg-2">
                                         {game.awayTeam.name} at {game.homeTeam.name}
                                     </span>
                                 </span>
-                                <span className={`oa-data text-xs whitespace-nowrap ${selected ? 'text-broadcast-white/80' : 'text-ink/60'}`}>
+                                <span className="font-mono text-[12px] whitespace-nowrap text-fg-2">
                                     {formatKickoff(game.kickoffAt)}
                                 </span>
                             </label>

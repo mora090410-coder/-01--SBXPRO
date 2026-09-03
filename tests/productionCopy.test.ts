@@ -75,6 +75,10 @@ const liveCopyFiles = [
   'pages/RunYourPoolAlternative.tsx',
   'pages/SuperBowlSquaresIdeas.tsx',
   'pages/YouthSportsFootballSquaresFundraiser.tsx',
+  'components/ScheduledGamePicker.tsx',
+  'components/ErrorBoundary.tsx',
+  'components/loading/FullScreenLoading.tsx',
+  'components/board/ShareModal.tsx',
 ] as const;
 
 const corpus = liveCopyFiles

@@ -4,7 +4,7 @@
 
 ## Platform
 
-Responsive web application. React 19 + Vite, Supabase, Cloudflare Pages Functions, Stripe Checkout, server-side Gemini Search grounding, and transactional email.
+Responsive web application. React 19 + Vite on Cloudflare Pages, Cloudflare Pages Functions for the API, two one-minute Cloudflare cron Workers, Supabase Postgres with Row Level Security, Stripe Checkout, server-side ESPN scoring, server-side Gemini OCR for paper-board import, and transactional email through Resend.
 
 ## Product
 
@@ -20,7 +20,7 @@ GridOne is a tracking and communication tool. It may record purchaser names, sel
 
 A youth-sports or community volunteer running an NFL football-squares fundraiser. They are accountable to a group, usually work from a phone or laptop between other responsibilities, and care more about trust and reduced follow-up than software configurability.
 
-One signed-in organizer owns and edits each board at launch.
+One signed-in organizer owns and edits each board.
 
 ### Purchaser/viewer
 
@@ -32,45 +32,47 @@ A parent, supporter, friend, or community member who receives a shared link. The
 
 ## Core journey
 
-1. **Create Draft:** Name the board and link the scheduled NFL game; native blank-board creation is primary.
-2. **Fill:** Assign purchaser/display names and optionally track private seller and payment metadata.
-3. **Reconcile:** Review open squares, private payment follow-up, duplicate labels, and public rules. This is advisory; off-platform payment status never blocks progression.
-4. **Draw:** Securely randomize and commit one fixed set of 0–9 digits. Draft redraws are allowed before publication.
-5. **Preview:** Inspect the exact private viewer experience and public/private boundary.
-6. **Go Live:** Publish the immutable viewer record and short link. Publication—not the first draft draw—is the public trust boundary.
-7. **Game Day:** Show canonical automatic-beta scoring with explicit freshness and manual recovery.
+The organizer workspace at `/boards/:boardId` moves through eight phases, evaluated by `src/features/organizer/lifecycle/organizerLifecycle.ts`.
+
+1. **Create Draft:** Name the board and link the scheduled NFL game. Native blank-board creation is primary; photo import is a recovery path.
+2. **Fill:** Assign purchaser/display names, one square at a time or as a selected block, and optionally record private seller and payment metadata.
+3. **Reconcile:** Review what blocks publishing and what is only private follow-up. Advisories never block progression.
+4. **Draw:** Securely randomize and commit one fixed set of 0–9 digits per axis. Draft redraws are allowed before publication.
+5. **Preview:** Inspect the exact viewer experience and the public/private boundary while sharing is still off.
+6. **Go Live:** Publish the viewer record and short link. Publication — not the first draft draw — is the public trust boundary.
+7. **Game Day:** Automatic ESPN scoring with explicit authority and freshness, plus a manual override the organizer controls.
 8. **Final Record:** Durably resolve Q1, Q2, Q3, and Final winners and deliver verified notifications exactly once.
 
-Boards require at least one assigned square before publication. Remaining open squares require explicit acknowledgement. An open-square milestone resolves as `Open square — see board rules` with no winner email and no automatic rollover. Published sold-square labels may change only through a viewer-visible audited correction with before/after value, timestamp, and reason.
+Boards require at least one assigned square before publication. Remaining open squares require explicit acknowledgement. An open-square milestone resolves as an OPEN result with no winner email and no automatic rollover. Published sold-square labels may change only through a viewer-visible audited correction carrying before/after value, timestamp, and reason.
 
-Use `docs/organizer-journey-contract.md` for exact phase criteria, persistence/recovery, correction boundaries, architecture seams, and verification.
+Use `docs/organizer-journey-contract.md` for the exact control names, phase criteria, persistence and recovery, and correction boundaries.
 
 ## Viewer hierarchy
 
-Phone viewers first see board identity, score/current result, authority/freshness, and **Find My Squares**. Selecting a durable participant identity changes the structure to show:
+The viewer at `/b/:shareCode` is composed by `src/features/viewer/shell/ViewerShell.tsx`. Phone viewers first see board identity, the score and current result, score authority and freshness, and **Find my squares**. Selecting a durable participant identity changes the structure to show:
 
-1. **Your Squares:** count plus every matching coordinate/digit pair and `View on board`.
+1. **Your squares:** count plus every matching coordinate/digit pair and `View on board`.
 2. **Your current result:** whether the selected viewer wins now.
 3. **What makes this viewer win next:** matching standard scenarios first; all outcomes behind disclosure.
-4. **Winner email:** compact verified opt-in after identity and status are understood.
-5. **Exact grid:** pan/zoom board with sticky top/side axes, orientation, selected-cell centering, and accessible detail.
+4. **Winner email:** compact verified opt-in, after identity and status are understood.
+5. **Exact grid:** pan/zoom board with sticky top/side axes, orientation, selected-cell centering, and accessible cell detail.
 6. **Completed winners and details:** ordered after the grid during live play and promoted into the Final record when the game ends.
 
-Before selection, the product never uses “me” language. Payouts/rules cannot displace Find My Squares. Pregame shows no inert scenario list; stale/offline scenarios identify last-known data locally; Final suppresses next-score scenarios entirely.
+Before selection, the product never uses "me" language. Payouts and rules cannot displace Find my squares. Pregame shows no inert scenario list; stale and offline states identify last-known data; Final suppresses next-score scenarios entirely.
 
-Use `docs/phone-viewer-hierarchy.md` for state order, progressive disclosure, board interaction, durable participant selection, and acceptance checks.
+Use `docs/phone-viewer-hierarchy.md` for the component composition, state order, progressive disclosure, and acceptance checks.
 
 ## Product-specific mechanism
 
-The **current-quarter scenario engine** shows the standard immediate NFL scoring outcomes for either team—+2, +3, +6, +7, and +8—the resulting last digits, and who would win the current quarter. When a viewer selects their name, scenarios that make them win are explicit.
+The **current-quarter scenario engine** (`src/features/viewer/scenarios/scenarioModel.ts`) shows the standard immediate NFL scoring outcomes for either team — +2, +3, +6, +7, and +8 — the resulting last digits, and who would win the current quarter. When a viewer selects their name, the scenarios that make them win are explicit.
 
 These are arithmetic outcomes, never probabilities, betting advice, or predictions.
 
 ## Scoring authority
 
-- Gemini with Google Search grounding is an automatic beta provider.
-- Gemini runs server-side and many viewers collapse into one cached refresh per board.
-- Responses are validated for matchup, state, score, quarter detail, provenance, and freshness before persistence.
+- ESPN is the automatic provider. It is reached only from the server, in `functions/_lib/espnNfl.ts`.
+- A one-minute cron Worker calls `POST /api/scores/refresh`, which fetches the live scoreboard **once for the entire slate** and promotes a canonical snapshot per board. Viewers read the projection through `GET /api/pools/:id/score`; they never amplify onto the provider.
+- Responses are validated for matchup, state, score, quarter detail, and freshness before persistence.
 - The interface always names whether the score is automatic, manual, refreshing, stale, rejected, offline, or Final.
 - Manual override becomes canonical until the organizer deliberately returns to automatic mode.
 - Late or stale automatic results can never overwrite manual or newer data.
@@ -79,18 +81,21 @@ These are arithmetic outcomes, never probabilities, betting advice, or predictio
 
 - No viewer account is required.
 - A viewer selects their board identity, enters an email, and verifies ownership.
-- Contact and delivery state remain private.
+- Contact and delivery state remain private to the organizer and the system.
 - The verified viewer receives one idempotent email when their assignment wins Q1, Q2, Q3, or Final.
+- Failed deliveries are retried by a one-minute cron Worker calling `POST /api/notifications/retry`.
 - SMS is deferred.
 
 ## Commercial model
+
+The ladder is written once, in `src/features/homepage/pricing.ts`. Change it there, in Stripe, and nowhere else.
 
 - Building, editing, and previewing unlimited draft boards are free.
 - The Free tier includes **1 published board per account per season**.
 - The **Game Day** tier is **$9.99 once** for up to 5 published boards in the 2026 season.
 - The **Organization** tier is **$79 per season** for up to 50 published boards, an organization name on each board, one dashboard for all organization boards, and one receipt with the organization name.
-- Payment gates published-board count only. Every published board includes live scores, scenarios, Find My Squares, winner emails, and QR sharing.
-- “100 viewers” is a tested capacity target, not a hard gate or marketing guarantee.
+- Payment gates published-board count only. Every published board includes live scores, scenarios, Find my squares, winner emails, and QR sharing.
+- "100 viewers" is a tested capacity target, not a hard gate or marketing guarantee.
 
 ## Public and private boundaries
 
@@ -103,41 +108,36 @@ These are arithmetic outcomes, never probabilities, betting advice, or predictio
 ### Organizer-only
 
 - Owner identity, full participant records, purchaser emails
-- Notification verification/delivery state
+- Notification verification and delivery state
 - Seller attribution and paid/unpaid status
 - Draft data, Stripe identifiers, and audit history
 
 ### System-only
 
-- Service-role, Gemini, Stripe-secret, webhook, and email-provider credentials
+- Service-role, Gemini, Stripe-secret, webhook, cron, and email-provider credentials
 - Provider raw responses and rate-limit/delivery internals
 
 ## Terminology
 
 Use **Board**, **Organizer**, **Viewer**, **Purchaser**, **Square**, **Axis digits**, and **Publish**.
 
-Marketing speaks like a game-day organizer, not a system specification. Do not
-use `beta`, `synthetic`, `fallback`, `read-only`, `grounded`, `native`,
-`canonical`, `provenance`, `freshness`, or `entitlement` on sales surfaces.
-Those terms may still appear where the product must explain actual score
-authority, safety state, legal boundaries, or internal architecture.
+Marketing speaks like a game-day organizer, not a system specification. Do not use `beta`, `synthetic`, `fallback`, `read-only`, `grounded`, `native`, `canonical`, `provenance`, `freshness`, or `entitlement` on sales surfaces. Those terms may still appear where the product must explain actual score authority, safety state, legal boundaries, or internal architecture. `tests/pricingCopyConsistency.test.ts` enforces this on the homepage.
 
 Do not use pool, contest, player, guest, bet, wager, or payout-processing language when those meanings are not literally intended.
 
-## Launch scope
+## Scope
 
-### Required
+### Shipped
 
 - Organizer account and native board creation
-- Fast direct/batch square assignment
-- Private paid status and seller attribution
-- Secure axis draw, lock, preview, unlock, and publish
+- Direct and block square assignment with private paid status and seller attribution
+- Secure axis draw, commit, preview, publish, and audited published-label correction
 - Read-only short link and QR code
-- Mobile My Squares, current winner, scenario engine, and full board
-- Server-cached automatic beta plus manual override
+- Phone viewer: Find my squares, current result, scenario engine, exact grid, Final record
+- Server-cached automatic ESPN scoring plus manual override
 - Viewer score updates about every minute through visibility-aware polling
-- Verified email opt-in and winner delivery
-- Explicit errors, stale/offline states, secure schema/RLS, and accessibility
+- Verified email opt-in, winner delivery, and delivery retry
+- Explicit error, stale, and offline states; RLS-backed schema; the accessibility contract
 
 ### Later
 
@@ -145,13 +145,13 @@ Do not use pool, contest, player, guest, bet, wager, or payout-processing langua
 - Viewer claiming
 - In-app money handling or payouts
 - SMS, co-organizers, non-NFL sports
-- Optional realtime transport after the 2026 season
+- Realtime transport in place of polling
 - Multiple digit sets by quarter
 - Native apps and hard viewer caps
 
 ## Success
 
-GridOne’s north-star outcome is **Successful Game-Day Board Runs through Final**. A qualifying board is published and publicly available, has committed axis digits, receives authoritative automatic or manual scoring, durably resolves Q1/Q2/Q3/Final, and finishes without an unresolved integrity, publication, or score-authority failure.
+GridOne's north-star outcome is **Successful Game-Day Board Runs through Final**. A qualifying board is published and publicly available, has committed axis digits, receives authoritative automatic or manual scoring, durably resolves Q1/Q2/Q3/Final, and finishes without an unresolved integrity, publication, or score-authority failure.
 
 Supporting evidence must show that an organizer can replace Excel and paper, a phone viewer can understand their live position without contacting the organizer, winner email happens exactly once, automatic-score failure remains honest and recoverable, and private organizer/contact/payment data is inaccessible to viewers and non-owners.
 
@@ -160,9 +160,9 @@ Use `docs/product-metrics-and-evidence.md` for qualification, leading metrics, g
 ## Brand commitments
 
 - Name: **GridOne**
-- Preserve the existing cardinal, gold, cool-neutral, ink, and live-green palette.
-- Root `DESIGN.md` is the formal GridOne overlay; `docs/universal-interface-foundation.md`, `docs/DESIGN_TOKENS.md`, and `docs/design-system-governance.md` define foundation, CSS mapping, and enforcement.
-- `docs/accessibility-contract.md` targets WCAG 2.2 AA across complete organizer/viewer processes and defines board-grid keyboard, dialog, touch, zoom, motion, state, automation, and assistive-technology gates.
+- The palette is fixed in `src/design/tokens.css`: cardinal, gold, live green, ink, chyron, broadcast white, newsprint.
+- Root `DESIGN.md` is the normative design overlay. `docs/DESIGN_TOKENS.md` records the CSS-variable and Tailwind mapping. `npm run design:lint` is the gate.
+- `docs/accessibility-contract.md` targets WCAG 2.2 AA across complete organizer and viewer processes and defines the board-grid keyboard, dialog, touch, zoom, motion, state, and automation gates.
 - Live green means only that a game is actively in progress.
 - Gold means a result has been settled or a high-stakes action is being committed.
 - The product is pre-launch. Never invent customers, testimonials, revenue, usage, or fundraising totals.

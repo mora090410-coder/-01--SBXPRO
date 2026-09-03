@@ -1,462 +1,164 @@
 # GridOne Organizer Journey Contract
 
-**Status:** Product and UX planning authority
-**Date:** 2026-08-20
-**Primary user:** Youth-sports fundraiser organizer running 1–5 boards
-**Related:** root `PRODUCT.md`, `wayfinder-gridone-production-quality.md`, `product-metrics-and-evidence.md`
+**Status:** Product, design, and release authority for the organizer workspace
+**Implementation:** `src/features/organizer/`
+**Phase authority:** `src/features/organizer/lifecycle/organizerLifecycle.ts`
+**Browser evidence:** `playwright-tests/organizer.spec.ts`, `playwright-tests/accessibility-contract.spec.ts`
+
+Every control name in this document is the accessible name a person actually reads or a screen reader actually announces. If the code and this file disagree, one of them is a defect — fix it, do not paraphrase.
 
 ## Product stance
 
-Board setup is a finite trust-building workflow, not a dashboard of equal controls.
+The organizer is a volunteer, not an administrator. The workspace is one page, not a wizard: the board is always visible, the current phase and the one thing worth doing next live in a status island, and nothing is hidden behind a step the organizer must complete in order.
 
-The organizer moves through:
+Building, editing, previewing, and redrawing are free and reversible. **Publication is the trust boundary.** Before it, nothing is public and almost everything is editable. After it, the viewer record is stable and change happens only through an audited, viewer-visible correction.
 
-`Create Draft → Fill → Reconcile → Draw → Preview → Go Live`
+## Composition
 
-After publication, setup navigation is replaced by:
+`src/features/organizer/workspace/OrganizerWorkspace.tsx` renders, on a `<Base kind="cream">` ground:
 
-`Game Day → Final Record`
+| Element | Component | Accessible name |
+|---|---|---|
+| Header | `WorkspaceHeader` | `Board name` field, `Change game`, save state, `Log out` |
+| Status island | `OrganizerIsland` | region `Organizer status` |
+| Board | `BoardEditor` | `main` named `{board title} workspace` |
+| Block assignment | `RangeAssignBar` | group `Assign selected squares` |
+| One square | `SquareSheet` | dialog `Square {n}` |
+| Draw | `DrawControl` | inline group; open-square confirmation |
+| Reconcile | `ReconcileCard` | regions `Before you can publish` and `Private follow-up` |
+| Payouts | `PayoutRulesCard` | `Payout rules`, `Board rules` |
+| Tools | `BoardToolsCard` | `Board tools` |
+| Preview → publish | `PreviewSheet` → `PublishSheet` → `PublishedSheet` | dialogs `Private preview — sharing is off`, `Publish viewer link`, `Published` |
+| Upgrade | `UpgradeSheet` | dialog `Choose a plan` |
+| Game day | `gameday/SharePanel`, `ScoreAuthorityCard`, `CorrectionsCard`, `DeliveryIssuesCard`, `FinalRecordCard` | `Public board`, `Score authority`, `Correct a published result`, `Review delivery issue`, `Final record` |
 
-**Go Live is a one-time publication transition. Game Day is the ongoing operating mode.** They are not the same phase.
-
-The interface presents one dominant artifact and one primary next action at a time. It may expose earlier phases for deliberate correction, but it does not show every control on one page.
+Board state lives in `useWorkspaceDraft`. Selection lives in `selection.ts`. The draw lives in `secureDraw.ts`. Publication lives in `publishBoard.ts`.
 
 ## Canonical language
 
-- **Board:** the organizer-owned 10×10 football-squares object.
-- **Draft:** an unpublished board. Private, editable, and free to preview.
-- **Assignment:** one square’s public display label plus organizer-only metadata.
-- **Open square:** a square without an assignment.
-- **Reconcile:** an advisory private review checkpoint before the draw. It does not adjudicate or block off-platform money collection.
-- **Committed draw:** one valid draft set of top/side axis digits. It may be replaced before publication.
-- **Published board:** the public trust record created by Go Live.
-- **Correction:** an audited post-publication change to a public fact. It is not ordinary editing.
-- **Game Day:** published-board scoring, winner resolution, viewer operation, and recovery.
-- **Final record:** the durable published board after Final resolution.
+Board, Organizer, Viewer, Purchaser, Square, Axis digits, Publish. One concept, one name. Never pool, contest, player, guest, bet, or wager.
 
-Do not use `pool`, `contest`, or `publish` as synonyms for draft save/create in product-facing code or documentation.
+Assignment state is `assigned` or `OPEN`. Payment state is `Not asked yet`, `Unpaid`, or `Paid` — and it is always private.
 
 ## State model
 
+`evaluateOrganizerLifecycle({ board, save, publishIntent })` returns the phase, the one primary action, `hardBlockers`, `advisories`, `canEnterDraw`, and `canPublish`. The island renders the primary action; the reconcile card renders the blockers and advisories. Nothing else decides the phase.
+
 ### 0. Create Draft
 
-**Organizer job:** establish the minimum truthful board identity.
+Name the board and attach the scheduled NFL game. The header's `Board name` field commits on `Enter` or blur; `Change game` opens the scheduled-game picker and warns that **Changing the game clears any score state on this board.**
 
-**Required input:**
-
-- Authenticated organizer account
-- Board name
-- Scheduled NFL game with canonical event id and kickoff
-- Blank native 10×10 board by default
-
-**Optional:** import a paper-board image as a recovery path. OCR never replaces organizer review.
-
-**Success:** the server returns a board id and revision, and the organizer enters Fill at the assignment surface.
-
-**Hard failures:** missing auth, name, game, kickoff, board id, valid board shape, or failed server creation.
-
-**Primary action:** `Start assigning`
+Hard blockers: `missing_owner`, `missing_board_identity`, `missing_scheduled_game`, `invalid_board_shape`.
 
 ### 1. Fill
 
-**Organizer job:** assign sold squares quickly and accurately.
+Primary action while nothing is assigned: **Fill the board** — it scrolls to the board, it does not open a step.
 
-**Dominant artifact:** the 10×10 assignment grid.
+One square: activate `Square {n}, unassigned` (or `Square {n}, assigned to {name}`) to open the `Square {n}` dialog. Initial focus lands on `Name on the board`. Optional `Sold by (optional)`; a `Payment` radiogroup of `Not asked yet` / `Unpaid` / `Paid`, defaulting to `Not asked yet`. `Save` closes; `Save and next` commits and moves to the next square. Arrow keys move between squares from the dialog.
 
-**Capabilities:**
+A block of squares: **`Select squares`** toggles selection mode and becomes **`Done selecting`**, with `aria-pressed` reflecting the state. Only in selection mode do the squares expose `aria-pressed`. Click, `Space`, or a drag across a block selects; `Shift` extends a rectangle from the last anchor. The `Assign selected squares` group announces `{n} selected` politely and carries `Name for these squares`, `Sold by (optional)`, the `Payment` radiogroup, `Apply to {n}`, and `Clear selection`. `Escape` on a square or in the bar leaves selection mode and returns focus to the toggle. On a published board only OPEN squares accept selection.
 
-- `Select squares` turns the grid into a selection surface (`Done selecting` leaves it and drops the selection). In select mode a square toggles on tap, shift-click adds the rectangular block from the last toggled square, dragging adds the rectangular block between the anchor square and the square under the pointer, Space toggles the focused square, and Escape leaves select mode.
-- `Assign selected squares` appears under the board as soon as one square is selected: `Name for these squares` is the one label written into every selected square, `Sold by (optional)` records seller/parent attribution, `Payment` records one private state for the whole block, and `Apply to {n}` writes them. `Clear selection` empties the selection without leaving select mode.
-- Private payment states are `Not asked yet` (the default, the honest record before anyone has been asked), `Unpaid`, and `Paid`. The same three states are on one square's own sheet.
-- Edit one assignment’s details in the square sheet (name, seller, payment state)
-- Import and correct a paper-board image when needed
-- On a published board only OPEN squares can be selected; a block or drag that reaches over sold squares arms only the OPEN ones. The square sheet still refuses a change to a sold square with `Published assignments cannot be changed. Select OPEN squares only.`
-
-**Entry:** unpublished board with no valid committed axes, or organizer deliberately returns before publication.
-
-**Exit to Reconcile:** at least one assigned square exists and the latest required writes are acknowledged by the server.
-
-**Hard blockers:**
-
-- Invalid board shape
-- Missing owner/auth
-- Draft or assignment save failure
-- Unresolved revision conflict
-
-**Advisory issues:** open squares, unpaid/unknown status, missing seller attribution, incomplete payout/rules descriptions.
-
-**Identity readiness issue:** duplicate or ambiguous display labels must be resolved into distinguishable durable participant identities before Draw. They are not grouped with private payment/seller advisories because ambiguity can break Find My Squares.
-
-**Primary action:** `Review board`
-
-Do not force 100 assigned squares. Fundraisers may legitimately publish with open squares.
+`Paste names` accepts a pasted list. `Board tools` holds `Clear all names` behind a `Confirm clear`.
 
 ### 2. Reconcile
 
-**Organizer job:** inspect readiness and make an informed choice before drawing numbers.
+`ReconcileCard` splits what stops publication from what is merely worth a look. It never merges them.
 
-**Nature:** required visible checkpoint. Off-platform payment and seller follow-up are advisory rather than hard business gates; data-integrity, save/conflict, scheduled-game, and participant-identity requirements remain hard blockers.
+**`Before you can publish`** — hard blockers, each with its own sentence: `Add a board title before publishing.`, `Choose the scheduled game before publishing.`, `Draw one complete set of numbers before publishing.`, `Confirm that the remaining OPEN squares should stay OPEN.`, `Save the latest changes before publishing.`, `Wait for the board to finish saving.`, `The latest changes did not save. Reload or try again.`, `Review and save the recovered draft before publishing.`, `The board owner could not be verified. Reload and try again.` When there are none: `Nothing blocking publish.`
 
-**Dominant artifact:** grouped readiness checklist, not the full editor.
+**`Private follow-up`** — advisories, never blockers: `OPEN squares remain. You can publish if you are okay leaving them OPEN.`, `Some private payment notes still need follow-up.`, `Some seller notes still need follow-up.` When there are none: `No private follow-up.`
 
-**Checklist:**
-
-- Assigned/open square count
-- Unpaid/unknown private follow-up grouped by purchaser label
-- Duplicate or ambiguous display labels affecting Find My Squares
-- Seller attribution gaps, when used
-- Scheduled game and kickoff
-- Payout/rules descriptions
-- Open-square rule acknowledgement
-- Save/conflict status
-
-**Hard exit requirements:**
-
-- Valid 100-cell board shape
-- At least one assigned square
-- Scheduled game and kickoff present
-- Latest required writes saved
-- Any open squares explicitly acknowledged
-- Every viewer-selectable participant identity is unambiguous; duplicate display text is allowed only when durable identities can be explicitly distinguished in Find My Squares
-
-**Not required:**
-
-- All assigned squares marked paid
-- Every seller label present
-- Private payment and seller follow-up complete
-- All 100 squares assigned
-
-**Primary action:**
-
-- `Continue to draw` when no advisory items remain
-- `Continue anyway` when advisory items remain, with the unresolved list visible
-
-Neither action is available while a hard blocker remains.
-
-GridOne does not decide whether off-platform money has been collected and does not block the organizer for forgetting to mark a private payment status.
+Off-platform payment status never gates progression.
 
 ### 3. Draw
 
-**Organizer job:** securely randomize and commit one set of axis digits after reviewing the board.
+Primary action: **`Draw numbers`**, enabled only when `canEnterDraw`. If squares are still OPEN, a confirmation group named `{n} squares are open. Draw anyway?` appears, states that **Open squares stay marked OPEN**, and offers `Keep assigning` (which takes focus) and `Draw with {n} OPEN`.
 
-**Dominant artifact:** the two axis sequences and their relationship to the board.
+The draw itself is `crypto.getRandomValues` in `secureDraw.ts`: one permutation of 0–9 per axis, each digit exactly once (`isExactAxis`). The result appears over the axes as a `Draft draw` with `Draw again` and `Use these numbers`; `Cancel` discards it. Once committed, the island shows `Drawn` / `Numbers set` and offers `Replace draft draw` while the board remains unpublished.
 
-**Requirements to enter:**
-
-- Unpublished board
-- At least one assigned square
-- Open-square acknowledgement when applicable
-- No unresolved save/conflict failure
-
-**Behavior:**
-
-1. Generate top and side permutations of 0–9 using cryptographically secure randomness.
-2. Show a draft preview.
-3. Allow regeneration before commitment.
-4. Commit the selected draft draw to the unpublished board.
-5. Permit a clearly labeled replacement draw before publication.
-
-**Exit to Preview:**
-
-- Both axes are exact unique permutations of 0–9
-- Fixed-axis launch model is active (`isDynamic = false`)
-- Per-quarter axes are absent
-- Committed axes are acknowledged by the server
-
-**Immutability boundary:** axes become permanently immutable when Go Live succeeds—not at the first draft draw.
-
-**Primary actions:** `Preview draw`, then `Commit draw`
-
-**Pre-publication replacement language:** `Replace draft draw`. Never imply a replacement was public when it was not.
+Dynamic axes are not supported at launch (`dynamic_axes_not_supported`). Do not flatten a legacy dynamic board without an approved preservation plan.
 
 ### 4. Preview
 
-**Organizer job:** inspect the exact public experience before creating a public record.
-
-**Dominant artifact:** the real viewer surface at representative phone and desktop sizes.
-
-**Entry:** unpublished board with valid committed axes and scheduled game.
-
-**Always show:**
-
-- `Private preview — sharing is off`
-- Board title, matchup, kickoff
-- Axis digits and all public labels
-- Open squares as OPEN
-- Payout/rules descriptions
-- Find My Squares behavior when labels exist
-- Honest pregame score-authority state
-- Core mobile board navigation
-
-**Do not show as operable before publication:** winner notification enrollment, live-score promises, or other activated services that cannot yet function.
-
-**Pre-publish checklist:**
-
-- Latest writes saved
-- At least one assignment
-- Valid scheduled game/kickoff
-- Valid committed axes
-- Public names display correctly
-- Open-square acknowledgement when applicable
-- Public/private data boundary reviewed
-
-**Primary action:** `Review and publish`
+Primary action once the axes are committed: **`Preview`**. It opens the dialog `Private preview — sharing is off`, which renders the real `ViewerShell` — not a mock — so the organizer sees exactly what a viewer will see and exactly what stays private. Its forward action is **`Review and publish`**, disabled whenever a hard blocker stands (a save conflict included).
 
 ### 5. Go Live
 
-**Organizer job:** deliberately create the public viewer record and share link.
+`Review and publish` opens the modal `Publish viewer link` (`aria-modal="true"`). Initial focus is on `Cancel` — the least destructive action. The dialog summarizes, in this order: `Board name`, `Matchup`, `Kickoff`, `Squares` as `{n} assigned · {n} OPEN`, `Top axis`, `Side axis`, `What becomes public`, `What remains private`, and the entitlement line `{n} of {n} published this season · {tier}`. `Open squares stay OPEN on the shared board.` when any remain.
 
-**Nature:** one-time state transition, not a persistent editor tab.
+The confirming button is **`Publish viewer link`**. Publication is atomic (`010_atomic_board_publish.sql`) and mints the share code. If the tier allowance is spent, `UpgradeSheet` (`Choose a plan`) offers `Game Day · up to 5 boards` and `Organization · up to 50 boards`, with `Organization name` where it applies, and `Not now`.
 
-**Confirmation must summarize:**
-
-- Board name and matchup
-- Kickoff
-- Assigned/open count
-- Committed axis digits
-- Open-square rule
-- What becomes public
-- What remains private
-- Current tier, allowance usage, and upgrade requirement if applicable
-
-**Minimum readiness:** at least one assigned square plus explicit acknowledgement of every remaining open square.
-
-**Server must revalidate atomically:**
-
-- Authenticated owner
-- Latest expected revision
-- Valid board shape
-- At least one assigned square
-- Scheduled event and kickoff
-- Exact fixed 0–9 axis permutations
-- Open-square acknowledgement when needed
-- Tier allowance/payment state
-- No dynamic/per-quarter axis model
-
-**Success creates:**
-
-- `published_at`
-- Immutable public snapshot
-- Short share code/viewer URL
-- Board activation/allowance consumption
-- Published services eligibility
-
-**Success response:** show a stable confirmation surface with copy link, QR code, open viewer, and `Enter game-day controls`. Do not reload blindly before the organizer can understand the result.
-
-**Primary action:** `Publish viewer link`
+Success opens the `Published` sheet: `Copy link`, `Open public board`, the QR code, and `Enter game-day controls`. The island's primary action becomes `Copy link`.
 
 ### 6. Game Day
 
-**Organizer job:** monitor trust, recover scoring, and resolve exceptional conditions.
-
-**Navigation:** setup rail is replaced by a game-day control surface. Fill/Reconcile/Draw/Preview are no longer ordinary editable phases.
-
-**Dominant facts:**
-
-- Matchup, kickoff, game state
-- Score authority and freshness
-- Current score and period
-- Viewer-link health
-- Current/resolved milestone state
-- Notification delivery issues
-
-**Capabilities:**
-
-- Copy/open viewer link
-- Observe automatic score authority
-- Switch deliberately to manual authority
-- Publish organizer-entered quarter scoring
-- Return deliberately to automatic authority
-- Assign squares that were OPEN at publication before kickoff
-- Correct public labels through audited correction
-- Correct resolved milestones through audited correction
-
-**Hard integrity conditions:**
-
-- Older automatic data never overwrites newer/manual authority
-- Milestones resolve idempotently
-- Viewer remains available
-- Public corrections are auditable
-- Axes and scheduled game are immutable
-
-**Primary action depends on state:** resolve score-authority failure, review delivery issue, or open viewer. There is no generic `Save` or `Edit board` action.
+- `Public board` (`SharePanel`) — the share URL, `Copy link`, `Open public board`.
+- `Score authority` (`ScoreAuthorityCard`) — the heading reads `Automatic scoring authority` or `Manual scoring authority`, with the source, detail, and checked time beneath. `Live Scoring` offers `Auto` and `Manual`. In manual mode the organizer enters `Game Status`, `Current Period`, and per-quarter `Top score` / `Side score`, then **`Publish manual score`**. Manual becomes canonical until the organizer chooses `Auto` again; a late or stale automatic result can never overwrite it.
+- `Correct a published result` (`CorrectionsCard`) — `Result to correct` (`Select a result`), the corrected `Top score` and `Side score`, and `Why this changed (shown publicly)`. The action is **`Publish correction and email both people`**. Corrections are audited and viewer-visible.
+- `Review delivery issue` (`DeliveryIssuesCard`) — surfaces failed `Winner email`, `Correction email (current winner)`, and `Correction email (previous winner)` sends.
 
 ### 7. Final Record
 
-**Organizer job:** confirm the completed public record and understand any unresolved operational issue.
-
-**Entry:** canonical game state is Final and Q1/Q2/Q3/Final have durable resolutions.
-
-**Show:**
-
-- Final score and authority
-- Resolved winners, including OPEN outcomes
-- Notification delivery state
-- Public correction history
-- Viewer link
-- Archive/share actions
-
-**North-star qualification:** this board counts as a Successful Game-Day Board Run only when it satisfies `docs/product-metrics-and-evidence.md`.
+`Final record` (`FinalRecordCard`) lists the resolved Q1/Q2/Q3/Final results, `Open square` where a milestone landed on an unassigned square, and states `This board is locked as the Final record.`
 
 ## Open-square contract
 
-When a milestone lands on an open square:
-
-- Resolve it as **`Open square — see board rules`**.
-- Do not invent a purchaser.
-- Do not roll the result to another score or square.
-- Do not send a winner email.
-- Preserve the score digits, square coordinate, milestone, and timestamp as the durable result.
-- GridOne does not adjudicate what the organizer does with any off-platform money.
+- A board needs at least one assignment before it can be published.
+- Remaining OPEN squares require the explicit acknowledgement `Confirm that the remaining OPEN squares should stay OPEN.`
+- An OPEN milestone resolves as an open-square result. It sends no winner email, and it never rolls over to another square.
+- After publication, OPEN squares may still be filled (`022_open_squares.sql`); sold squares may not be reassigned.
 
 ## Post-publication correction boundary
 
-Publication creates a public trust record.
+**Always private and editable:** seller attribution, payment status, private notes, internal board metadata.
 
-### Always private/editable
+**Allowed before kickoff:** filling OPEN squares, payout descriptions and board rules.
 
-- Paid/unpaid/unknown status
-- Seller/parent attribution
-- Contact and notification-delivery administration
+**Allowed as an audited public correction:** a published square's public label (`renamePublishedSquare`, `024_published_square_rename.sql`) and a resolved milestone's score (`functions/api/pools/[id]/milestones/[milestone]/correct.ts`). Each records the before value, the after value, the timestamp, and the organizer's stated reason, shows the change to viewers, and emails both the previous and the current winner.
 
-Private metadata changes never appear in public correction history.
+**Never allowed after publication:** redrawing or editing the axis digits, changing the scheduled game, reassigning a sold square to a different person without a correction, deleting the audit history, or silently editing a resolved result.
 
-### Allowed before kickoff
+## Draft persistence and recovery
 
-- Assign a square that was OPEN at publication
+Save states, from `draft/draftSaveModel.ts`: `clean` (`Saved`), `dirty` (`Unsaved changes`), `saving` (`Saving…`), `save_failed` (`Save failed`, with `Retry`), `conflicted`.
 
-Server enforcement:
-
-- Cell was empty in the published record
-- Kickoff has not occurred
-- Expected revision matches
-- No axis or scheduled-game changes
-- Existing sold assignments remain untouched
-
-### Allowed as audited public correction
-
-A sold-square label may be corrected after publication only through a correction flow requiring:
-
-- Square coordinate/index
-- Before value
-- After value
-- Required reason
-- Organizer identity
-- Timestamp
-- Expected version/revision
-
-Viewers can see the before/after value, timestamp, and reason. The interface labels this a correction, never an edit.
-
-Milestone corrections use the same public-trust principles and notify affected verified recipients appropriately.
-
-### Never allowed after publication
-
-- Axis digit changes
-- Scheduled-game changes through ordinary organizer UI
-- Silent sold-square overwrite
-- Silent milestone recomputation
-- Reordering the grid
-- Stale automatic score overwriting manual/newer authority
-
-Legacy incident recovery is an internal/admin process, not an organizer feature.
-
-## Draft persistence and recovery contract
-
-### Save states
-
-- `clean`: local state matches the acknowledged server revision
-- `dirty`: local changes await sending
-- `saving`: a write is in flight
-- `save_failed`: the write failed and can be retried
-- `conflicted`: the server revision changed elsewhere; organizer decision required
-- `recovered`: a newer local recovery draft is being reviewed
-
-The product must not display `Saved` while any structural, assignment, or metadata write is failed.
-
-### Autosave
-
-- Debounce unpublished draft edits
-- Serialize revisioned writes
-- Keep one authoritative expected revision
-- Flush before phase progression, navigation, logout, preview confirmation, and publication
-- Never publish while dirty, saving, failed, or conflicted
-
-### Conflict behavior
-
-GridOne is one-organizer-per-board at launch. A conflict therefore means another tab/session or stale state—not collaborative editing.
-
-On conflict:
-
-1. Stop autosave.
-2. Show `This board changed in another session.`
-3. Offer `Reload latest board`.
-4. Offer a local-change recovery path only when consequences can be shown safely.
-5. Never silently update the revision and overwrite the newer server state.
-
-### Local recovery
-
-Retain an expiring local recovery snapshot for dirty/failed authenticated drafts:
-
-- Keyed by board id
-- Includes last known server revision and local timestamp
-- Excludes emails, notification tokens, and unnecessary private contact data
-- Offered after reload when newer than the last acknowledged server state
-- Removed after successful save/publication or expiration
-
-Retention duration is set during implementation; seven days is the initial recommendation.
+- Autosave commits on field blur and on explicit commit; it never fires per keystroke.
+- A revision mismatch produces the alert **`This board changed in another session.`** with **`Reload latest board`**. The conflict is a hard blocker: `Review and publish` is disabled until it is resolved, and the organizer's in-progress input is preserved through the reload prompt.
+- A recovered local draft announces `Recovered draft · review before publishing` and blocks publication until reviewed and saved.
 
 ## Interaction contract
 
-- One vertical scroll owner per surface
-- Native scrolling on organizer routes
-- Sticky organizer context and save status
-- Typed phase destinations with deterministic focus and announcement
-- Tab/phase changes intentionally reset or preserve scroll
-- At least 44×44 CSS-pixel targets
-- Keyboard/touch/pointer parity for assignment, draw, preview, dialogs, and corrections
-- No hidden phase controls above the primary artifact
-- Destructive and public-trust actions use semantic dialogs with focus return
+- The board is one composite grid, not 100 tab stops. `Tab` enters once; arrow keys move; `Space` toggles selection in selection mode.
+- Every square has a durable accessible name: `Square {n}, unassigned`, `Square {n}, assigned to {name}`.
+- Primary controls are at least 44×44 CSS pixels.
+- Sheets are real dialogs: labelled, focus-contained, `Escape`-closable, and they return focus to their trigger.
+- Advisories never look like blockers, and blockers never hide inside a paragraph.
+- Every irreversible action names its result in the button, and its dialog opens on the safe choice.
 
 ## Architecture seams
 
-The eventual `src/features/organizer/` structure should follow the state machine rather than visual sections:
+- Phase, blockers, and advisories: `lifecycle/organizerLifecycle.ts` — pure, no React.
+- Save semantics: `draft/draftSaveModel.ts` and `workspace/useWorkspaceDraft.ts`.
+- Selection algebra: `workspace/selection.ts`.
+- Randomness: `workspace/secureDraw.ts`.
+- Publication: `workspace/publishBoard.ts` → `POST /api/pools/:id/publish`.
+- Private metadata: `workspace/entryMetaService.ts`.
+- Manual scoring: `game-day/manualScoringModel.ts` → `POST /api/pools/:id/score/manual`.
+- Corrections: `services/corrections/milestoneCorrectionService.ts`.
 
-```text
-src/features/organizer/
-  lifecycle/       phase model, readiness checks, navigation
-  draft/           create/load/save, revision, autosave, recovery
-  assignment/      grid selection, bulk assignment, square details
-  reconcile/       readiness checklist and private follow-up
-  draw/            secure draw, draft commitment, validation
-  preview/         exact viewer preview and publish checklist
-  publish/         atomic Go Live transition, allowance/checkout
-  game-day/        score authority, delivery health, open-square fill
-  corrections/     public label and milestone correction flows
-```
+Presentation components hold no business rules. Every rule above is testable without a browser, and is.
 
-Shared UI primitives remain global only when they are genuinely reused outside the organizer feature. External clients remain separated into browser and server adapters.
+## Verification
 
-### Vocabulary repairs required during implementation
-
-- `publishPool` → `createDraft`
-- `handlePublish` when saving → `saveDraft`
-- `handleBoardLifecycleAction` → explicit `publishBoard` or `copyViewerLink`
-- Keep `publishManualScore` and `publishCorrection` only where they create public score/correction records
-
-## Verification matrix
-
-Each phase requires:
-
-- Domain-state unit tests for entry, exit, blockers, and advisory issues
-- Component tests for primary action and recovery
-- Browser tests at desktop and phone widths
-- Keyboard, focus, scroll, reduced-motion, and 200% zoom checks
-- Save ordering and revision-conflict tests
-- Server contract tests for publish readiness and immutability
-- Rendered inspection of empty, partial, complete, failed-save, conflict, open-square, published, stale-score, manual-score, correction, and Final states
-
-Whole-journey acceptance path:
-
-`Create draft → assign at least one square → reconcile/acknowledge open squares → secure draw → preview → publish → open viewer → operate score authority → resolve Q1/Q2/Q3/Final → verify final record`
-
-No implementation slice is complete if it makes its own phase look good while breaking this path.
+| Behavior | Test |
+|---|---|
+| Phase, blockers, advisories | `tests/organizerLifecycle.test.ts` |
+| Save, conflict, recovery | `tests/draftSaveModel.test.ts`, `tests/organizerPersistence.test.tsx` |
+| Square and block assignment | `tests/organizer/` |
+| Draw exactness | `tests/numberDraw.test.ts` |
+| Publication and entitlement | `tests/publishEntitlementEndpoint.test.ts`, `tests/postgresPricingTiers.integration.test.ts` |
+| Open squares | `tests/openSquaresOrganizerContract.test.ts`, `tests/openSquaresEndpoint.test.ts` |
+| Manual scoring | `tests/manualScoringMode.test.ts`, `tests/manualScoringPanel.test.tsx`, `tests/manualScoringUiState.test.ts` |
+| Corrections | `tests/milestoneConfirmation.test.ts`, `tests/publishedSquareRename.integration.test.ts` |
+| Control names, focus, target size | `playwright-tests/accessibility-contract.spec.ts` |
+| Whole journey | `playwright-tests/organizer.spec.ts` |

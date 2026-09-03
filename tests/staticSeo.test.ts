@@ -24,8 +24,8 @@ const publicAppPaths = (): string[] => {
     appSource.matchAll(/<Route\s+path="([^"]+)"/g),
     (match) => match[1],
   );
-  // Auth-gated routes plus the dev-only kitchen route; none are public SEO surfaces.
-  const excludedPaths = new Set(['/boards/:boardId', '/dashboard', '/create', '/design-kitchen']);
+  // Auth-gated routes; none are public SEO surfaces.
+  const excludedPaths = new Set(['/boards/:boardId', '/dashboard', '/create']);
 
   return literalRoutePaths.filter((path) => (
     path !== '*'

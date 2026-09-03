@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 // @ts-ignore
 import { QRCodeSVG } from 'qrcode.react';
-import { ActionButton } from '../../src/components/primitives/ActionButton';
-import { Dialog } from '../../src/components/primitives/Dialog';
+import { CapsuleButton, Sheet } from '../../src/design/primitives';
 
 interface ShareModalProps {
     shareUrl: string;
@@ -25,33 +24,31 @@ const ShareModal: React.FC<ShareModalProps> = ({ shareUrl, onClose }) => {
     };
 
     return (
-        <Dialog titleId="share-dialog-title" onClose={onClose} overlayClassName="z-[100]" placement="center" panelClassName="max-w-sm p-6 text-center flex flex-col items-center gap-4">
-                <h2 id="share-dialog-title" className="oa-headline !text-lg text-ink">Share link</h2>
-                <div className="bg-broadcast-white ring-1 ring-ink p-4">
-                    <QRCodeSVG value={shareUrl} size={160} />
-                </div>
-                <div className="bg-newsprint p-3 flex items-center gap-3 w-full">
-                    <div className="flex-1 oa-data text-xs text-ink/70 truncate text-left">{shareUrl}</div>
-                    <ActionButton
-                        onClick={handleCopy}
-                        busy={copyStatus === 'copying'}
-                        className="!px-4 !py-2"
-                    >
-                        {copyStatus === 'copying' ? 'Copying…' : copyStatus === 'copied' ? 'Copied' : 'Copy'}
-                    </ActionButton>
-                </div>
-                {copyStatus === 'error' && (
-                    <p className="oa-body text-[13px] text-cardinal" role="alert">
-                        The link could not be copied. Select the address above and copy it manually.
+        <div data-base="dark">
+            <Sheet open onClose={onClose} title="Share link" layer="raised">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="rounded-card border border-hairline bg-broadcast-white p-4">
+                        <QRCodeSVG value={shareUrl} size={160} />
+                    </div>
+                    <div className="flex w-full items-center gap-3 rounded-card border border-hairline bg-panel p-3">
+                        <div className="min-w-0 flex-1 truncate text-left font-mono text-[12px] text-fg-2">{shareUrl}</div>
+                        <CapsuleButton onClick={handleCopy} disabled={copyStatus === 'copying'} aria-busy={copyStatus === 'copying'}>
+                            {copyStatus === 'copying' ? 'Copying…' : copyStatus === 'copied' ? 'Copied' : 'Copy'}
+                        </CapsuleButton>
+                    </div>
+                    {copyStatus === 'error' && (
+                        <p className="font-ui text-[14px] text-tone-cardinal" role="alert">
+                            The link could not be copied. Select the address above and copy it manually.
+                        </p>
+                    )}
+                    {copyStatus === 'copied' && <span className="sr-only" role="status">Viewer link copied.</span>}
+                    <p className="font-ui text-[14px] leading-snug text-fg-2">
+                        <span className="font-semibold text-fg">Note:</span> This link gives{' '}
+                        <span className="text-fg">read-only access</span> to viewers. Organizers keep edit access inside their GridOne account.
                     </p>
-                )}
-                {copyStatus === 'copied' && <span className="sr-only" role="status">Viewer link copied.</span>}
-                <p className="oa-body text-[13px] text-ink/70 leading-tight px-4">
-                    <span className="font-bold text-ink">Note:</span> This link gives{' '}
-                    <span className="text-ink">read-only access</span> to viewers. Organizers keep edit access inside their GridOne account.
-                </p>
-                <ActionButton variant="ghost" onClick={onClose} fullWidth>Close</ActionButton>
-        </Dialog>
+                </div>
+            </Sheet>
+        </div>
     );
 };
 

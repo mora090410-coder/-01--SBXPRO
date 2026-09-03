@@ -3,7 +3,7 @@
 **Status:** Planning authority
 **Created:** 2026-08-20
 **Owner:** Product
-**Related:** `../PRODUCT.md`, `wayfinder-gridone-production-quality.md`
+**Related:** `../PRODUCT.md`, `ARCHITECTURE.md`
 
 ## North-star outcome
 

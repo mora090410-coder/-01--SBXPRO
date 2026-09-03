@@ -27,7 +27,6 @@ const ChurchSchoolFundraiserSquares = React.lazy(() => import('./pages/ChurchSch
 const NFLOpeningWeekSquares = React.lazy(() => import('./pages/NFLOpeningWeekSquares').then((module) => ({ default: module.NFLOpeningWeekSquares })));
 const FootballSquaresApp = React.lazy(() => import('./pages/FootballSquaresApp').then((module) => ({ default: module.FootballSquaresApp })));
 const Homepage = React.lazy(() => import('./src/features/homepage/Homepage'));
-const DesignKitchen = React.lazy(() => import('./src/design/kitchen/DesignKitchen'));
 
 const HomepageProductFallback = () => (
   <main className="min-h-[100dvh] bg-ink px-4 py-8 text-broadcast-white">
@@ -105,7 +104,6 @@ const App: React.FC = () => {
               <Route path="/articles/nfl-opening-week-squares-pool" element={<NFLOpeningWeekSquares />} />
               <Route path="/articles/football-squares-app" element={<FootballSquaresApp />} />
               <Route path="/privacy" element={<Privacy />} />
-              {import.meta.env.DEV ? <Route path="/design-kitchen" element={<DesignKitchen />} /> : null}
               <Route path="/terms" element={<Terms />} />
 
               <Route path="*" element={<NotFound />} />
