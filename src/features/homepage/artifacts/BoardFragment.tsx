@@ -18,7 +18,11 @@ export function BoardFragment({ highlight, size = 4, className = '' }: BoardFrag
   const label = `Board fragment with the winning square at ${demoGame.topAbbr} ${highlight.top}, ${demoGame.leftAbbr} ${highlight.left}`;
 
   return (
-    <div role="img" aria-label={label} className={`inline-grid gap-px bg-hairline rounded-cell overflow-hidden ${className}`.trim()} style={{ gridTemplateColumns: `28px repeat(${size}, minmax(0, 1fr))` }}>
+    // The cell and hairline tokens are translucent, so the fragment carries its own
+    // opaque ground: without it the tiles composite over whatever section they sit
+    // on and the muted `OPEN` label drops below WCAG AA (axe color-contrast).
+    <div role="img" aria-label={label} className={`inline-block bg-ground rounded-cell overflow-hidden ${className}`.trim()}>
+      <div className="grid gap-px bg-hairline" style={{ gridTemplateColumns: `28px repeat(${size}, minmax(0, 1fr))` }}>
       <div className="bg-ground" aria-hidden="true" />
       {cols.map((c) => (
         <div key={`t${c}`} aria-hidden="true" className="bg-ground h-7 flex items-center justify-center font-mono text-[12px] text-fg-3">{demoBoard.topAxis[c]}</div>
@@ -44,6 +48,7 @@ export function BoardFragment({ highlight, size = 4, className = '' }: BoardFrag
           })}
         </React.Fragment>
       ))}
+      </div>
     </div>
   );
 }

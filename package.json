@@ -23,6 +23,7 @@
     "stripe": "^20.2.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
     "@cloudflare/workers-types": "5.20260822.1",
     "@google/design.md": "0.4.0",
     "@playwright/test": "^1.59.0",

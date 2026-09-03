@@ -37,10 +37,11 @@ Requires Docker. If Docker is unavailable, record the blocker and run every othe
 npx playwright test --project=chromium
 ```
 
-`playwright-tests/` against the Vite dev server, with Supabase and API routes mocked in the page. `chromium` is the release project (56 tests); `webkit`, `phone-chromium`, and `phone-webkit` exist for targeted checks.
+`playwright-tests/` against the Vite dev server, with Supabase and API routes mocked in the page. `chromium` is the release project (66 tests); `webkit`, `phone-chromium`, and `phone-webkit` exist for targeted checks.
 
 - `accessibility-contract.spec.ts` is the executable half of `docs/accessibility-contract.md`: focus order and visibility, 44×44 target geometry, field-linked auth errors, the organizer selection mode and range-assign bar, Reconcile blockers vs advisories, the draw and publish confirmations, save conflict, the viewer's first viewport and score-authority states, the find-my-squares dialog focus loop, one keyboard tab stop into the board grid, 320/390 overflow, reduced motion, and forced colors.
 - `homepage.spec.ts`, `viewer.spec.ts`, `organizer.spec.ts`, `site.spec.ts`, `scheduled-game-picker.spec.ts`, `user-workflows.spec.ts`, `smoke.spec.ts` cover the routes end to end.
+- `axe.spec.ts` is the automated half of the accessibility layer, complementing the hand-written contract above. It drives `@axe-core/playwright` over ten redesigned surfaces — `/`, `/demo`, `/articles`, `/articles/how-football-squares-work`, `/login`, `/privacy`, an unknown path, and the authenticated `/dashboard`, `/create`, and `/boards/:id` draft workspace (organizer session and REST/API mocks come from `playwright-tests/helpers/organizerMocks.ts`) — analysing each with the `wcag2a`, `wcag2aa`, `wcag21a`, and `wcag21aa` rule tags. Because several sections reveal on scroll, each test walks the page to the bottom and back before analysing; otherwise axe would sweep a mostly empty document. Any `critical` or `serious` violation fails the test, and the full violations list is attached to the report as `axe-violations.json` while `moderate` and `minor` counts are recorded as a test annotation. No rule is disabled: an axe finding is treated as a real defect to fix in application code, not a rule to silence. Run it alone with `npx playwright test playwright-tests/axe.spec.ts --project=chromium`, or as part of the release command below.
 
 ### 4. Design lint
 
