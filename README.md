@@ -140,8 +140,9 @@ See `docs/TEST_STRATEGY.md` for what each layer owns.
 The repo cannot tell you which migrations or Worker versions are live. Check the
 Supabase and Cloudflare dashboards before relying on anything below.
 
-- **Site and API.** The Cloudflare Pages project (`wrangler.toml` names it
-  `gridone`; confirm the project name in the dashboard) is Git-connected and
+- **Site and API.** The Cloudflare Pages project `grid-one` (domains
+  `grid-one.pages.dev`, `getgridone.com`, `www.getgridone.com`; `wrangler.toml`'s
+  `name = "gridone"` is the Wrangler config name, not the Pages project) is Git-connected and
   builds production from `main` (`npm ci && npm run build`, output directory
   `dist`). `git push origin main` therefore deploys both the site and the Pages
   Functions in `functions/`. There is no manual deploy step.
