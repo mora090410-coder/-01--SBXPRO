@@ -23,8 +23,8 @@ export interface PhoneFrameProps {
 export function PhoneFrame({ children, caption, className = '', aspect = 'phone' }: PhoneFrameProps) {
   if (aspect === 'auto') {
     return (
-      <Glass as="figure" padding="lg" className={`w-full max-w-[390px] overflow-hidden rounded-[32px] ${className}`.trim()}>
-        <div inert aria-hidden="true">{children}</div>
+      <Glass as="figure" padding="lg" className={`w-full max-w-[390px] min-h-[220px] overflow-hidden rounded-[32px] ${className}`.trim()}>
+        <div inert aria-hidden="true" className="min-h-[220px]">{children}</div>
         <figcaption className="sr-only">{caption}</figcaption>
       </Glass>
     );

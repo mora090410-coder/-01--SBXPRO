@@ -65,7 +65,7 @@ const ViewerShell: React.FC<ViewerShellProps> = ({
         aria-label={`${game.title || 'GridOne board'} viewer`}
       >
         <div data-testid="viewer-first-viewport" className="flex min-w-0 flex-col gap-8">
-          <ScoreInstrument game={game} board={board} live={live} liveStatus={liveStatus} isSynced={isSynced} />
+          <ScoreInstrument game={game} board={board} live={live} liveStatus={liveStatus} isSynced={isSynced} headingLevel={organizerPreview ? 'h2' : 'h1'} />
           <FindSquaresEntry selectedPlayer={selectedPlayer} onFindSquares={onFindSquares} onClearPlayer={onClearPlayer} />
           <YourSquaresSummary board={board} game={game} live={live} selectedPlayer={selectedPlayer} onViewSquare={setFocus} />
           {pendingMilestones.length > 0 && servicesEnabled && (

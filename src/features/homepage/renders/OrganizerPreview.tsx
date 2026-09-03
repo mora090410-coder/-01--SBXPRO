@@ -1,11 +1,14 @@
 import React, { Suspense } from 'react';
 import { Glass } from '../../../design/primitives';
-import { ORGANIZER_PREVIEW_CAPTION } from './organizerDemoData';
 
 const OrganizerPreviewInner = React.lazy(() => import('./OrganizerPreviewInner'));
 
 const SHELL_WIDTH = 560;
 const DEVICE_WIDTH = 800;
+
+// Kept as a literal (not imported from organizerDemoData) so the homepage chunk never pulls in
+// the demo board construction -- that stays behind the lazy OrganizerPreviewInner boundary.
+export const ORGANIZER_PREVIEW_CAPTION = 'Organizer workspace with 61 of 100 squares filled';
 
 function OrganizerFrame({ children, className = '' }: { children?: React.ReactNode; className?: string }) {
   return (

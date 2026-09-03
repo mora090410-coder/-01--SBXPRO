@@ -9,9 +9,14 @@ const namePool = demoBoard.squares
   .map((names) => names[0] ?? '')
   .filter((name) => name !== '' && name !== 'OPEN');
 
-/** A half-sold board: the first 61 squares carry names, the rest are still open. */
+/** Numbers not drawn: BoardEditor and the organizer island both read a null axis digit as "not drawn". */
+const UNDRAWN_AXIS: (number | null)[] = Array.from({ length: 10 }, () => null);
+
+/** A half-sold board: the first 61 squares carry names, the rest are still open. Numbers are not drawn, matching the island's "Numbers not drawn" ring. */
 export const organizerDemoBoard: BoardData = {
   ...demoBoard,
+  topAxis: UNDRAWN_AXIS,
+  leftAxis: UNDRAWN_AXIS,
   squares: Array.from({ length: 100 }, (_, index) => (
     index < ORGANIZER_FILLED ? [namePool[index % namePool.length]!] : []
   )),
@@ -27,5 +32,3 @@ export const organizerDemoEntryMeta: Record<number, EntryMeta> = Object.fromEntr
     seller_label: null,
   } satisfies EntryMeta]),
 );
-
-export const ORGANIZER_PREVIEW_CAPTION = `Organizer workspace with ${ORGANIZER_FILLED} of 100 squares filled`;

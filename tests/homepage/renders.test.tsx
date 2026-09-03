@@ -73,4 +73,19 @@ describe('Homepage with the renders resolved', () => {
     expect(screen.getAllByRole('main').length).toBe(1);
     expect(screen.getByRole('main')).toHaveAttribute('data-testid', 'homepage');
   });
+
+  it('renders exactly one h1 once both lazy renders resolve', async () => {
+    render(<MemoryRouter><Homepage /></MemoryRouter>);
+    await screen.findByText('Lincoln Softball Booster Board');
+    await screen.findByText('Select squares');
+    expect(document.querySelectorAll('h1').length).toBe(1);
+  });
+
+  it('never duplicates an id across both lazy renders', async () => {
+    render(<MemoryRouter><Homepage /></MemoryRouter>);
+    await screen.findByText('Lincoln Softball Booster Board');
+    await screen.findByText('Select squares');
+    const ids = Array.from(document.querySelectorAll('[id]')).map((node) => node.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
 });
