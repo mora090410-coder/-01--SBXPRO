@@ -115,11 +115,6 @@
         box-shadow: var(--gridone-elevation-raised);
     }
 
-    .gridone-organizer-header {
-        box-shadow: var(--gridone-elevation-raised);
-    }
-
-    .gridone-board-frame,
     .gridone-board-grid,
     .gridone-board-grid th,
     .gridone-board-grid td {
@@ -127,8 +122,7 @@
     }
 
 @media (prefers-reduced-transparency: reduce), (forced-colors: active) {
-    :where([role="dialog"][aria-modal="true"]),
-    .gridone-organizer-header {
+    :where([role="dialog"][aria-modal="true"]) {
         box-shadow: none;
     }
 }

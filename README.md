@@ -117,7 +117,7 @@ See `.env.example` for a template.
 | `npm run test:coverage` | Vitest with a coverage report |
 | `npm run design:lint` | `designmd lint DESIGN.md` |
 
-Playwright is not in `package.json`; run it directly:
+Playwright is a devDependency but has no npm script; run it directly:
 
 ```bash
 npx playwright test --project=chromium
@@ -134,6 +134,37 @@ npx playwright test --project=chromium
 ```
 
 See `docs/TEST_STRATEGY.md` for what each layer owns.
+
+## Deploying to production
+
+The repo cannot tell you which migrations or Worker versions are live. Check the
+Supabase and Cloudflare dashboards before relying on anything below.
+
+- **Site and API.** The Cloudflare Pages project (`wrangler.toml` names it
+  `gridone`; confirm the project name in the dashboard) is Git-connected and
+  builds production from `main` (`npm ci && npm run build`, output directory
+  `dist`). `git push origin main` therefore deploys both the site and the Pages
+  Functions in `functions/`. There is no manual deploy step.
+- **Node version.** `.node-version` pins `22`, which Cloudflare Pages reads; keep
+  the `NODE_VERSION` environment variable on the Pages project in step with it.
+  Wrangler 4 needs Node 20 or newer.
+- **Cron Workers.** The two scheduled Workers deploy separately and are *not*
+  covered by a push to `main`:
+
+  ```bash
+  npx wrangler deploy -c wrangler.score-scheduler.toml
+  npx wrangler deploy -c wrangler.retry-scheduler.toml
+  ```
+
+- **Secrets.** `CRON_SECRET` must be set on both Workers and on the Pages project —
+  the Workers sign their cron call with it and the Pages Functions
+  (`/api/scores/refresh`, `/api/notifications/retry`) check it. `REFRESH_ENDPOINT`
+  and `RETRY_ENDPOINT` are plain vars already committed in the two scheduler
+  `wrangler.*.toml` files; override them per environment if the endpoint moves.
+- **Database.** Migrations in `supabase/migrations/` are applied by hand through
+  the Supabase dashboard SQL editor. Nothing in the repo records which have been
+  applied — verify `020` through `025` in the dashboard before relying on live
+  scoring.
 
 ## Notes
 

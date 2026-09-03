@@ -23,10 +23,9 @@ describe('Phase 5 visual system', () => {
     expect(css).not.toMatch(/border-radius:\s*(?:999px|50%)/);
   });
 
-  it('uses the single elevation token in exactly two allowed rule blocks', () => {
-    expect(css.match(/var\(--gridone-elevation-raised\)/g)).toHaveLength(2);
+  it('uses the single elevation token in exactly one allowed rule block', () => {
+    expect(css.match(/var\(--gridone-elevation-raised\)/g)).toHaveLength(1);
     expect(css).toMatch(/role="dialog"[\s\S]*var\(--gridone-elevation-raised\)/);
-    expect(css).toMatch(/\.gridone-organizer-header[\s\S]*var\(--gridone-elevation-raised\)/);
   });
 
   it('does not reintroduce gradients, blur, or arbitrary shadow utilities', () => {
