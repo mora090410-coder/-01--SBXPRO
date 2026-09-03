@@ -140,7 +140,7 @@ Score freshness is information, not decoration: viewer updates arrive about ever
 
 1. The product is the hero image. No illustrations, stock, or abstract 3D.
 2. Asymmetric, left-anchored layouts on desktop. Centered only on single-column phone.
-3. One spotlight per page, behind the artifact. A section may additionally carry one ambient ground tint (`SectionTone`); that is light in the room, not a second spotlight, and it never sits behind an artifact.
+3. One spotlight per page, focused behind the artifact. A section may additionally carry one ambient ground tint (`SectionTone`) — light in the room, not a second spotlight: far larger, far softer, edge-anchored, and never focused on anything. A section may hold both.
 4. Hierarchy from scale contrast, not card count. No three-up feature rows.
 5. Real numbers and real team names everywhere, including empty states.
 6. Icons almost never. When required: one set, one stroke weight, 16px, muted.

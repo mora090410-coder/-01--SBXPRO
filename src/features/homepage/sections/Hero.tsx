@@ -11,7 +11,7 @@ import { primaryLink, quietLink } from './cta';
 export function Hero() {
   // Vertical travel and a rotation easing -3deg -> -1deg, in one transform string.
   // Inert under reduced motion and below md; never writes a horizontal translate.
-  const artifact = useParallax<HTMLDivElement>({ maxPx: 40, rotateFromDeg: -3, rotateToDeg: -1 });
+  const artifact = useParallax<HTMLDivElement>({ maxPx: 40, rotateFromDeg: 3, rotateToDeg: 1 });
 
   return (
     <section data-testid="homepage-first-viewport" className="relative overflow-hidden px-6 pt-6 pb-16 md:px-12 md:pt-8 md:pb-24">
@@ -50,7 +50,7 @@ export function Hero() {
 
         <div className="relative flex flex-col items-center gap-3 md:items-end">
           <Spotlight className="left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" breathe />
-          <div ref={artifact} className="relative z-10 w-fit max-w-full rotate-[-3deg] will-change-transform">
+          <div ref={artifact} className="relative z-10 w-fit max-w-full rotate-[-3deg] md:rotate-[3deg] will-change-transform">
             <HeroViewer />
           </div>
           <p className="relative z-10 font-mono text-[12px] text-fg-3">{DEMO_LABEL}</p>

@@ -22,8 +22,11 @@ const TINT: Record<SectionToneName, string> = {
  * the section's left or right edge — light in the room, not chromatic UI. It is
  * NOT a `Spotlight`; a page still gets exactly one spotlight, behind its artifact.
  *
- * Contract: place it as the first child of a `relative` section and give that
- * section's content `relative z-10`, so the tone never paints over content. It
+ * Contract: place it as the first child of a `relative overflow-hidden` section
+ * and give that section's content `relative z-10`. The clip is required, not
+ * cosmetic: the blob is edge-anchored and half of it sits outside the section
+ * box, and a transformed element contributes to scrollable overflow — without
+ * `overflow-hidden` (or `overflow-x-clip`) the page grows horizontally. It
  * is `aria-hidden` and `pointer-events-none`, so it can never be read or clicked.
  * The tint alpha is capped in `tokens.css` so text over it still clears WCAG AA.
  */
