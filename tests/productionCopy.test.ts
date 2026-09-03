@@ -60,6 +60,8 @@ const liveCopyFiles = [
   'pages/NotFound.tsx',
   'pages/Paid.tsx',
   'pages/CreateContest.tsx',
+  'pages/Privacy.tsx',
+  'pages/Terms.tsx',
   'pages/ArticlesHub.tsx',
   'pages/BoosterClubFootballSquares.tsx',
   'pages/ChurchSchoolFundraiserSquares.tsx',

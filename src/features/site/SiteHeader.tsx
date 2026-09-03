@@ -22,7 +22,13 @@ function useOptionalUser() {
   }
 }
 
-export function SiteHeader({ className = '' }: { className?: string }) {
+export interface SiteHeaderProps {
+  className?: string;
+  /** `/login` is already the sign-in page: the header link there is noise. */
+  hideSignIn?: boolean;
+}
+
+export function SiteHeader({ className = '', hideSignIn = false }: SiteHeaderProps) {
   const user = useOptionalUser();
   const navigate = useNavigate();
 
@@ -39,7 +45,7 @@ export function SiteHeader({ className = '' }: { className?: string }) {
           <Link to="/dashboard" className={ghostLink}>Your boards</Link>
           <CapsuleButton variant="quiet" onClick={logOut}>Log out</CapsuleButton>
         </div>
-      ) : (
+      ) : hideSignIn ? null : (
         <Link to="/login?mode=signin" className={ghostLink}>Sign in</Link>
       )}
     </header>

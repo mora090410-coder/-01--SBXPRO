@@ -8,8 +8,10 @@ test('warm inputs retain rendered boundaries, focus, error semantics, and touch 
   const submit = page.getByRole('button', { name: 'Sign In', exact: true });
 
   await expect(email).toHaveCSS('border-top-style', 'solid');
-  await expect.poll(() => email.evaluate((element) => parseFloat(getComputedStyle(element).borderTopWidth)))
-    .toBeGreaterThan(0);
+  // CapsuleInput draws a 1px boundary; a hairline that renders at 0 or thickens
+  // under a stray override are both regressions.
+  await expect.poll(() => email.evaluate((element) => getComputedStyle(element).borderTopWidth))
+    .toBe('1px');
 
   const emailBox = await email.boundingBox();
   const submitBox = await submit.boundingBox();

@@ -62,8 +62,19 @@ describe('Login', () => {
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
   });
 
+  it('keeps the site banner and one main landmark, without a redundant Sign in link', () => {
+    renderAt(<Login />, '/login');
+    const banner = screen.getByRole('banner');
+    expect(banner).toBeInTheDocument();
+    expect(banner.querySelector('a[href="/"]')).toHaveTextContent('GridOne');
+    expect(screen.getByRole('main')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Sign in' })).toBeNull();
+    expect(screen.queryByRole('contentinfo')).toBeNull();
+  });
+
   it('adds the confirmation and name fields in signup mode', () => {
     renderAt(<Login />, '/login?mode=signup');
+    expect(screen.getByText('New organizer')).toBeInTheDocument();
     expect(screen.getByLabelText('Confirm Password')).toBeInTheDocument();
     expect(screen.getByLabelText('First Name (optional)')).toBeInTheDocument();
     expect(screen.getByLabelText('Last Name (optional)')).toBeInTheDocument();
