@@ -7,19 +7,24 @@ test('warm inputs retain rendered boundaries, focus, error semantics, and touch 
   const email = page.getByLabel('Email Address');
   const submit = page.getByRole('button', { name: 'Sign In', exact: true });
 
-  await expect(email).toHaveCSS('min-height', '44px');
-  await expect(email).toHaveCSS('border-top-width', '2px');
   await expect(email).toHaveCSS('border-top-style', 'solid');
-  await expect(submit).toHaveCSS('min-height', '44px');
+  // CapsuleInput draws a 1px boundary; a hairline that renders at 0 or thickens
+  // under a stray override are both regressions.
+  await expect.poll(() => email.evaluate((element) => getComputedStyle(element).borderTopWidth))
+    .toBe('1px');
 
   const emailBox = await email.boundingBox();
   const submitBox = await submit.boundingBox();
   expect(emailBox?.height).toBeGreaterThanOrEqual(44);
   expect(submitBox?.height).toBeGreaterThanOrEqual(44);
 
+  const restingBorder = await email.evaluate((element) => getComputedStyle(element).borderTopColor);
   await email.focus();
   await expect(email).toBeFocused();
-  await expect(email).toHaveCSS('border-top-color', 'rgb(143, 29, 44)');
+  // The focused boundary changes colour and gains a ring; either alone would
+  // leave a keyboard organizer guessing where they are.
+  await expect.poll(() => email.evaluate((element) => getComputedStyle(element).borderTopColor))
+    .not.toBe(restingBorder);
   await expect.poll(() => email.evaluate((element) => getComputedStyle(element).boxShadow))
     .not.toBe('none');
 
@@ -27,11 +32,13 @@ test('warm inputs retain rendered boundaries, focus, error semantics, and touch 
   await page.getByLabel('Email Address').fill('organizer@example.test');
   await page.getByLabel('Password', { exact: true }).fill('abcdef');
   await page.getByLabel('Confirm Password').fill('uvwxyz');
-  await page.getByRole('button', { name: 'Create Account' }).click();
+  await page.getByRole('button', { name: 'Create organizer account' }).click();
 
   const alert = page.getByRole('alert');
   await expect(alert).toContainText('Passwords do not match');
-  await expect(alert.locator('svg')).toHaveCount(1);
+  await expect(alert).toHaveAttribute('id', 'auth-error');
+  // The dark base carries no icons: the alert says it in words.
+  await expect(alert.locator('svg')).toHaveCount(0);
   await expect(page.getByLabel('Email Address')).toHaveAttribute('aria-invalid', 'true');
   await expect(page.getByLabel('Email Address')).toHaveAttribute('aria-describedby', 'auth-error');
 });

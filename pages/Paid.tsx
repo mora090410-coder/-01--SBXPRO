@@ -2,6 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { PageMetadata } from '../components/seo/PageMetadata';
 import { supabase } from '../services/supabase';
+import { CapsuleButton, CapsuleTag, Eyebrow } from '../src/design/primitives';
+import { SitePage } from '../src/features/site';
+import { primaryLink, quietLink } from '../src/features/homepage/sections/cta';
 
 const Paid: React.FC = () => {
     const [searchParams] = useSearchParams();
@@ -123,43 +126,47 @@ const Paid: React.FC = () => {
     const loginUrl = `/login?returnTo=${encodeURIComponent(paidReturnTo)}`;
 
     return (
-        <main className="oa-root gdh-unavailable min-h-[100dvh]" aria-live="polite">
+        <SitePage width="prose" withFooter={false} mainProps={{ 'aria-live': 'polite' }}>
             <PageMetadata
                 title="Checkout status | GridOne"
                 description="Confirming your GridOne 2026 plan payment."
                 path="/paid"
                 noIndex
             />
-            <p className="gdh-kicker">2026 plan</p>
-            <h1>
-                {state === 'ready'
-                    ? 'Plan ready.'
-                    : state === 'checking'
-                        ? 'Finishing checkout.'
-                        : state === 'processing'
-                            ? 'Payment processing.'
-                            : state === 'duplicate'
-                                ? 'Refund review.'
-                                : state === 'payment_review'
-                                    ? 'Payment updated.'
-                                : state === 'inactive'
-                                    ? 'Plan inactive.'
-                                    : 'Checkout needs attention.'}
-            </h1>
-            <p>{message}</p>
-            {state === 'checking' && <span className="oa-data">Secure verification in progress</span>}
-            {state === 'ready' && contestId && <Link className="oa-btn oa-btn-primary" to={`/boards/${contestId}`}>Open organizer view</Link>}
-            {state === 'ready' && !contestId && <Link className="oa-btn oa-btn-primary" to="/dashboard">Return to dashboard</Link>}
-            {state === 'signin' && <Link className="oa-btn oa-btn-primary" to={loginUrl}>Sign in to continue</Link>}
-            {(state === 'processing' || state === 'duplicate' || state === 'payment_review' || state === 'inactive' || state === 'payment_failed' || state === 'delayed' || state === 'error') && (
-                <div className="flex flex-wrap justify-center gap-3">
-                    {orderId && (state === 'processing' || state === 'delayed' || state === 'error') && (
-                        <button type="button" className="oa-btn oa-btn-primary" onClick={retry}>Check again</button>
-                    )}
-                    <Link className="oa-btn oa-btn-ghost" to="/dashboard">Return to dashboard</Link>
-                </div>
-            )}
-        </main>
+            <div className="flex flex-col gap-4">
+                <Eyebrow>2026 plan</Eyebrow>
+                <h1 className="font-display text-[40px] leading-[1.05] text-fg md:text-[52px]">
+                    {state === 'ready'
+                        ? 'Plan ready.'
+                        : state === 'checking'
+                            ? 'Finishing checkout.'
+                            : state === 'processing'
+                                ? 'Payment processing.'
+                                : state === 'duplicate'
+                                    ? 'Refund review.'
+                                    : state === 'payment_review'
+                                        ? 'Payment updated.'
+                                    : state === 'inactive'
+                                        ? 'Plan inactive.'
+                                        : 'Checkout needs attention.'}
+                </h1>
+                <p className="font-ui text-[19px] leading-[1.5] text-fg-2">{message}</p>
+            </div>
+            <div className="mt-8 flex flex-wrap items-center gap-3">
+                {state === 'checking' && <CapsuleTag>Secure verification in progress</CapsuleTag>}
+                {state === 'ready' && contestId && <Link className={primaryLink} to={`/boards/${contestId}`}>Open organizer view</Link>}
+                {state === 'ready' && !contestId && <Link className={primaryLink} to="/dashboard">Return to dashboard</Link>}
+                {state === 'signin' && <Link className={primaryLink} to={loginUrl}>Sign in to continue</Link>}
+                {(state === 'processing' || state === 'duplicate' || state === 'payment_review' || state === 'inactive' || state === 'payment_failed' || state === 'delayed' || state === 'error') && (
+                    <>
+                        {orderId && (state === 'processing' || state === 'delayed' || state === 'error') && (
+                            <CapsuleButton variant="primary" onClick={retry}>Check again</CapsuleButton>
+                        )}
+                        <Link className={quietLink} to="/dashboard">Return to dashboard</Link>
+                    </>
+                )}
+            </div>
+        </SitePage>
     );
 };
 

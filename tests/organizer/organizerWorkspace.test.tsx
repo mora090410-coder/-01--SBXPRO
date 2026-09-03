@@ -12,6 +12,7 @@ vi.mock('../../services/supabase', () => ({
 
 vi.mock('../../src/features/organizer/workspace/entryMetaService', () => ({
   saveEntryMeta: vi.fn(async () => undefined),
+  saveEntryMetaBatch: vi.fn(async () => undefined),
   clearEntryMeta: vi.fn(async () => undefined),
 }));
 
@@ -59,7 +60,7 @@ vi.mock('../../src/features/organizer/workspace/renamePublishedSquare', () => ({
 }));
 
 import OrganizerWorkspace from '../../src/features/organizer/workspace/OrganizerWorkspace';
-import { saveEntryMeta } from '../../src/features/organizer/workspace/entryMetaService';
+import { saveEntryMeta, saveEntryMetaBatch } from '../../src/features/organizer/workspace/entryMetaService';
 import { enableManualScoringOnServer } from '../../src/features/organizer/services/game-day/manualScoreService';
 import { publishMilestoneCorrectionToServer } from '../../src/features/organizer/services/corrections/milestoneCorrectionService';
 import { renamePublishedSquare } from '../../src/features/organizer/workspace/renamePublishedSquare';
@@ -598,7 +599,7 @@ describe('OrganizerWorkspace published boards', () => {
     expect(await screen.findByText('Viewer link copied.')).toBeInTheDocument();
   });
 
-  it('sends a late fill through onAssignOpenSquares and reloads', async () => {
+  it('sends a late fill through onAssignOpenSquares, which reloads for itself', async () => {
     const onAssignOpenSquares = vi.fn(async (_squares: string[][]) => undefined);
     const { onReload } = renderPublished({ board: drawnBoard(99), onAssignOpenSquares });
 
@@ -611,7 +612,9 @@ describe('OrganizerWorkspace published boards', () => {
     expect(onAssignOpenSquares).toHaveBeenCalledTimes(1);
     const squares = onAssignOpenSquares.mock.calls[0][0];
     expect(squares[99]).toEqual(['Dana P.']);
-    expect(onReload).toHaveBeenCalled();
+    // The callback reloads the board itself; a second reload here would only
+    // turn a reload failure into a false "nothing changed".
+    expect(onReload).not.toHaveBeenCalled();
   });
 
   it('refuses to clear a published assignment and never routes it through the late-fill callback', async () => {
@@ -721,5 +724,205 @@ describe('OrganizerWorkspace published boards', () => {
     expect(screen.getByText('This board is locked as the Final record.')).toBeInTheDocument();
     expandIsland();
     expect(screen.getAllByRole('link', { name: 'Create another board' }).length).toBeGreaterThan(0);
+  });
+});
+
+describe('OrganizerWorkspace range assignment', () => {
+  const enterSelectMode = () => fireEvent.click(screen.getByRole('button', { name: 'Select squares' }));
+  const selectCell = (n: number) => fireEvent.click(screen.getByRole('button', { name: `Square ${n}, unassigned` }));
+  const typeName = (value: string) => fireEvent.change(screen.getByLabelText('Name for these squares'), { target: { value } });
+
+  it('writes one name across the block and batches the private notes as not asked yet', async () => {
+    const { onApply, onEntryMetaChange } = renderWorkspace();
+
+    enterSelectMode();
+    selectCell(1);
+    fireEvent.click(screen.getByRole('button', { name: 'Square 12, unassigned' }), { shiftKey: true });
+    expect(screen.getByText('4 selected')).toBeInTheDocument();
+
+    typeName('Dana P.');
+    fireEvent.change(screen.getByLabelText('Sold by (optional)'), { target: { value: 'Coach Lee' } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Apply to 4' }));
+    });
+
+    const board = lastBoard(onApply);
+    expect(board.squares[0]).toEqual(['Dana P.']);
+    expect(board.squares[1]).toEqual(['Dana P.']);
+    expect(board.squares[10]).toEqual(['Dana P.']);
+    expect(board.squares[11]).toEqual(['Dana P.']);
+
+    expect(saveEntryMetaBatch).toHaveBeenCalledTimes(1);
+    const [poolId, metas] = (saveEntryMetaBatch as any).mock.calls[0];
+    expect(poolId).toBe('pool-1');
+    expect(metas.map((meta: EntryMeta) => meta.cell_index)).toEqual([0, 1, 10, 11]);
+    for (const meta of metas) {
+      expect(meta.paid_status).toBe('unknown');
+      expect(meta.seller_label).toBe('Coach Lee');
+    }
+    expect(onEntryMetaChange).toHaveBeenCalledTimes(4);
+    expect(screen.queryByRole('group', { name: 'Assign selected squares' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Done selecting' })).toBeInTheDocument();
+  });
+
+  it('records the chosen payment state for every square in the block', async () => {
+    renderWorkspace();
+
+    enterSelectMode();
+    selectCell(1);
+    selectCell(2);
+    fireEvent.click(screen.getByRole('radio', { name: 'Unpaid' }));
+    typeName('Dana P.');
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Apply to 2' }));
+    });
+
+    const [, metas] = (saveEntryMetaBatch as any).mock.calls[0];
+    expect(metas.map((meta: EntryMeta) => meta.paid_status)).toEqual(['unpaid', 'unpaid']);
+  });
+
+  it('leaves the board and the selection alone when the batch write fails', async () => {
+    (saveEntryMetaBatch as any).mockRejectedValueOnce(new Error('network down'));
+    renderWorkspace();
+
+    enterSelectMode();
+    selectCell(1);
+    typeName('Dana P.');
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Apply to 1' }));
+    });
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Could not assign those squares. Nothing changed.');
+    expect(screen.getByRole('button', { name: 'Square 1, unassigned' })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Assign selected squares' })).toBeInTheDocument();
+  });
+
+  it('keeps an existing payment record when the payment radio is left untouched', async () => {
+    renderWorkspace({ entryMeta: { 0: paidMeta(0), 1: paidMeta(1) } });
+
+    enterSelectMode();
+    selectCell(1);
+    selectCell(2);
+    typeName('Dana P.');
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Apply to 2' }));
+    });
+
+    const [, metas] = (saveEntryMetaBatch as any).mock.calls[0];
+    expect(metas.map((meta: EntryMeta) => meta.paid_status)).toEqual(['paid', 'paid']);
+    expect(metas.map((meta: EntryMeta) => meta.seller_label)).toEqual(['Coach Lee', 'Coach Lee']);
+  });
+
+  it('warns before replacing names and says how many it replaced, in the status region', async () => {
+    renderWorkspace({ board: boardWithAssignments(2) });
+
+    enterSelectMode();
+    fireEvent.click(screen.getByRole('button', { name: 'Square 1, assigned to Ann R.' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Square 3, unassigned' }));
+    expect(screen.getByText('1 of these already have a name. Apply replaces them.')).toBeInTheDocument();
+
+    typeName('Dana Prince');
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Apply to 2' }));
+    });
+
+    const status = await screen.findByText('Assigned 2 squares to Dana Prince. Replaced 1 existing names.');
+    expect(status).toHaveAttribute('role', 'status');
+  });
+
+  it('published: says the names landed when only the notes fail, and drops the selection', async () => {
+    (saveEntryMetaBatch as any).mockRejectedValueOnce(new Error('network down'));
+    const onAssignOpenSquares = vi.fn(async (_squares: string[][]) => undefined);
+    renderWorkspace({ board: drawnBoard(99), isPublished: true, shareCode: 'abc123', onAssignOpenSquares });
+
+    enterSelectMode();
+    selectCell(100);
+    typeName('Dana Prince');
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Apply to 1' }));
+    });
+
+    expect(onAssignOpenSquares).toHaveBeenCalledTimes(1);
+    expect(await screen.findByRole('alert')).toHaveTextContent('Squares assigned. Seller and payment notes were not saved.');
+    expect(screen.queryByRole('group', { name: 'Assign selected squares' })).not.toBeInTheDocument();
+  });
+
+  it('drops the selection when select mode is left', () => {
+    renderWorkspace();
+
+    enterSelectMode();
+    selectCell(1);
+    expect(screen.getByRole('group', { name: 'Assign selected squares' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Done selecting' }));
+    expect(screen.queryByRole('group', { name: 'Assign selected squares' })).not.toBeInTheDocument();
+  });
+
+  it('published: assigns the OPEN squares through the late-fill callback, which reloads for itself', async () => {
+    const onAssignOpenSquares = vi.fn(async (_squares: string[][]) => undefined);
+    const { onReload } = renderWorkspace({
+      board: drawnBoard(98),
+      isPublished: true,
+      shareCode: 'abc123',
+      onAssignOpenSquares,
+    });
+
+    enterSelectMode();
+    selectCell(99);
+    selectCell(100);
+    typeName('Dana Prince');
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Apply to 2' }));
+    });
+
+    expect(onAssignOpenSquares).toHaveBeenCalledTimes(1);
+    const squares = onAssignOpenSquares.mock.calls[0][0];
+    expect(squares[98]).toEqual(['Dana Prince']);
+    expect(squares[99]).toEqual(['Dana Prince']);
+    expect(onReload).not.toHaveBeenCalled();
+    expect(saveEntryMetaBatch).toHaveBeenCalledTimes(1);
+    // The published branch keeps confirmations in the flow rather than the island.
+    expect(await screen.findByText('Assigned 2 squares to Dana Prince.')).toBeInTheDocument();
+  });
+
+  it('published: a block that reaches over sold squares selects only the OPEN ones', async () => {
+    const onAssignOpenSquares = vi.fn(async (_squares: string[][]) => undefined);
+    const board = drawnBoard(100);
+    board.squares[90] = [];
+    board.squares[99] = [];
+    renderWorkspace({ board, isPublished: true, shareCode: 'abc123', onAssignOpenSquares });
+
+    enterSelectMode();
+    selectCell(91);
+    fireEvent.click(screen.getByRole('button', { name: 'Square 100, unassigned' }), { shiftKey: true });
+    // The eight sold squares between them are never armed, so the organizer
+    // sees the apply that will actually happen rather than one that is refused.
+    expect(screen.getByRole('button', { name: /^Square 92, assigned to / })).not.toHaveAttribute('aria-pressed', 'true');
+    typeName('Dana P.');
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Apply to 2' }));
+    });
+
+    expect(onAssignOpenSquares).toHaveBeenCalledTimes(1);
+    const squares = onAssignOpenSquares.mock.calls[0][0];
+    expect(squares[90]).toEqual(['Dana P.']);
+    expect(squares[99]).toEqual(['Dana P.']);
+    expect(squares[91]).toEqual(board.squares[91]);
+    expect(saveEntryMetaBatch).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('SquareSheet payment states', () => {
+  it('offers Not asked yet first and saves it as the unknown state', async () => {
+    renderWorkspace();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Square 1, unassigned' }));
+    expect(screen.getByRole('radio', { name: 'Not asked yet' })).toHaveAttribute('aria-checked', 'true');
+    fireEvent.change(screen.getByLabelText('Name on the board'), { target: { value: 'Dana P.' } });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    });
+
+    expect(saveEntryMeta).toHaveBeenCalledWith('pool-1', expect.objectContaining({ cell_index: 0, paid_status: 'unknown' }));
   });
 });

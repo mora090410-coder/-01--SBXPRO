@@ -1,7 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import Header from '../components/layout/Header';
-import { PageMetadata } from '../components/seo/PageMetadata';
+import { Glass } from '../src/design/primitives';
+import { primaryLink } from '../src/features/homepage/sections/cta';
+import { ArticleShell } from '../src/features/site';
 import { ArticleCTA } from '../components/seo/ArticleCTA';
 
 export const OfficeSuperBowlSquares: React.FC = () => {
@@ -9,72 +10,26 @@ export const OfficeSuperBowlSquares: React.FC = () => {
   const description = 'Run office Super Bowl squares online with one clean live board link, easier score tracking, and fewer payout disputes.';
 
   return (
-    <div className="oa-root min-h-screen bg-broadcast-white text-ink font-sans selection:bg-gold/30 flex flex-col overflow-x-hidden">
-      <PageMetadata
-        title={title}
-        description={description}
-        path="/articles/office-super-bowl-squares"
-        type="article"
-        schema={{
-          '@type': 'Article',
-          headline: title,
-          description,
-          mainEntityOfPage: 'https://www.getgridone.com/articles/office-super-bowl-squares',
-          author: { '@type': 'Organization', name: 'GridOne' },
-          publisher: { '@type': 'Organization', name: 'GridOne', logo: { '@type': 'ImageObject', url: 'https://www.getgridone.com/icons/gridone-icon-256.png' } },
-        }}
-      />
-      <Header />
-      <main className="mx-auto w-full max-w-4xl px-5 py-24 duration-700">
-        <div className="mb-8 inline-flex items-center gap-2 rounded-control bg-newsprint px-3 py-1 text-xs text-cardinal ring-1 ring-cardinal">
-          Office Pool Guide
-        </div>
-
-        <h1 className="oa-chyron text-4xl font-semibold tracking-tight md:text-5xl lg:text-6xl text-ink mb-6">
-          Office Super Bowl squares without the spreadsheet circus
-        </h1>
-
-        <p className="text-xl text-ink/70 mb-12 leading-relaxed">
-          The office pool itself is fun. The annoying part is the organizer getting stuck as unpaid tech support once screenshots, payouts, and score questions start flying.
-        </p>
-
-        <article className="prose prose-lg max-w-none">
-          <h2 className="oa-headline text-2xl font-semibold text-ink mt-12 mb-6">What people actually want</h2>
-          <p className="text-ink/80 leading-relaxed mb-6">
-            Coworkers want to glance at the board, see who is winning, and stop asking where the latest photo is. Organizers want fewer disputes and less cleanup.
-          </p>
-
-          <div className="my-12 grid gap-6 md:grid-cols-2">
-            <div className="rounded-surface bg-newsprint p-6 ring-1 ring-gold/20">
-              <h3 className="text-xl font-bold text-gold mb-4">Better office squares flow</h3>
-              <ul className="space-y-3 text-sm text-ink/80">
-                <li>One live board link for the whole office</li>
-                <li>Read-only viewer experience on phones</li>
-                <li>Live winners and next-score scenarios</li>
-                <li>Cleaner handoff than spreadsheet plus group chat</li>
-              </ul>
-            </div>
-            <div className="rounded-surface bg-newsprint p-6 ring-1 ring-white/10 opacity-80">
-              <h3 className="text-xl font-bold text-ink mb-4">Typical mess</h3>
-              <ul className="space-y-3 text-sm text-ink/65">
-                <li>Someone uploads one blurry photo</li>
-                <li>People keep asking for updated scores</li>
-                <li>Manual checking creates payout arguments</li>
-                <li>The organizer becomes the bottleneck</li>
-              </ul>
-            </div>
-          </div>
-
-          <h2 className="oa-headline text-2xl font-semibold text-ink mt-12 mb-6">Use this if you are organizing for:</h2>
-          <ul className="space-y-3 text-ink/80">
-            <li>An office Super Bowl party</li>
-            <li>A department morale event</li>
-            <li>A customer appreciation watch party</li>
-            <li>A local business community event</li>
-          </ul>
-
-          <div className="mt-16 text-center">
-            <Link to="/create" className="inline-flex items-center justify-center gap-2 rounded-control bg-cardinal px-8 py-4 text-lg font-semibold text-broadcast-white hover:bg-cardinal-deep transition-all active:scale-95">
+    <ArticleShell
+      tag="Office Pool Guide"
+      title={title}
+      heading="Office Super Bowl squares without the spreadsheet circus"
+      lede="The office pool itself is fun. The annoying part is the organizer getting stuck as unpaid tech support once screenshots, payouts, and score questions start flying."
+      description={description}
+      path="/articles/office-super-bowl-squares"
+      type="article"
+      schema={{
+        '@type': 'Article',
+        headline: title,
+        description,
+        mainEntityOfPage: 'https://www.getgridone.com/articles/office-super-bowl-squares',
+        author: { '@type': 'Organization', name: 'GridOne' },
+        publisher: { '@type': 'Organization', name: 'GridOne', logo: { '@type': 'ImageObject', url: 'https://www.getgridone.com/icons/gridone-icon-256.png' } },
+      }}
+      aside={
+        <>
+          <div className="flex flex-col items-start gap-4">
+            <Link to="/create" className={primaryLink}>
               Build your office board →
             </Link>
           </div>
@@ -87,8 +42,42 @@ export const OfficeSuperBowlSquares: React.FC = () => {
               { to: '/articles/football-squares-fundraiser', label: 'See fundraiser use cases' },
             ]}
           />
-        </article>
-      </main>
-    </div>
+        </>
+      }
+    >
+      <h2>What people actually want</h2>
+      <p>
+        Coworkers want to glance at the board, see who is winning, and stop asking where the latest photo is. Organizers want fewer disputes and less cleanup.
+      </p>
+
+      <div className="my-12 grid gap-6 md:grid-cols-2">
+        <Glass padding="lg">
+          <h3>Better office squares flow</h3>
+          <ul>
+            <li>One live board link for the whole office</li>
+            <li>Read-only viewer experience on phones</li>
+            <li>Live winners and next-score scenarios</li>
+            <li>Cleaner handoff than spreadsheet plus group chat</li>
+          </ul>
+        </Glass>
+        <Glass padding="lg">
+          <h3>Typical mess</h3>
+          <ul>
+            <li>Someone uploads one blurry photo</li>
+            <li>People keep asking for updated scores</li>
+            <li>Manual checking creates payout arguments</li>
+            <li>The organizer becomes the bottleneck</li>
+          </ul>
+        </Glass>
+      </div>
+
+      <h2>Use this if you are organizing for:</h2>
+      <ul>
+        <li>An office Super Bowl party</li>
+        <li>A department morale event</li>
+        <li>A customer appreciation watch party</li>
+        <li>A local business community event</li>
+      </ul>
+    </ArticleShell>
   );
 };

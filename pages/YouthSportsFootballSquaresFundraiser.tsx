@@ -1,6 +1,5 @@
 import React from 'react';
-import Header from '../components/layout/Header';
-import { PageMetadata } from '../components/seo/PageMetadata';
+import { ArticleShell } from '../src/features/site';
 import { ArticleCTA } from '../components/seo/ArticleCTA';
 import { ArticleFAQ, faqPageSchema, FAQItem } from '../components/seo/ArticleFAQ';
 
@@ -20,66 +19,60 @@ export const YouthSportsFootballSquaresFundraiser: React.FC = () => {
   const description = 'Run a youth sports football squares fundraiser with less parent confusion, cleaner board sharing, and one live mobile-friendly link.';
 
   return (
-    <div className="oa-root min-h-screen bg-broadcast-white text-ink font-sans selection:bg-gold/30 flex flex-col overflow-x-hidden">
-      <PageMetadata
-        title={title}
-        description={description}
-        path="/articles/youth-sports-football-squares-fundraiser"
-        type="article"
-        schema={[
-          {
-            '@type': 'Article',
-            headline: title,
-            description,
-            mainEntityOfPage: 'https://www.getgridone.com/articles/youth-sports-football-squares-fundraiser',
-            author: { '@type': 'Organization', name: 'GridOne' },
-            publisher: { '@type': 'Organization', name: 'GridOne', logo: { '@type': 'ImageObject', url: 'https://www.getgridone.com/icons/gridone-icon-256.png' } },
-          },
-          faqPageSchema(faqs),
-        ]}
-      />
-      <Header />
-      <main className="mx-auto w-full max-w-4xl px-5 py-24">
-        <div className="mb-8 inline-flex items-center gap-2 rounded-control bg-newsprint px-3 py-1 text-xs text-gold ring-1 ring-gold/20">Youth sports fundraiser</div>
-        <h1 className="oa-chyron text-4xl font-semibold tracking-tight md:text-5xl text-ink mb-6">Youth sports football squares fundraiser guide</h1>
-        <p className="text-xl text-ink/70 mb-12 leading-relaxed">Youth-sports fundraisers are a strong fit for GridOne because parent organizers already know the format and need a cleaner way to run it.</p>
+    <ArticleShell
+      tag="Youth sports fundraiser"
+      title={title}
+      heading="Youth sports football squares fundraiser guide"
+      lede="Youth-sports fundraisers are a strong fit for GridOne because parent organizers already know the format and need a cleaner way to run it."
+      description={description}
+      path="/articles/youth-sports-football-squares-fundraiser"
+      type="article"
+      schema={[
+        {
+          '@type': 'Article',
+          headline: title,
+          description,
+          mainEntityOfPage: 'https://www.getgridone.com/articles/youth-sports-football-squares-fundraiser',
+          author: { '@type': 'Organization', name: 'GridOne' },
+          publisher: { '@type': 'Organization', name: 'GridOne', logo: { '@type': 'ImageObject', url: 'https://www.getgridone.com/icons/gridone-icon-256.png' } },
+        },
+        faqPageSchema(faqs),
+      ]}
+      aside={
+        <ArticleCTA
+          title="Build a fundraiser board"
+          links={[
+            { to: '/create', label: 'Create your free board', primary: true },
+            { to: '/articles/football-squares-fundraiser', label: 'Football Squares Fundraiser Ideas' },
+            { to: '/articles/how-to-run-super-bowl-squares', label: 'How to Run Super Bowl Squares' },
+          ]}
+        />
+      }
+    >
+      <h2>Why this use case fits</h2>
+      <p>Booster clubs and youth teams need simple fundraising mechanics that people understand quickly. Football squares works because it feels familiar, social, and tied to a real event.</p>
+      <p>Where it breaks is the admin load. One parent ends up managing the board, answering winner questions, and sending updates manually.</p>
 
-        <article className="prose prose-lg max-w-none">
-          <h2 className="oa-headline text-2xl font-semibold text-ink mt-12 mb-6">Why this use case fits</h2>
-          <p className="text-ink/80 leading-relaxed mb-6">Booster clubs and youth teams need simple fundraising mechanics that people understand quickly. Football squares works because it feels familiar, social, and tied to a real event.</p>
-          <p className="text-ink/80 leading-relaxed mb-6">Where it breaks is the admin load. One parent ends up managing the board, answering winner questions, and sending updates manually.</p>
+      <h2>What parents actually need</h2>
+      <ul>
+        <li>One live board link they can drop into the team chat</li>
+        <li>A clean mobile view for parents and supporters</li>
+        <li>Clear organizer control so the board does not get mangled</li>
+        <li>Less confusion during the game</li>
+      </ul>
 
-          <h2 className="oa-headline text-2xl font-semibold text-ink mt-12 mb-6">What parents actually need</h2>
-          <ul className="space-y-3 text-ink/80">
-            <li>One live board link they can drop into the team chat</li>
-            <li>A clean mobile view for parents and supporters</li>
-            <li>Clear organizer control so the board does not get mangled</li>
-            <li>Less confusion during the game</li>
-          </ul>
+      <h2>A simple team rollout</h2>
+      <ul>
+        <li>Pick one game and one clear price per square.</li>
+        <li>Share the GridOne board link in the team chat, parent email, or booster club page.</li>
+        <li>Close sales, draw numbers, and publish the final board before kickoff.</li>
+        <li>Use the live board during the game so supporters can check winners without asking the organizer.</li>
+      </ul>
 
-          <h2 className="oa-headline text-2xl font-semibold text-ink mt-12 mb-6">A simple team rollout</h2>
-          <ul className="space-y-3 text-ink/80">
-            <li>Pick one game and one clear price per square.</li>
-            <li>Share the GridOne board link in the team chat, parent email, or booster club page.</li>
-            <li>Close sales, draw numbers, and publish the final board before kickoff.</li>
-            <li>Use the live board during the game so supporters can check winners without asking the organizer.</li>
-          </ul>
+      <h2>Keep it trustworthy</h2>
+      <p>Draw the numbers after all the spots are filled, explain payout rules clearly, and confirm any local fundraising rules before collecting money. The cleaner the process feels, the easier it is for families to trust it.</p>
 
-          <h2 className="oa-headline text-2xl font-semibold text-ink mt-12 mb-6">Keep it trustworthy</h2>
-          <p className="text-ink/80 leading-relaxed mb-6">Draw the numbers after all the spots are filled, explain payout rules clearly, and confirm any local fundraising rules before collecting money. The cleaner the process feels, the easier it is for families to trust it.</p>
-
-          <ArticleFAQ faqs={faqs} />
-
-          <ArticleCTA
-            title="Build a fundraiser board"
-            links={[
-              { to: '/create', label: 'Create your free board', primary: true },
-              { to: '/articles/football-squares-fundraiser', label: 'Football Squares Fundraiser Ideas' },
-              { to: '/articles/how-to-run-super-bowl-squares', label: 'How to Run Super Bowl Squares' },
-            ]}
-          />
-        </article>
-      </main>
-    </div>
+      <ArticleFAQ faqs={faqs} />
+    </ArticleShell>
   );
 };

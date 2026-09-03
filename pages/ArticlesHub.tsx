@@ -1,6 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import Header from '../components/layout/Header';
+import { CapsuleTag, Eyebrow, Glass } from '../src/design/primitives';
+import { primaryLink } from '../src/features/homepage/sections/cta';
+import { SitePage } from '../src/features/site';
 import { PageMetadata } from '../components/seo/PageMetadata';
 
 const ARTICLES = [
@@ -83,7 +85,7 @@ export const ArticlesHub: React.FC = () => {
   const description = 'GridOne guides for football squares, Super Bowl squares, fundraisers, office pools, and digital board alternatives.';
 
   return (
-    <div className="oa-root min-h-screen bg-broadcast-white text-ink font-sans selection:bg-gold/30 flex flex-col overflow-x-hidden">
+    <SitePage width="wide">
       <PageMetadata
         title={title}
         description={description}
@@ -96,35 +98,40 @@ export const ArticlesHub: React.FC = () => {
           url: 'https://www.getgridone.com/articles',
         }}
       />
-      <Header />
-      <main className="mx-auto w-full max-w-6xl px-5 py-24 duration-700">
-        <div className="max-w-3xl">
-          <div className="mb-8 inline-flex items-center gap-2 rounded-control bg-newsprint px-3 py-1 text-xs text-gold ring-1 ring-gold/20">
-            Organizer guides
-          </div>
-          <h1 className="oa-chyron text-4xl font-semibold tracking-tight md:text-5xl text-ink mb-6">
-            Football squares guides for organizers
-          </h1>
-          <p className="text-xl text-ink/70 mb-12 leading-relaxed">
-            Practical help for fundraiser teams, booster clubs, offices, and community groups that need one clean board link.
-          </p>
-        </div>
+      <div className="flex max-w-[720px] flex-col gap-4">
+        <Eyebrow>Organizer guides</Eyebrow>
+        <h1 className="font-display text-[40px] leading-[1.05] text-fg md:text-[52px]">
+          Football squares guides for organizers
+        </h1>
+        <p className="font-ui text-[19px] leading-[1.5] text-fg-2">
+          Practical help for fundraiser teams, booster clubs, offices, and community groups that need one clean board link.
+        </p>
+      </div>
 
-        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {ARTICLES.map((article) => (
-            <Link key={article.to} to={article.to} className="rounded-surface bg-newsprint p-6 ring-1 ring-white/10 hover:bg-newsprint transition-colors">
-              <div className="inline-flex rounded-control bg-newsprint px-3 py-1 text-xs text-gold ring-1 ring-gold/20">{article.tag}</div>
-              <h2 className="oa-headline mt-4 text-xl font-semibold text-ink">{article.title}</h2>
-              <p className="mt-3 text-sm leading-relaxed text-ink/70">{article.desc}</p>
-              <div className="mt-5 text-sm font-medium text-gold">Read guide →</div>
-            </Link>
-          ))}
+      <div className="mt-12 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {ARTICLES.map((article) => (
+          <Link
+            key={article.to}
+            to={article.to}
+            className="group rounded-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action"
+          >
+            <Glass padding="lg" className="flex h-full flex-col items-start gap-3 group-hover:bg-panel-hover">
+              <CapsuleTag>{article.tag}</CapsuleTag>
+              <h2 className="font-display text-[22px] leading-[1.15] text-fg">{article.title}</h2>
+              <p className="font-ui text-[15px] leading-[1.6] text-fg-2">{article.desc}</p>
+              <span className="mt-auto pt-2 font-ui text-[15px] text-tone-gold group-hover:underline underline-offset-4">Read guide</span>
+            </Glass>
+          </Link>
+        ))}
+      </div>
+
+      <Glass padding="lg" className="mt-12 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-1">
+          <h2 className="font-display text-[28px] leading-[1.1] text-fg">Ready to run your board?</h2>
+          <p className="font-ui text-[17px] leading-[1.6] text-fg-2">Build and preview for free. Your first published board is free.</p>
         </div>
-        <div className="mt-12 flex flex-col items-start gap-3 border border-ink bg-newsprint p-6 sm:flex-row sm:items-center sm:justify-between">
-          <div><h2 className="text-2xl font-black">Ready to run your board?</h2><p className="mt-1 text-ink/70">Build and preview for free. Your first published board is free.</p></div>
-          <Link to="/create" className="oa-btn oa-btn-cardinal">Create your free board</Link>
-        </div>
-      </main>
-    </div>
+        <Link to="/create" className={primaryLink}>Create your free board</Link>
+      </Glass>
+    </SitePage>
   );
 };

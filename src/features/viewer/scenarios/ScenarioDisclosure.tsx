@@ -19,6 +19,7 @@ const lastKnownCopy = (checkedAt: string | null): string => {
 };
 
 const ScenarioDisclosure: React.FC<ScenarioDisclosureProps> = ({ board, game, live, selectedPlayer, servicesEnabled, onScenarioFocus }) => {
+  const titleId = React.useId();
   if (!servicesEnabled) return <p className="font-ui text-[15px] text-fg-2">Publish this board to show live scenarios.</p>;
   const model = buildScenarioModel({ board, game, live });
   if (model.status === 'final') return null;
@@ -48,8 +49,8 @@ const ScenarioDisclosure: React.FC<ScenarioDisclosureProps> = ({ board, game, li
   );
 
   return (
-    <section className="flex flex-col gap-3" role="region" aria-labelledby="viewer-scenarios-title">
-      <h2 id="viewer-scenarios-title" className="font-display text-[26px] leading-[1.1] text-fg">What score changes the next result?</h2>
+    <section className="flex flex-col gap-3" role="region" aria-labelledby={titleId}>
+      <h2 id={titleId} className="font-display text-[26px] leading-[1.1] text-fg">What score changes the next result?</h2>
       <p className="font-ui text-[14px] text-fg-3">Read each result across the top team’s columns, then down the side team’s rows.</p>
       {model.status === 'last-known' && <p className="font-ui text-[14px] text-gold">{lastKnownCopy(model.lastKnownCheckedAt)}</p>}
       {selectedPlayer && selected.length > 0 && (

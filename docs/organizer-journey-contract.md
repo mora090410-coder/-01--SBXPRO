@@ -65,12 +65,12 @@ Do not use `pool`, `contest`, or `publish` as synonyms for draft save/create in 
 
 **Capabilities:**
 
-- Select one, multiple, or dragged ranges of squares
-- Apply a purchaser/display label
-- Optionally record seller/parent attribution
-- Optionally track paid, unpaid, or unknown privately
-- Edit one assignment’s details
+- `Select squares` turns the grid into a selection surface (`Done selecting` leaves it and drops the selection). In select mode a square toggles on tap, shift-click adds the rectangular block from the last toggled square, dragging adds the rectangular block between the anchor square and the square under the pointer, Space toggles the focused square, and Escape leaves select mode.
+- `Assign selected squares` appears under the board as soon as one square is selected: `Name for these squares` is the one label written into every selected square, `Sold by (optional)` records seller/parent attribution, `Payment` records one private state for the whole block, and `Apply to {n}` writes them. `Clear selection` empties the selection without leaving select mode.
+- Private payment states are `Not asked yet` (the default, the honest record before anyone has been asked), `Unpaid`, and `Paid`. The same three states are on one square's own sheet.
+- Edit one assignment’s details in the square sheet (name, seller, payment state)
 - Import and correct a paper-board image when needed
+- On a published board only OPEN squares can be selected; a block or drag that reaches over sold squares arms only the OPEN ones. The square sheet still refuses a change to a sold square with `Published assignments cannot be changed. Select OPEN squares only.`
 
 **Entry:** unpublished board with no valid committed axes, or organizer deliberately returns before publication.
 

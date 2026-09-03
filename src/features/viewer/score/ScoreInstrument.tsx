@@ -16,10 +16,13 @@ export interface ScoreInstrumentProps {
   live: LiveGameData | null;
   liveStatus: string;
   isSynced: boolean;
+  /** The real viewer is the page's one h1; a shell that previews the viewer (e.g. the homepage organizer preview) renders h2. */
+  headingLevel?: 'h1' | 'h2';
 }
 
-const ScoreInstrument: React.FC<ScoreInstrumentProps> = ({ game, board, live, liveStatus, isSynced }) => {
+const ScoreInstrument: React.FC<ScoreInstrumentProps> = ({ game, board, live, liveStatus, isSynced, headingLevel = 'h1' }) => {
   const score = buildViewerScoreModel({ live, liveStatus, isSynced });
+  const Heading = headingLevel;
   const quarter = quarterForLive(live);
   const currentNames = live ? playersForDigits(board, live.topScore % 10, live.leftScore % 10, quarter) : [];
   const stale = live?.freshness === 'stale' || live?.freshness === 'offline' || live?.freshness === 'refreshing';
@@ -32,7 +35,7 @@ const ScoreInstrument: React.FC<ScoreInstrumentProps> = ({ game, board, live, li
     <section className="flex flex-col gap-4" aria-labelledby="viewer-score-title">
       <div className="flex flex-col gap-2">
         <Eyebrow>{game.dates || 'Game date pending'}</Eyebrow>
-        <h1 id="viewer-score-title" className="font-display text-[34px] leading-[1.05] tracking-[-0.01em] text-fg">{game.title || 'Football squares'}</h1>
+        <Heading id="viewer-score-title" className="font-display text-[34px] leading-[1.05] tracking-[-0.01em] text-fg">{game.title || 'Football squares'}</Heading>
         <p className="font-ui text-[15px] text-fg-2">{leftLabel} at {topLabel}</p>
       </div>
 

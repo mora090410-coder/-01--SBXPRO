@@ -14,21 +14,28 @@ export interface SquareSheetProps {
   onClose: () => void;
 }
 
+type PaidStatus = EntryMeta['paid_status'];
+
+const PAID_OPTIONS: { value: PaidStatus; label: string; tone: 'neutral' | 'cardinal' | 'gold' }[] = [
+  { value: 'unknown', label: 'Not asked yet', tone: 'neutral' },
+  { value: 'unpaid', label: 'Unpaid', tone: 'cardinal' },
+  { value: 'paid', label: 'Paid', tone: 'gold' },
+];
+
 const PUBLISHED_HELPER = 'This board is published. Renaming a square is recorded in the board history and updates the shared link right away.';
 
 /** Bottom sheet for assigning a name, seller, and paid status to one square. */
 export default function SquareSheet({ open, index, name, meta, isPublished, hasNextOpen, onSave, onClose }: SquareSheetProps) {
   const [nameValue, setNameValue] = useState(name);
   const [sellerValue, setSellerValue] = useState(meta?.seller_label ?? '');
-  const [paidStatus, setPaidStatus] = useState<'unpaid' | 'paid'>(meta?.paid_status === 'paid' ? 'paid' : 'unpaid');
-  const unpaidRadioRef = useRef<HTMLButtonElement>(null);
-  const paidRadioRef = useRef<HTMLButtonElement>(null);
+  const [paidStatus, setPaidStatus] = useState<PaidStatus>(meta?.paid_status ?? 'unknown');
+  const radioRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   useEffect(() => {
     if (!open) return;
     setNameValue(name);
     setSellerValue(meta?.seller_label ?? '');
-    setPaidStatus(meta?.paid_status === 'paid' ? 'paid' : 'unpaid');
+    setPaidStatus(meta?.paid_status ?? 'unknown');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, index]);
 
@@ -56,14 +63,14 @@ export default function SquareSheet({ open, index, name, meta, isPublished, hasN
     save(showSaveAndNext);
   };
 
-  const onPaymentKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
-    const toggleKeys = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'];
-    if (!toggleKeys.includes(event.key)) return;
+  const onPaymentKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>, position: number) => {
+    const back = event.key === 'ArrowLeft' || event.key === 'ArrowUp';
+    const forward = event.key === 'ArrowRight' || event.key === 'ArrowDown';
+    if (!back && !forward) return;
     event.preventDefault();
-    const next = paidStatus === 'unpaid' ? 'paid' : 'unpaid';
-    setPaidStatus(next);
-    const nextRef = next === 'paid' ? paidRadioRef : unpaidRadioRef;
-    nextRef.current?.focus();
+    const next = (position + (back ? -1 : 1) + PAID_OPTIONS.length) % PAID_OPTIONS.length;
+    setPaidStatus(PAID_OPTIONS[next].value);
+    radioRefs.current[next]?.focus();
   };
 
   return (
@@ -84,29 +91,21 @@ export default function SquareSheet({ open, index, name, meta, isPublished, hasN
         />
         <div className="flex flex-col gap-2">
           <span className="font-ui text-[14px] text-fg-2">Payment</span>
-          <div role="radiogroup" aria-label="Payment" className="flex gap-2">
-            <button
-              ref={unpaidRadioRef}
-              type="button"
-              role="radio"
-              aria-checked={paidStatus === 'unpaid'}
-              onClick={() => setPaidStatus('unpaid')}
-              onKeyDown={onPaymentKeyDown}
-              className="min-h-11 min-w-11 px-3 rounded-capsule inline-flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action"
-            >
-              <CapsuleTag tone={paidStatus === 'unpaid' ? 'cardinal' : 'neutral'}>Unpaid</CapsuleTag>
-            </button>
-            <button
-              ref={paidRadioRef}
-              type="button"
-              role="radio"
-              aria-checked={paidStatus === 'paid'}
-              onClick={() => setPaidStatus('paid')}
-              onKeyDown={onPaymentKeyDown}
-              className="min-h-11 min-w-11 px-3 rounded-capsule inline-flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action"
-            >
-              <CapsuleTag tone={paidStatus === 'paid' ? 'gold' : 'neutral'}>Paid</CapsuleTag>
-            </button>
+          <div role="radiogroup" aria-label="Payment" className="flex flex-wrap gap-2">
+            {PAID_OPTIONS.map((option, position) => (
+              <button
+                key={option.value}
+                ref={(node) => { radioRefs.current[position] = node; }}
+                type="button"
+                role="radio"
+                aria-checked={paidStatus === option.value}
+                onClick={() => setPaidStatus(option.value)}
+                onKeyDown={(event) => onPaymentKeyDown(event, position)}
+                className="min-h-11 min-w-11 px-3 rounded-capsule inline-flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action"
+              >
+                <CapsuleTag tone={paidStatus === option.value ? option.tone : 'neutral'}>{option.label}</CapsuleTag>
+              </button>
+            ))}
           </div>
         </div>
         <div className="flex gap-2 pt-2">
