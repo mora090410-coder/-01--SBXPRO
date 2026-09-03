@@ -36,15 +36,26 @@
   --g-tone-gold: var(--g-gold);
   --g-tone-live: var(--g-live);
   --g-tone-cardinal: var(--g-cardinal);
+
+  /* Ambient ground tints. Derived from the locked palette, never new hues.
+     Used only by SectionTone as large, soft, low-alpha light behind content.
+     Capped at 14% so body text over a tint still clears WCAG AA.
+
+     `transparent` is written FIRST on purpose. A build that downlevels
+     color-mix for old engines substitutes the mix's first color, so the
+     fallback is no tint at all rather than a full-strength brand blob. */
+  --g-tint-cardinal: color-mix(in srgb, transparent 86%, var(--g-cardinal));
+  --g-tint-live: color-mix(in srgb, transparent 86%, var(--g-live));
+  --g-tint-gold: color-mix(in srgb, transparent 86%, var(--g-gold));
 }
 
 /* Dark base: viewer and homepage. Gold is the only action color. */
 [data-base="dark"] {
   color-scheme: dark;
-  --g-ground: #0B0C0F;
-  --g-panel: rgba(255, 255, 255, 0.06);
-  --g-panel-hover: rgba(255, 255, 255, 0.08);
-  --g-hairline: rgba(255, 255, 255, 0.10);
+  --g-ground: #111318;
+  --g-panel: rgba(255, 255, 255, 0.07);
+  --g-panel-hover: rgba(255, 255, 255, 0.10);
+  --g-hairline: rgba(255, 255, 255, 0.12);
   --g-text: var(--g-white);
   --g-text-2: rgba(239, 240, 241, 0.60);
   --g-text-3: rgba(239, 240, 241, 0.58);
@@ -96,4 +107,33 @@
 @keyframes sheet-fade {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+/* Reveal. The resting state is VISIBLE: an element with no `data-reveal`
+   attribute has no transition and no transform, so no-JS, no-observer, and
+   server renders show finished content. `Reveal` only adds the attribute from
+   a useLayoutEffect when motion is allowed. See src/design/primitives/Reveal.tsx. */
+[data-reveal] {
+  transition:
+    opacity var(--g-dur-spring) var(--g-ease-state),
+    transform var(--g-dur-spring) var(--g-ease-state);
+}
+[data-reveal="pending"] {
+  opacity: 0;
+  transform: translateY(20px);
+}
+[data-reveal="in"] {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal] {
+    transition: none;
+    transition-delay: 0ms !important;
+  }
+  [data-reveal="pending"] {
+    opacity: 1;
+    transform: none;
+  }
 }

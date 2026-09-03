@@ -21,6 +21,9 @@
   --color-tone-gold: var(--g-tone-gold);
   --color-tone-live: var(--g-tone-live);
   --color-tone-cardinal: var(--g-tone-cardinal);
+  --color-tint-cardinal: var(--g-tint-cardinal);
+  --color-tint-live: var(--g-tint-live);
+  --color-tint-gold: var(--g-tint-gold);
   --color-ink: var(--g-ink);
   --color-chyron: var(--g-chyron);
   --color-broadcast-white: var(--g-white);

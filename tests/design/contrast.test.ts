@@ -112,3 +112,49 @@ describe('token contrast (WCAG 2.x, ratio >= 4.5)', () => {
     }
   });
 });
+
+/** Resolve `color-mix(in srgb, transparent N%, var(--brand))` to an rgba pair. */
+function parseTint(value: string): { rgb: [number, number, number]; alpha: number } {
+  const m = value.match(/^color-mix\(in srgb,\s*transparent\s*([\d.]+)%,\s*var\((--[\w-]+)\)\)$/);
+  if (!m) throw new Error(`Not a transparent color-mix: ${value}`);
+  return { rgb: parseRgba(resolveVar(readVar(rootBlock, m[2]))).rgb, alpha: (100 - Number(m[1])) / 100 };
+}
+
+describe('lifted dark ground', () => {
+  const ground = parseRgba(resolveVar(darkGround)).rgb;
+
+  it('is #111318 and clears AA for all three dark text tokens', () => {
+    expect(ground).toEqual([17, 19, 24]);
+    for (const name of ['--g-text', '--g-text-2', '--g-text-3']) {
+      const c = contrastAgainstGround(readVar(darkBlock, name), darkGround);
+      expect(c, `${name} on the lifted dark ground`).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+});
+
+describe('ambient tints keep text at AA', () => {
+  const ground = parseRgba(resolveVar(darkGround)).rgb;
+  const TINTS = ['--g-tint-cardinal', '--g-tint-live', '--g-tint-gold'] as const;
+
+  it('caps every tint so the smallest text token still passes over it', () => {
+    for (const tintName of TINTS) {
+      const { rgb, alpha } = parseTint(readVar(rootBlock, tintName));
+      // Worst case: the tint at its FULL token alpha, ignoring SectionTone's
+      // 0.55 layer opacity and its radial falloff, so the assertion is stricter
+      // than anything that can render.
+      const tinted = composite(rgb, alpha, ground);
+      for (const textName of ['--g-text', '--g-text-2', '--g-text-3']) {
+        const { rgb: textRgb, alpha: textAlpha } = parseRgba(resolveVar(readVar(darkBlock, textName)));
+        const text = textAlpha < 1 ? composite(textRgb, textAlpha, tinted) : textRgb;
+        const c = contrastRatio(text, tinted);
+        expect(c, `${textName} over ${tintName} over the lifted ground`).toBeGreaterThanOrEqual(4.5);
+      }
+    }
+  });
+
+  it('holds every tint at or below 14% of its brand color', () => {
+    for (const tintName of TINTS) {
+      expect(parseTint(readVar(rootBlock, tintName)).alpha, tintName).toBeLessThanOrEqual(0.14);
+    }
+  });
+});
