@@ -70,4 +70,4 @@ JS constants and `useReducedMotion()` live in `src/design/primitives/motion.ts`.
 
 ## Legacy
 
-The remaining `--gridone-*` variables in `src/index.css` back the unlayered cascade guards there (button fill re-assertion, dialog and organizer-header elevation, sharp board radius). The `Archivo` / `Chivo Mono` families and their `font-condensed` / `font-data` aliases are gone. Do not add new `--gridone-*` variables; use the `--g-*` tokens above.
+The remaining `--gridone-*` variables in `src/index.css` back the unlayered cascade guards there: `--gridone-color-background`, `--gridone-color-brand-primary-deep` (button fill re-assertion), `--gridone-color-text-primary`, `--gridone-radius-surface`, `--gridone-radius-grid` (sharp board radius), and `--gridone-elevation-raised` (dialog and organizer-header elevation). The `Archivo` / `Chivo Mono` families and their `font-condensed` / `font-data` aliases are gone. Do not add new `--gridone-*` variables; use the `--g-*` tokens above.

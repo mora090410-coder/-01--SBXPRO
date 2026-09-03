@@ -32,7 +32,7 @@ const ShareModal: React.FC<ShareModalProps> = ({ shareUrl, onClose }) => {
                     </div>
                     <div className="flex w-full items-center gap-3 rounded-card border border-hairline bg-panel p-3">
                         <div className="min-w-0 flex-1 truncate text-left font-mono text-[12px] text-fg-2">{shareUrl}</div>
-                        <CapsuleButton onClick={handleCopy} disabled={copyStatus === 'copying'}>
+                        <CapsuleButton onClick={handleCopy} disabled={copyStatus === 'copying'} aria-busy={copyStatus === 'copying'}>
                             {copyStatus === 'copying' ? 'Copying…' : copyStatus === 'copied' ? 'Copied' : 'Copy'}
                         </CapsuleButton>
                     </div>

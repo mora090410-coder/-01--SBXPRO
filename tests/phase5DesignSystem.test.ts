@@ -15,7 +15,6 @@ describe('Phase 5 visual system', () => {
   ).join('\n');
 
   it('keeps one 8/12/0 radius system and a deliberately sharp board', () => {
-    expect(css).toContain('--gridone-radius-control: 8px');
     expect(css).toContain('--gridone-radius-surface: 12px');
     expect(css).toContain('--gridone-radius-grid: 0px');
     expect(css).toContain('.gridone-board-grid td');
