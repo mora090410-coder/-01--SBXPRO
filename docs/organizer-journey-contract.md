@@ -70,7 +70,7 @@ Do not use `pool`, `contest`, or `publish` as synonyms for draft save/create in 
 - Private payment states are `Not asked yet` (the default, the honest record before anyone has been asked), `Unpaid`, and `Paid`. The same three states are on one square's own sheet.
 - Edit one assignment’s details in the square sheet (name, seller, payment state)
 - Import and correct a paper-board image when needed
-- On a published board only OPEN squares can be selected; a block that reaches over a sold square is refused with `Published assignments cannot be changed. Select OPEN squares only.` and nothing changes.
+- On a published board only OPEN squares can be selected; a block or drag that reaches over sold squares arms only the OPEN ones. The square sheet still refuses a change to a sold square with `Published assignments cannot be changed. Select OPEN squares only.`
 
 **Entry:** unpublished board with no valid committed axes, or organizer deliberately returns before publication.
 
