@@ -48,6 +48,19 @@ const liveCopyFiles = [
   'src/features/organizer/game-day/ManualScoringPanel.tsx',
   'pages/Dashboard.tsx',
   'pages/CreateContest.tsx',
+  'pages/ArticlesHub.tsx',
+  'pages/BoosterClubFootballSquares.tsx',
+  'pages/ChurchSchoolFundraiserSquares.tsx',
+  'pages/DigitalFootballSquaresBoardVsPaper.tsx',
+  'pages/FootballSquaresApp.tsx',
+  'pages/FootballSquaresFundraiser.tsx',
+  'pages/HowFootballSquaresWork.tsx',
+  'pages/HowToRunSquares.tsx',
+  'pages/NFLOpeningWeekSquares.tsx',
+  'pages/OfficeSuperBowlSquares.tsx',
+  'pages/RunYourPoolAlternative.tsx',
+  'pages/SuperBowlSquaresIdeas.tsx',
+  'pages/YouthSportsFootballSquaresFundraiser.tsx',
 ] as const;
 
 const corpus = liveCopyFiles

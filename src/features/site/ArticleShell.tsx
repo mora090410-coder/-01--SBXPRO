@@ -8,6 +8,8 @@ export const proseClasses = '[&_h2]:font-display [&_h2]:text-[28px] [&_h2]:leadi
 export interface ArticleShellProps {
   tag: string;
   title: string;
+  /** Visible h1 when the page's headline differs from its metadata title. Defaults to `title`. */
+  heading?: string;
   lede: React.ReactNode;
   path: string;
   description: string;
@@ -20,6 +22,7 @@ export interface ArticleShellProps {
 export function ArticleShell({
   tag,
   title,
+  heading,
   lede,
   path,
   description,
@@ -33,7 +36,7 @@ export function ArticleShell({
       <PageMetadata title={title} description={description} path={path} type={type} schema={schema} />
       <div className="flex flex-col gap-4">
         <Eyebrow>{tag}</Eyebrow>
-        <h1 className="font-display text-[40px] leading-[1.05] text-fg md:text-[52px]">{title}</h1>
+        <h1 className="font-display text-[40px] leading-[1.05] text-fg md:text-[52px]">{heading ?? title}</h1>
         <p className="font-ui text-[19px] leading-[1.5] text-fg-2">{lede}</p>
       </div>
       <article className={`mt-10 ${proseClasses}`}>{children}</article>

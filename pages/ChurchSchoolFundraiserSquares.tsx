@@ -1,6 +1,5 @@
 import React from 'react';
-import Header from '../components/layout/Header';
-import { PageMetadata } from '../components/seo/PageMetadata';
+import { ArticleShell } from '../src/features/site';
 import { ArticleCTA } from '../components/seo/ArticleCTA';
 import { ArticleFAQ, faqPageSchema, FAQItem } from '../components/seo/ArticleFAQ';
 
@@ -20,65 +19,59 @@ export const ChurchSchoolFundraiserSquares: React.FC = () => {
   const description = 'Church and school football squares fundraiser ideas with cleaner sharing, simpler organizer flow, and one live board link for supporters.';
 
   return (
-    <div className="oa-root min-h-screen bg-broadcast-white text-ink font-sans selection:bg-gold/30 flex flex-col overflow-x-hidden">
-      <PageMetadata
-        title={title}
-        description={description}
-        path="/articles/church-school-football-squares-fundraiser"
-        type="article"
-        schema={[
-          {
-            '@type': 'Article',
-            headline: title,
-            description,
-            mainEntityOfPage: 'https://www.getgridone.com/articles/church-school-football-squares-fundraiser',
-            author: { '@type': 'Organization', name: 'GridOne' },
-            publisher: { '@type': 'Organization', name: 'GridOne', logo: { '@type': 'ImageObject', url: 'https://www.getgridone.com/icons/gridone-icon-256.png' } },
-          },
-          faqPageSchema(faqs),
-        ]}
-      />
-      <Header />
-      <main className="mx-auto w-full max-w-4xl px-5 py-24">
-        <div className="mb-8 inline-flex items-center gap-2 rounded-control bg-newsprint px-3 py-1 text-xs text-cardinal ring-1 ring-cardinal">Church and school fundraiser</div>
-        <h1 className="oa-chyron text-4xl font-semibold tracking-tight md:text-5xl text-ink mb-6">Church and school football squares fundraiser ideas</h1>
-        <p className="text-xl text-ink/70 mb-12 leading-relaxed">For schools and churches, the issue is not whether football squares can work. It is whether the fundraiser feels organized enough that people actually trust it.</p>
+    <ArticleShell
+      tag="Church and school fundraiser"
+      title={title}
+      heading="Church and school football squares fundraiser ideas"
+      lede="For schools and churches, the issue is not whether football squares can work. It is whether the fundraiser feels organized enough that people actually trust it."
+      description={description}
+      path="/articles/church-school-football-squares-fundraiser"
+      type="article"
+      schema={[
+        {
+          '@type': 'Article',
+          headline: title,
+          description,
+          mainEntityOfPage: 'https://www.getgridone.com/articles/church-school-football-squares-fundraiser',
+          author: { '@type': 'Organization', name: 'GridOne' },
+          publisher: { '@type': 'Organization', name: 'GridOne', logo: { '@type': 'ImageObject', url: 'https://www.getgridone.com/icons/gridone-icon-256.png' } },
+        },
+        faqPageSchema(faqs),
+      ]}
+      aside={
+        <ArticleCTA
+          title="Build a fundraiser board"
+          links={[
+            { to: '/create', label: 'Create your free board', primary: true },
+            { to: '/articles/football-squares-fundraiser', label: 'Football Squares Fundraiser Ideas' },
+            { to: '/articles/booster-club-football-squares', label: 'Booster Club Guide' },
+          ]}
+        />
+      }
+    >
+      <h2>Keep the process simple</h2>
+      <p>The simplest version wins. Clear rules, one organizer, one live board link, and a board everyone can read from their phone. That removes most of the friction immediately.</p>
 
-        <article className="prose prose-lg max-w-none">
-          <h2 className="oa-headline text-2xl font-semibold text-ink mt-12 mb-6">Keep the process simple</h2>
-          <p className="text-ink/80 leading-relaxed mb-6">The simplest version wins. Clear rules, one organizer, one live board link, and a board everyone can read from their phone. That removes most of the friction immediately.</p>
+      <h2>Where this fits best</h2>
+      <ul>
+        <li>School sports fundraiser</li>
+        <li>Church youth group fundraiser</li>
+        <li>Faith community watch-party event</li>
+        <li>Parent-led school support effort</li>
+      </ul>
 
-          <h2 className="oa-headline text-2xl font-semibold text-ink mt-12 mb-6">Where this fits best</h2>
-          <ul className="space-y-3 text-ink/80">
-            <li>School sports fundraiser</li>
-            <li>Church youth group fundraiser</li>
-            <li>Faith community watch-party event</li>
-            <li>Parent-led school support effort</li>
-          </ul>
+      <h2>Do the trust-building work</h2>
+      <p>Explain how winners are determined, publish the rules up front, and make sure anyone participating can follow along without having to ask for an updated screenshot every quarter.</p>
 
-          <h2 className="oa-headline text-2xl font-semibold text-ink mt-12 mb-6">Do the trust-building work</h2>
-          <p className="text-ink/80 leading-relaxed mb-6">Explain how winners are determined, publish the rules up front, and make sure anyone participating can follow along without having to ask for an updated screenshot every quarter.</p>
+      <h2>A simple rollout for community groups</h2>
+      <ol className="mb-5 list-decimal pl-6">
+        <li>Pick one game that already has attention in the community.</li>
+        <li>Set the square price, winner schedule, and beneficiary before sharing.</li>
+        <li>Use one GridOne link in newsletters, parent messages, group texts, or event pages.</li>
+        <li>Keep winner updates visible during the game so supporters do not need to chase the organizer.</li>
+      </ol>
 
-          <h2 className="oa-headline text-2xl font-semibold text-ink mt-12 mb-6">A simple rollout for community groups</h2>
-          <ol className="space-y-3 text-ink/80">
-            <li>Pick one game that already has attention in the community.</li>
-            <li>Set the square price, winner schedule, and beneficiary before sharing.</li>
-            <li>Use one GridOne link in newsletters, parent messages, group texts, or event pages.</li>
-            <li>Keep winner updates visible during the game so supporters do not need to chase the organizer.</li>
-          </ol>
-
-          <ArticleFAQ faqs={faqs} />
-
-          <ArticleCTA
-            title="Build a fundraiser board"
-            links={[
-              { to: '/create', label: 'Create your free board', primary: true },
-              { to: '/articles/football-squares-fundraiser', label: 'Football Squares Fundraiser Ideas' },
-              { to: '/articles/booster-club-football-squares', label: 'Booster Club Guide' },
-            ]}
-          />
-        </article>
-      </main>
-    </div>
+      <ArticleFAQ faqs={faqs} />
+    </ArticleShell>
   );
 };
