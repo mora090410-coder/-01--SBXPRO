@@ -15,7 +15,8 @@ import { parseBoardImage } from '../../../../services/boardImportService';
 import { renderBoardPng, shareBoardPng, boardImageFilename } from '../../../../utils/boardImage';
 import { useWorkspaceDraft } from './useWorkspaceDraft';
 import { applyScheduledGame } from './applyScheduledGame';
-import { saveEntryMeta, clearEntryMeta } from './entryMetaService';
+import { saveEntryMeta, saveEntryMetaBatch, clearEntryMeta } from './entryMetaService';
+import { assignable, type Selection } from './selection';
 import { secureShuffleDigits } from './secureDraw';
 import { publishBoard, type PublishResult } from './publishBoard';
 import { renamePublishedSquare } from './renamePublishedSquare';
@@ -36,6 +37,7 @@ import { publishedOpenSquaresAreAssignable } from '../services/game-day/publishe
 import { publishMilestoneCorrectionToServer, type MilestoneCorrectionDraft } from '../services/corrections/milestoneCorrectionService';
 import WorkspaceHeader from './WorkspaceHeader';
 import BoardEditor from './BoardEditor';
+import RangeAssignBar, { type RangeAssignInput } from './RangeAssignBar';
 import SquareSheet from './SquareSheet';
 import OrganizerIsland from './OrganizerIsland';
 import DrawControl from './DrawControl';
@@ -87,6 +89,7 @@ const LATE_FILL_FAILED = 'The OPEN squares could not be assigned. Reload and try
 const RENAME_FAILED = 'The name could not be changed. The board still shows the previous name.';
 const UNTITLED_WORKSPACE = 'Untitled board workspace';
 const SQUARE_META_FAILED = 'Square details were not saved. The name is on the board; try saving the details again.';
+const RANGE_ASSIGN_FAILED = 'Could not assign those squares. Nothing changed.';
 const CLEAR_META_FAILED = 'The private notes were not cleared. Try again.';
 const PAYOUT_FAILED = 'Prize notes were not saved. Try again.';
 
@@ -199,6 +202,9 @@ export default function OrganizerWorkspace({
   const [drawPreview, setDrawPreview] = useState<{ top: number[]; left: number[] } | null>(null);
   const [selectedSquare, setSelectedSquare] = useState<number | null>(null);
   const [highlightOpen, setHighlightOpen] = useState(false);
+  const [selectMode, setSelectMode] = useState(false);
+  const [selection, setSelection] = useState<Selection>(() => new Set<number>());
+  const [rangeBusy, setRangeBusy] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [publishOpen, setPublishOpen] = useState(false);
   const [publishPending, setPublishPending] = useState(false);
@@ -354,6 +360,71 @@ export default function OrganizerWorkspace({
       setAlert(null);
     } catch {
       setAlert(SQUARE_META_FAILED);
+    }
+  };
+
+  // Leaving select mode drops the selection: a stale set of squares would be
+  // applied to the wrong board state next time the mode is entered.
+  const toggleSelectMode = () => {
+    setSelectMode((current) => {
+      if (current) setSelection(new Set<number>());
+      return !current;
+    });
+  };
+
+  const clearSelection = () => setSelection(new Set<number>());
+
+  /**
+   * One name, one seller, and one payment state across every selected square.
+   * The payment state is always written -- `unknown` is the honest "not asked
+   * yet" record, not an absence.
+   */
+  const applyRange = async (input: RangeAssignInput) => {
+    const indices = [...selection].sort((a, b) => a - b);
+    if (!indices.length) return;
+    const { ok, blocked } = assignable(indices, board.squares, isPublished);
+    if (isPublished && blocked.length) {
+      setAlert(PUBLISHED_IMMUTABLE);
+      return;
+    }
+    if (!ok.length) return;
+
+    const name = input.name.trim();
+    const previousSquares = board.squares;
+    const okSet = new Set(ok);
+    const nextSquares = board.squares.map((names, index) => (okSet.has(index) ? [name] : names));
+    const metas: EntryMeta[] = ok.map((index) => {
+      const existing = entryMeta[index];
+      return {
+        cell_index: index,
+        paid_status: input.paid,
+        notify_opt_in: existing?.notify_opt_in ?? false,
+        contact_type: existing?.contact_type ?? null,
+        contact_value: existing?.contact_value ?? null,
+        seller_label: input.seller || existing?.seller_label || null,
+      };
+    });
+
+    setRangeBusy(true);
+    setAlert(null);
+    try {
+      if (isPublished) {
+        await onAssignOpenSquares(nextSquares);
+        await onReload?.();
+      } else {
+        setBoard((current) => ({ ...current, squares: nextSquares }));
+      }
+      if (activePoolId) {
+        await saveEntryMetaBatch(activePoolId, metas);
+        metas.forEach((meta) => onEntryMetaChange(meta));
+      }
+      clearSelection();
+      setNote(`Assigned ${ok.length} squares to ${name}.`);
+    } catch {
+      if (!isPublished) setBoard((current) => ({ ...current, squares: previousSquares }));
+      setAlert(RANGE_ASSIGN_FAILED);
+    } finally {
+      setRangeBusy(false);
     }
   };
 
@@ -831,8 +902,21 @@ export default function OrganizerWorkspace({
                 highlightOpen={false}
                 isPublished
                 canAssignOpenSquares={canAssignOpenSquares}
+                selectMode={selectMode}
+                selection={selection}
+                onSelectionChange={setSelection}
+                onToggleSelectMode={toggleSelectMode}
                 onSelectSquare={setSelectedSquare}
               />
+              {selectMode && selection.size > 0 && (
+                <RangeAssignBar
+                  count={selection.size}
+                  isPublished
+                  busy={rangeBusy}
+                  onApply={(input) => void applyRange(input)}
+                  onClear={clearSelection}
+                />
+              )}
             </section>
             <aside className="flex flex-col gap-6">
               <PayoutRulesCard
@@ -906,9 +990,22 @@ export default function OrganizerWorkspace({
               highlightOpen={highlightOpen}
               isPublished={false}
               canAssignOpenSquares={false}
+              selectMode={selectMode}
+              selection={selection}
+              onSelectionChange={setSelection}
+              onToggleSelectMode={toggleSelectMode}
               onSelectSquare={setSelectedSquare}
               onPasteNames={pasteNames}
             />
+            {selectMode && selection.size > 0 && (
+              <RangeAssignBar
+                count={selection.size}
+                isPublished={false}
+                busy={rangeBusy}
+                onApply={(input) => void applyRange(input)}
+                onClear={clearSelection}
+              />
+            )}
           </section>
           <aside className="flex flex-col gap-6">
             <ReconcileCard

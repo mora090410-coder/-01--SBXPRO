@@ -1,0 +1,160 @@
+import React, { useState } from 'react';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
+import BoardEditor from '../../src/features/organizer/workspace/BoardEditor';
+import RangeAssignBar, { type RangeAssignInput } from '../../src/features/organizer/workspace/RangeAssignBar';
+import type { Selection } from '../../src/features/organizer/workspace/selection';
+import type { BoardData, GameState } from '../../types';
+
+const game: GameState = { title: 'T', meta: '', leftAbbr: 'KC', leftName: 'Kansas City', topAbbr: 'PHI', topName: 'Philadelphia', dates: '', lockTitle: false, lockMeta: false };
+
+const board = (filled: number[] = []): BoardData => ({
+  topAxis: Array(10).fill(null),
+  leftAxis: Array(10).fill(null),
+  squares: Array.from({ length: 100 }, (_, index) => (filled.includes(index) ? ['Ann R.'] : [])),
+});
+
+interface HarnessProps {
+  isPublished?: boolean;
+  filled?: number[];
+  onApply?: (input: RangeAssignInput) => void;
+}
+
+function Harness({ isPublished = false, filled = [], onApply = () => {} }: HarnessProps) {
+  const [selectMode, setSelectMode] = useState(false);
+  const [selection, setSelection] = useState<Selection>(() => new Set<number>());
+  return (
+    <>
+      <BoardEditor
+        board={board(filled)}
+        game={game}
+        entryMeta={{}}
+        drawPreview={null}
+        highlightOpen={false}
+        isPublished={isPublished}
+        canAssignOpenSquares={isPublished}
+        selectMode={selectMode}
+        selection={selection}
+        onSelectionChange={setSelection}
+        onToggleSelectMode={() => setSelectMode((current) => {
+          if (current) setSelection(new Set<number>());
+          return !current;
+        })}
+        onSelectSquare={vi.fn()}
+      />
+      {selectMode && selection.size > 0 && (
+        <RangeAssignBar
+          count={selection.size}
+          isPublished={isPublished}
+          busy={false}
+          onApply={onApply}
+          onClear={() => setSelection(new Set<number>())}
+        />
+      )}
+    </>
+  );
+}
+
+const cell = (n: number) => screen.getByRole('button', { name: `Square ${n}, unassigned` });
+const enterSelectMode = () => fireEvent.click(screen.getByRole('button', { name: 'Select squares' }));
+const pressedCells = () => screen
+  .getAllByRole('button')
+  .filter((el) => el.getAttribute('aria-pressed') === 'true' && /^Square /.test(el.getAttribute('aria-label') ?? ''));
+
+describe('BoardEditor select mode', () => {
+  it('toggles a square on and off and marks it pressed', () => {
+    render(<Harness />);
+    enterSelectMode();
+    fireEvent.click(cell(1));
+    expect(cell(1)).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText('1 selected')).toBeInTheDocument();
+    fireEvent.click(cell(1));
+    expect(cell(1)).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('shift-click adds the rectangular block from the last toggled square', () => {
+    render(<Harness />);
+    enterSelectMode();
+    fireEvent.click(cell(1));
+    fireEvent.click(cell(12), { shiftKey: true });
+    expect(pressedCells()).toHaveLength(4);
+    expect(screen.getByText('4 selected')).toBeInTheDocument();
+  });
+
+  it('drag across a block adds every square the pointer enters', () => {
+    render(<Harness />);
+    enterSelectMode();
+    fireEvent.pointerDown(cell(1), { buttons: 1 });
+    fireEvent.pointerEnter(cell(2), { buttons: 1 });
+    fireEvent.pointerEnter(cell(13), { buttons: 1 });
+    fireEvent.pointerUp(window);
+    expect(pressedCells()).toHaveLength(6);
+  });
+
+  it('Space toggles the focused square and Escape leaves select mode', () => {
+    render(<Harness />);
+    enterSelectMode();
+    fireEvent.keyDown(cell(5), { key: ' ' });
+    expect(cell(5)).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.keyDown(cell(5), { key: 'Escape' });
+    expect(screen.getByRole('button', { name: 'Select squares' })).toHaveAttribute('aria-pressed', 'false');
+    expect(cell(5)).not.toHaveAttribute('aria-pressed');
+    expect(screen.queryByRole('group', { name: 'Assign selected squares' })).not.toBeInTheDocument();
+  });
+
+  it('published: sold squares cannot be selected', () => {
+    render(<Harness isPublished filled={[0]} />);
+    enterSelectMode();
+    expect(screen.getByRole('button', { name: 'Square 1, assigned to Ann R.' })).toBeDisabled();
+    fireEvent.click(cell(2));
+    expect(cell(2)).toHaveAttribute('aria-pressed', 'true');
+  });
+});
+
+describe('RangeAssignBar', () => {
+  it('keeps Apply disabled until a name is typed, then reports the name, seller, and payment state', () => {
+    const onApply = vi.fn();
+    render(<Harness onApply={onApply} />);
+    enterSelectMode();
+    fireEvent.click(cell(1));
+    fireEvent.click(cell(2));
+
+    const apply = screen.getByRole('button', { name: 'Apply to 2' });
+    expect(apply).toBeDisabled();
+    fireEvent.change(screen.getByLabelText('Name for these squares'), { target: { value: 'Ann R.' } });
+    fireEvent.change(screen.getByLabelText('Sold by (optional)'), { target: { value: 'Coach Lee' } });
+    expect(apply).toBeEnabled();
+
+    fireEvent.click(apply);
+    expect(onApply).toHaveBeenCalledWith({ name: 'Ann R.', seller: 'Coach Lee', paid: 'unknown' });
+  });
+
+  it('defaults payment to Not asked yet and records the chosen state', () => {
+    const onApply = vi.fn();
+    render(<Harness onApply={onApply} />);
+    enterSelectMode();
+    fireEvent.click(cell(1));
+    expect(screen.getByRole('radio', { name: 'Not asked yet' })).toHaveAttribute('aria-checked', 'true');
+    fireEvent.click(screen.getByRole('radio', { name: 'Paid' }));
+    fireEvent.change(screen.getByLabelText('Name for these squares'), { target: { value: 'Bo T.' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Apply to 1' }));
+    expect(onApply).toHaveBeenCalledWith({ name: 'Bo T.', seller: '', paid: 'paid' });
+  });
+
+  it('published: no payment radios, and the OPEN-only rule is stated', () => {
+    render(<Harness isPublished filled={[0]} />);
+    enterSelectMode();
+    fireEvent.click(cell(2));
+    expect(screen.queryByRole('radiogroup', { name: 'Payment' })).not.toBeInTheDocument();
+    expect(screen.getByText('Only OPEN squares can be selected. Sold squares and axis digits do not change.')).toBeInTheDocument();
+  });
+
+  it('clears the selection and closes the bar', () => {
+    render(<Harness />);
+    enterSelectMode();
+    fireEvent.click(cell(1));
+    fireEvent.click(screen.getByRole('button', { name: 'Clear selection' }));
+    expect(screen.queryByRole('group', { name: 'Assign selected squares' })).not.toBeInTheDocument();
+    expect(cell(1)).toHaveAttribute('aria-pressed', 'false');
+  });
+});

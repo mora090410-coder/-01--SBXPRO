@@ -11,20 +11,20 @@ const board: BoardData = { topAxis: Array(10).fill(null), leftAxis: Array(10).fi
 describe('BoardEditor', () => {
   it('names cells accessibly and opens the selected square', () => {
     const onSelectSquare = vi.fn();
-    render(<BoardEditor board={board} game={game} entryMeta={{ 0: { cell_index: 0, paid_status: 'paid', notify_opt_in: false, contact_type: null, contact_value: null } }} drawPreview={null} highlightOpen={false} isPublished={false} canAssignOpenSquares={false} onSelectSquare={onSelectSquare} />);
+    render(<BoardEditor board={board} game={game} entryMeta={{ 0: { cell_index: 0, paid_status: 'paid', notify_opt_in: false, contact_type: null, contact_value: null } }} drawPreview={null} highlightOpen={false} isPublished={false} canAssignOpenSquares={false} selectMode={false} selection={new Set<number>()} onSelectionChange={vi.fn()} onToggleSelectMode={vi.fn()} onSelectSquare={onSelectSquare} />);
     fireEvent.click(screen.getByRole('button', { name: 'Square 1, assigned to Ann' }));
     expect(onSelectSquare).toHaveBeenCalledWith(0);
     expect(screen.getByRole('button', { name: 'Square 2, unassigned' })).toBeInTheDocument();
     expect(screen.getByText('paid')).toBeInTheDocument();
   });
   it('shows draw preview digits in the axes with the draft tag', () => {
-    render(<BoardEditor board={board} game={game} entryMeta={{}} drawPreview={{ top: [3,1,4,1,5,9,2,6,5,3], left: [0,1,2,3,4,5,6,7,8,9] }} highlightOpen={false} isPublished={false} canAssignOpenSquares={false} onSelectSquare={vi.fn()} />);
+    render(<BoardEditor board={board} game={game} entryMeta={{}} drawPreview={{ top: [3,1,4,1,5,9,2,6,5,3], left: [0,1,2,3,4,5,6,7,8,9] }} highlightOpen={false} isPublished={false} canAssignOpenSquares={false} selectMode={false} selection={new Set<number>()} onSelectionChange={vi.fn()} onToggleSelectMode={vi.fn()} onSelectSquare={vi.fn()} />);
     expect(screen.getByText('Draft draw')).toBeInTheDocument();
     expect(screen.getAllByText('3').length).toBeGreaterThan(0);
   });
   it('pastes a name list into open cells', () => {
     const onPasteNames = vi.fn();
-    render(<BoardEditor board={board} game={game} entryMeta={{}} drawPreview={null} highlightOpen={false} isPublished={false} canAssignOpenSquares={false} onSelectSquare={vi.fn()} onPasteNames={onPasteNames} />);
+    render(<BoardEditor board={board} game={game} entryMeta={{}} drawPreview={null} highlightOpen={false} isPublished={false} canAssignOpenSquares={false} selectMode={false} selection={new Set<number>()} onSelectionChange={vi.fn()} onToggleSelectMode={vi.fn()} onSelectSquare={vi.fn()} onPasteNames={onPasteNames} />);
     const area = screen.getByRole('textbox', { name: 'Paste names' });
     fireEvent.change(area, { target: { value: 'Bo\n\n Cy \nDi' } });
     fireEvent.blur(area);
@@ -32,7 +32,7 @@ describe('BoardEditor', () => {
   });
   it('published: only open cells are selectable when late fill is allowed', () => {
     const onSelectSquare = vi.fn();
-    render(<BoardEditor board={board} game={game} entryMeta={{}} drawPreview={null} highlightOpen={false} isPublished canAssignOpenSquares onSelectSquare={onSelectSquare} />);
+    render(<BoardEditor board={board} game={game} entryMeta={{}} drawPreview={null} highlightOpen={false} isPublished canAssignOpenSquares selectMode={false} selection={new Set<number>()} onSelectionChange={vi.fn()} onToggleSelectMode={vi.fn()} onSelectSquare={onSelectSquare} />);
     expect(screen.getByRole('button', { name: 'Square 1, assigned to Ann' })).not.toBeDisabled();
     fireEvent.click(screen.getByRole('button', { name: 'Square 2, unassigned' }));
     expect(onSelectSquare).toHaveBeenCalledWith(1);
@@ -41,7 +41,7 @@ describe('BoardEditor', () => {
     vi.useFakeTimers();
     try {
       const onPasteNames = vi.fn();
-      render(<BoardEditor board={board} game={game} entryMeta={{}} drawPreview={null} highlightOpen={false} isPublished={false} canAssignOpenSquares={false} onSelectSquare={vi.fn()} onPasteNames={onPasteNames} />);
+      render(<BoardEditor board={board} game={game} entryMeta={{}} drawPreview={null} highlightOpen={false} isPublished={false} canAssignOpenSquares={false} selectMode={false} selection={new Set<number>()} onSelectionChange={vi.fn()} onToggleSelectMode={vi.fn()} onSelectSquare={vi.fn()} onPasteNames={onPasteNames} />);
       const area = screen.getByRole('textbox', { name: 'Paste names' }) as HTMLTextAreaElement;
       fireEvent.paste(area);
       fireEvent.change(area, { target: { value: 'Bo\nCy' } });
@@ -75,7 +75,7 @@ describe('SquareSheet', () => {
   it('sizes the payment radios to a 44px touch target', () => {
     render(<SquareSheet open index={0} name="Ann" isPublished={false} hasNextOpen={false} onSave={vi.fn()} onClose={vi.fn()} />);
     const radios = within(screen.getByRole('radiogroup', { name: 'Payment' })).getAllByRole('radio');
-    expect(radios).toHaveLength(2);
+    expect(radios).toHaveLength(3);
     radios.forEach((radio) => {
       expect(radio.className).toContain('min-h-11');
     });
