@@ -1,6 +1,6 @@
 import React from 'react';
 import { Eyebrow } from '../../../design/primitives';
-import { OrganizerCard } from '../artifacts/OrganizerCard';
+import { OrganizerPreview } from '../renders/OrganizerPreview';
 
 export function OrganizerSection() {
   return (
@@ -13,7 +13,7 @@ export function OrganizerSection() {
         </p>
         <p className="font-ui text-[15px] text-fg-3">OPEN squares stay visible so nobody argues about who had what.</p>
       </div>
-      <OrganizerCard />
+      <OrganizerPreview />
     </section>
   );
 }

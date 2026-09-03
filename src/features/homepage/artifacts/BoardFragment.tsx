@@ -15,18 +15,17 @@ export function BoardFragment({ highlight, size = 4, className = '' }: BoardFrag
   const colStart = Math.max(0, Math.min(col - 1, 10 - size));
   const rows = Array.from({ length: size }, (_, i) => rowStart + i);
   const cols = Array.from({ length: size }, (_, i) => colStart + i);
-  const holder = demoBoard.squares[row * 10 + col][0] ?? 'OPEN';
-  const label = `Board fragment, ${holder} holds ${demoGame.topAbbr} ${highlight.top} across, ${demoGame.leftAbbr} ${highlight.left} down`;
+  const label = `Board fragment with the winning square at ${demoGame.topAbbr} ${highlight.top}, ${demoGame.leftAbbr} ${highlight.left}`;
 
   return (
     <div role="img" aria-label={label} className={`inline-grid gap-px bg-hairline rounded-cell overflow-hidden ${className}`.trim()} style={{ gridTemplateColumns: `28px repeat(${size}, minmax(0, 1fr))` }}>
-      <div className="bg-ground" />
+      <div className="bg-ground" aria-hidden="true" />
       {cols.map((c) => (
-        <div key={`t${c}`} className="bg-ground h-7 flex items-center justify-center font-mono text-[12px] text-fg-3">{demoBoard.topAxis[c]}</div>
+        <div key={`t${c}`} aria-hidden="true" className="bg-ground h-7 flex items-center justify-center font-mono text-[12px] text-fg-3">{demoBoard.topAxis[c]}</div>
       ))}
       {rows.map((r) => (
         <React.Fragment key={`r${r}`}>
-          <div className="bg-ground w-7 flex items-center justify-center font-mono text-[12px] text-fg-3">{demoBoard.leftAxis[r]}</div>
+          <div aria-hidden="true" className="bg-ground w-7 flex items-center justify-center font-mono text-[12px] text-fg-3">{demoBoard.leftAxis[r]}</div>
           {cols.map((c) => {
             const names = demoBoard.squares[r * 10 + c];
             const name = names[0] ?? '';
@@ -35,6 +34,7 @@ export function BoardFragment({ highlight, size = 4, className = '' }: BoardFrag
             return (
               <div
                 key={`c${r}-${c}`}
+                aria-hidden="true"
                 data-cell={`${demoBoard.leftAxis[r]}-${demoBoard.topAxis[c]}`}
                 className={`h-12 px-1 flex items-center justify-center text-center font-ui text-[12px] leading-tight rounded-cell ${isHit ? 'bg-gold text-ink font-medium' : isOpen ? 'bg-panel text-fg-3' : 'bg-ground text-fg'}`}
               >
