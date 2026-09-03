@@ -1,7 +1,7 @@
 # GridOne pricing recommendation — 2026-09-01
 
 **Status:** Recommendation for the owner. No Stripe or code change is made by this document.
-**Live ladder today:** Free (1 published board per season) · Game Day $9.99 once (up to 5 boards) · Organization $79 per season (up to 50 boards, org name on boards, shared dashboard, one receipt). Rationale in `docs/pricing-gating-copy-2026-07-29.md`.
+**Live ladder today:** Free (1 published board per season) · Game Day $9.99 once (up to 5 boards) · Organization $79 per season (up to 50 boards, org name on boards, shared dashboard, one receipt).
 
 ## What the market charges (September 2026)
 
@@ -35,7 +35,7 @@ Two things stand out. The paid incumbents charge **per grid** at $12.95 to $25, 
 
 ## What this means for the redesigned homepage
 
-The price moment shows the three live tiers with the copy already drafted in `docs/pricing-gating-copy-2026-07-29.md` Part D, rendered from a single pricing constant. No new tiers, no toggles, no guarantees or urgency.
+The price moment shows the three live tiers rendered from a single pricing constant. No new tiers, no toggles, no guarantees or urgency.
 
 ## Sources
 
