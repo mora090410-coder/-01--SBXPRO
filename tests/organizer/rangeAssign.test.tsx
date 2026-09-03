@@ -60,6 +60,27 @@ function Harness({ isPublished = false, canAssignOpenSquares, filled = [], onApp
   );
 }
 
+function GridOnlyHarness() {
+  const [selectMode, setSelectMode] = useState(false);
+  const [selection, setSelection] = useState<Selection>(() => new Set<number>());
+  return (
+    <BoardEditor
+      board={board()}
+      game={game}
+      entryMeta={{}}
+      drawPreview={null}
+      highlightOpen={false}
+      isPublished={false}
+      canAssignOpenSquares={false}
+      selectMode={selectMode}
+      selection={selection}
+      onSelectionChange={setSelection}
+      onToggleSelectMode={() => setSelectMode((current) => !current)}
+      onSelectSquare={vi.fn()}
+    />
+  );
+}
+
 const cell = (n: number) => screen.getByRole('button', { name: `Square ${n}, unassigned` });
 const enterSelectMode = () => fireEvent.click(screen.getByRole('button', { name: 'Select squares' }));
 const pressedCells = () => screen
@@ -125,6 +146,40 @@ describe('BoardEditor select mode', () => {
     expect(pressedCells()).toHaveLength(2);
     expect(cell(1)).toHaveAttribute('aria-pressed', 'true');
     expect(cell(2)).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('a keyboard Space does not swallow the next mouse click', () => {
+    render(<Harness />);
+    enterSelectMode();
+    fireEvent.keyDown(cell(2), { key: ' ' });
+    fireEvent.click(cell(5));
+    expect(cell(2)).toHaveAttribute('aria-pressed', 'true');
+    expect(cell(5)).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('deselecting the last square leaves focus on the cell, not the toolbar', () => {
+    // The grid alone: the assign bar claims focus for itself while it is up,
+    // and this is about what the grid does when the bar goes away.
+    render(<GridOnlyHarness />);
+    enterSelectMode();
+    cell(3).focus();
+    fireEvent.click(cell(3));
+    fireEvent.click(cell(3));
+    expect(cell(3)).toHaveAttribute('aria-pressed', 'false');
+    expect(document.activeElement).toBe(cell(3));
+  });
+
+  it('published: a block reaching over a sold square picks up only the OPEN ones', () => {
+    const onApply = vi.fn();
+    render(<Harness isPublished filled={[11]} onApply={onApply} />);
+    enterSelectMode();
+    fireEvent.click(cell(1));
+    fireEvent.click(cell(13), { shiftKey: true });
+    expect(screen.getByRole('button', { name: 'Square 12, assigned to Ann R.' })).not.toHaveAttribute('aria-pressed', 'true');
+    expect(pressedCells()).toHaveLength(5);
+    fireEvent.change(screen.getByLabelText('Name for these squares'), { target: { value: 'Dana P.' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Apply to 5' }));
+    expect(onApply).toHaveBeenCalledWith({ name: 'Dana P.', seller: '', paid: 'unknown' });
   });
 
   it('published without late fill: select mode is not offered', () => {

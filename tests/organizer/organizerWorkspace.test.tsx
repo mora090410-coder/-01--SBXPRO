@@ -599,7 +599,7 @@ describe('OrganizerWorkspace published boards', () => {
     expect(await screen.findByText('Viewer link copied.')).toBeInTheDocument();
   });
 
-  it('sends a late fill through onAssignOpenSquares and reloads', async () => {
+  it('sends a late fill through onAssignOpenSquares, which reloads for itself', async () => {
     const onAssignOpenSquares = vi.fn(async (_squares: string[][]) => undefined);
     const { onReload } = renderPublished({ board: drawnBoard(99), onAssignOpenSquares });
 
@@ -612,7 +612,9 @@ describe('OrganizerWorkspace published boards', () => {
     expect(onAssignOpenSquares).toHaveBeenCalledTimes(1);
     const squares = onAssignOpenSquares.mock.calls[0][0];
     expect(squares[99]).toEqual(['Dana P.']);
-    expect(onReload).toHaveBeenCalled();
+    // The callback reloads the board itself; a second reload here would only
+    // turn a reload failure into a false "nothing changed".
+    expect(onReload).not.toHaveBeenCalled();
   });
 
   it('refuses to clear a published assignment and never routes it through the late-fill callback', async () => {
@@ -855,7 +857,7 @@ describe('OrganizerWorkspace range assignment', () => {
     expect(screen.queryByRole('group', { name: 'Assign selected squares' })).not.toBeInTheDocument();
   });
 
-  it('published: assigns the OPEN squares through the late-fill callback and reloads', async () => {
+  it('published: assigns the OPEN squares through the late-fill callback, which reloads for itself', async () => {
     const onAssignOpenSquares = vi.fn(async (_squares: string[][]) => undefined);
     const { onReload } = renderWorkspace({
       board: drawnBoard(98),
@@ -876,13 +878,13 @@ describe('OrganizerWorkspace range assignment', () => {
     const squares = onAssignOpenSquares.mock.calls[0][0];
     expect(squares[98]).toEqual(['Dana Prince']);
     expect(squares[99]).toEqual(['Dana Prince']);
-    expect(onReload).toHaveBeenCalled();
+    expect(onReload).not.toHaveBeenCalled();
     expect(saveEntryMetaBatch).toHaveBeenCalledTimes(1);
     // The published branch keeps confirmations in the flow rather than the island.
     expect(await screen.findByText('Assigned 2 squares to Dana Prince.')).toBeInTheDocument();
   });
 
-  it('published: refuses a block that reaches over a sold square and changes nothing', async () => {
+  it('published: a block that reaches over sold squares selects only the OPEN ones', async () => {
     const onAssignOpenSquares = vi.fn(async (_squares: string[][]) => undefined);
     const board = drawnBoard(100);
     board.squares[90] = [];
@@ -892,14 +894,20 @@ describe('OrganizerWorkspace range assignment', () => {
     enterSelectMode();
     selectCell(91);
     fireEvent.click(screen.getByRole('button', { name: 'Square 100, unassigned' }), { shiftKey: true });
+    // The eight sold squares between them are never armed, so the organizer
+    // sees the apply that will actually happen rather than one that is refused.
+    expect(screen.getByRole('button', { name: /^Square 92, assigned to / })).not.toHaveAttribute('aria-pressed', 'true');
     typeName('Dana P.');
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Apply to 10' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Apply to 2' }));
     });
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Published assignments cannot be changed. Select OPEN squares only.');
-    expect(onAssignOpenSquares).not.toHaveBeenCalled();
-    expect(saveEntryMetaBatch).not.toHaveBeenCalled();
+    expect(onAssignOpenSquares).toHaveBeenCalledTimes(1);
+    const squares = onAssignOpenSquares.mock.calls[0][0];
+    expect(squares[90]).toEqual(['Dana P.']);
+    expect(squares[99]).toEqual(['Dana P.']);
+    expect(squares[91]).toEqual(board.squares[91]);
+    expect(saveEntryMetaBatch).toHaveBeenCalledTimes(1);
   });
 });
 

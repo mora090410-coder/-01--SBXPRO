@@ -30,7 +30,9 @@ export async function saveEntryMetaBatch(poolId: string, metas: EntryMeta[]): Pr
   const rows = metas.map((meta) => ({
     contest_id: poolId,
     cell_index: meta.cell_index,
-    paid_status: meta.paid_status === null ? undefined : meta.paid_status,
+    // A batch upsert must send the same columns for every row, so the honest
+    // "not asked yet" default is written rather than left out.
+    paid_status: meta.paid_status ?? 'unknown',
     notify_opt_in: meta.notify_opt_in,
     contact_type: meta.contact_type || null,
     contact_value: meta.contact_value || null,

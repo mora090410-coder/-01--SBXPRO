@@ -429,8 +429,9 @@ export default function OrganizerWorkspace({
     setAlert(null);
     try {
       if (isPublished) {
+        // onAssignOpenSquares reloads the board itself; a second reload here
+        // would only turn a reload failure into "Nothing changed."
         await onAssignOpenSquares(nextSquares);
-        await onReload?.();
         if (activePoolId) {
           try {
             await saveEntryMetaBatch(activePoolId, metas);
@@ -638,8 +639,8 @@ export default function OrganizerWorkspace({
     }
     squares[index] = [name];
     try {
+      // Same as the range apply: the callback already reloads.
       await onAssignOpenSquares(squares);
-      await onReload?.();
       setAlert(null);
       setNote(`Square ${index + 1} assigned before kickoff.`);
     } catch (error: any) {

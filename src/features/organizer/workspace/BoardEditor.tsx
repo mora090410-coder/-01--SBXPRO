@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Glass, CapsuleTag, CapsuleButton } from '../../../design/primitives';
 import type { BoardData, EntryMeta, GameState } from '../../../../types';
-import { addRange, rangeBetween, toggle, type Selection } from './selection';
+import { assignable, rangeBetween, toggle, type Selection } from './selection';
 
 export interface BoardEditorProps {
   board: BoardData;
@@ -58,8 +58,10 @@ export default function BoardEditor({
   // The corner a shift-click or a drag measures its block from.
   const anchorRef = useRef<number | null>(null);
   const dragRef = useRef<{ anchor: number; base: Selection; moved: boolean } | null>(null);
-  // A keyboard Space already toggled; swallow the click the browser sends next.
-  const keyToggledRef = useRef(false);
+  // Set when this grid is what emptied the selection, so deselecting the last
+  // square leaves focus on the cell the organizer is standing on. Apply, Clear
+  // selection, and Done selecting come from the bar and still hand focus back.
+  const localChangeRef = useRef(false);
   // CapsuleButton does not forward a ref, so focus is taken through the row.
   const toolbarRef = useRef<HTMLDivElement | null>(null);
   const previousSelectionSize = useRef(selection.size);
@@ -69,7 +71,6 @@ export default function BoardEditor({
   const leftDigits = drawPreview ? drawPreview.left : board.leftAxis;
 
   useEffect(() => {
-    keyToggledRef.current = false;
     if (!selectMode) {
       anchorRef.current = null;
       dragRef.current = null;
@@ -84,12 +85,16 @@ export default function BoardEditor({
     toolbarRef.current?.querySelector('button')?.focus();
   };
 
-  // The bar unmounts when the selection empties -- after Apply, Clear
-  // selection, or Done selecting -- so focus goes back to the toggle.
+  // The bar unmounts when the selection empties. When that came from Apply,
+  // Clear selection, or Done selecting the organizer was standing in the bar,
+  // so focus goes back to the toggle; when they simply deselected their last
+  // square, focus stays on the cell under their cursor.
   useEffect(() => {
     const previous = previousSelectionSize.current;
+    const fromGrid = localChangeRef.current;
+    localChangeRef.current = false;
     previousSelectionSize.current = selection.size;
-    if (previous > 0 && selection.size === 0) focusToggle();
+    if (previous > 0 && selection.size === 0 && !fromGrid) focusToggle();
   }, [selection]);
 
   // A failed apply leaves the selection standing; the workspace bumps this so
@@ -116,22 +121,36 @@ export default function BoardEditor({
     return !canAssignOpenSquares;
   };
 
+  /**
+   * A published board only ever accepts OPEN squares, so a block or a drag that
+   * reaches over a sold square picks up the open cells and leaves the sold one
+   * alone rather than arming an apply the workspace will refuse.
+   */
+  const selectableOnly = (indices: readonly number[]) => (
+    isPublished ? assignable(indices, board.squares, true).ok : [...indices]
+  );
+
+  const addAll = (base: Selection, indices: readonly number[]): Selection => {
+    const next = new Set(base);
+    for (const index of indices) next.add(index);
+    return next;
+  };
+
   const toggleCell = (index: number, extend: boolean) => {
     if (extend && anchorRef.current !== null) {
-      onSelectionChange(addRange(selection, anchorRef.current, index));
+      localChangeRef.current = true;
+      onSelectionChange(addAll(selection, selectableOnly(rangeBetween(anchorRef.current, index))));
       return;
     }
+    if (!selectableOnly([index]).length) return;
     anchorRef.current = index;
+    localChangeRef.current = true;
     onSelectionChange(toggle(selection, index));
   };
 
   const onCellClick = (index: number, event: React.MouseEvent<HTMLButtonElement>) => {
     if (!selectMode) {
       onSelectSquare(index);
-      return;
-    }
-    if (keyToggledRef.current) {
-      keyToggledRef.current = false;
       return;
     }
     const drag = dragRef.current;
@@ -157,7 +176,8 @@ export default function BoardEditor({
     if (!drag) return;
     drag.moved = true;
     anchorRef.current = index;
-    onSelectionChange(addRange(drag.base, drag.anchor, index));
+    localChangeRef.current = true;
+    onSelectionChange(addAll(drag.base, selectableOnly(rangeBetween(drag.anchor, index))));
   };
 
   const onCellPointerEnter = (index: number, event: React.PointerEvent<HTMLButtonElement>) => {
@@ -195,7 +215,6 @@ export default function BoardEditor({
     }
     if (event.key === ' ' || event.key === 'Spacebar') {
       event.preventDefault();
-      keyToggledRef.current = true;
       toggleCell(index, event.shiftKey);
     }
   };
@@ -274,7 +293,7 @@ export default function BoardEditor({
                         onPointerDown={(event) => onCellPointerDown(index, event)}
                         onPointerEnter={(event) => onCellPointerEnter(index, event)}
                         onKeyDown={(event) => onCellKeyDown(index, event)}
-                        className={`flex min-h-11 flex-col items-center justify-center gap-0.5 rounded-cell px-1 py-1 font-ui text-[12px] transition-[background-color] duration-[var(--g-dur-state)] ease-[var(--g-ease-state)] disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action ${selectMode ? 'touch-none' : ''} ${isOpen ? openClasses : assignedClasses} ${highlightClasses} ${selectedClasses}`.trim()}
+                        className={`flex min-h-11 flex-col items-center justify-center gap-0.5 rounded-cell px-1 py-1 font-ui text-[12px] transition-[background-color] duration-[var(--g-dur-state)] ease-[var(--g-ease-state)] disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action ${selectMode ? 'touch-pan-x' : ''} ${isOpen ? openClasses : assignedClasses} ${highlightClasses} ${selectedClasses}`.trim()}
                       >
                         {!isOpen && <span className="line-clamp-2 text-center leading-tight">{name}</span>}
                         {paid && <span className="font-mono text-[10px] text-fg-2">paid</span>}

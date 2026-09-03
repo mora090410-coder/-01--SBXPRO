@@ -65,7 +65,7 @@ Do not use `pool`, `contest`, or `publish` as synonyms for draft save/create in 
 
 **Capabilities:**
 
-- `Select squares` turns the grid into a selection surface (`Done selecting` leaves it and drops the selection). In select mode a square toggles on tap, shift-click adds the rectangular block from the last toggled square, dragging across the grid adds every square the pointer crosses, Space toggles the focused square, and Escape leaves select mode.
+- `Select squares` turns the grid into a selection surface (`Done selecting` leaves it and drops the selection). In select mode a square toggles on tap, shift-click adds the rectangular block from the last toggled square, dragging adds the rectangular block between the anchor square and the square under the pointer, Space toggles the focused square, and Escape leaves select mode.
 - `Assign selected squares` appears under the board as soon as one square is selected: `Name for these squares` is the one label written into every selected square, `Sold by (optional)` records seller/parent attribution, `Payment` records one private state for the whole block, and `Apply to {n}` writes them. `Clear selection` empties the selection without leaving select mode.
 - Private payment states are `Not asked yet` (the default, the honest record before anyone has been asked), `Unpaid`, and `Paid`. The same three states are on one square's own sheet.
 - Edit one assignment’s details in the square sheet (name, seller, payment state)
