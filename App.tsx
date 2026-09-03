@@ -2,7 +2,6 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, useSearchParams } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import FullScreenLoading from './components/loading/FullScreenLoading';
-import Layout from './components/layout/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
 import RequireAuth from './components/auth/RequireAuth';
 import BoardView from './components/BoardView';
@@ -70,11 +69,7 @@ const App: React.FC = () => {
               />
               <Route
                 path="/login"
-                element={
-                  <Layout>
-                    <Login />
-                  </Layout>
-                }
+                element={<Login />}
               />
 
               {/* Protected Routes */}
@@ -95,7 +90,7 @@ const App: React.FC = () => {
                 }
               />
 
-              <Route path="/paid" element={<Layout><Paid /></Layout>} />
+              <Route path="/paid" element={<Paid />} />
               <Route path="/articles" element={<ArticlesHub />} />
               <Route path="/articles/run-your-pool-alternative" element={<RunYourPoolAlternative />} />
               <Route path="/articles/how-to-run-super-bowl-squares" element={<HowToRunSquares />} />
