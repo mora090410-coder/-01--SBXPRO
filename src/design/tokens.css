@@ -130,6 +130,19 @@
   animation: live-dot-pulse 2.4s ease-in-out infinite alternate;
 }
 
+/* Winning-cell entry pulse for BoardFragment. Decorative only: the fragment's
+   role="img" label already names the winning square and the cell's gold fill is
+   the same with or without the pulse, so no meaning is carried by motion. One
+   900ms ring, then rest. box-shadow only, so it cannot shift layout or add
+   scrollable overflow. Neutralized in the reduced-motion block below. */
+@keyframes board-cell-pulse {
+  from { box-shadow: 0 0 0 0 color-mix(in srgb, var(--g-gold) 70%, transparent); }
+  to { box-shadow: 0 0 0 10px color-mix(in srgb, var(--g-gold) 0%, transparent); }
+}
+.board-cell-pulse {
+  animation: board-cell-pulse 900ms var(--g-ease-state) 1;
+}
+
 /* Reveal. The resting state is VISIBLE: an element with no `data-reveal`
    attribute has no transition and no transform, so no-JS, no-observer, and
    server renders show finished content. `Reveal` only adds the attribute from
@@ -156,6 +169,10 @@
   .live-dot {
     animation: none;
     opacity: 1;
+  }
+  .board-cell-pulse {
+    animation: none;
+    box-shadow: none;
   }
   [data-reveal] {
     transition: none;

@@ -87,6 +87,36 @@ describe('BoardFragment', () => {
     expect(gold).toHaveAttribute('aria-hidden', 'true');
     expect(grid.textContent).toContain('OPEN');
   });
+
+  it('pulses the winning cell by class alone, leaving the label and content untouched', () => {
+    setReducedMotion(false);
+    const observer = stubObserver();
+    render(<BoardFragment highlight={{ left: 7, top: 4 }} />);
+
+    const name = 'Board fragment with the winning square at PHI 4, KC 7';
+    const grid = screen.getByRole('img', { name });
+    const gold = grid.querySelector('[data-cell="7-4"]') as HTMLElement;
+    const contentBefore = grid.textContent;
+
+    expect(gold.className).not.toContain('board-cell-pulse');
+
+    act(() => observer.fire(true));
+
+    // Class-driven only: same accessible name, same DOM content, same gold fill.
+    expect(gold.className).toContain('board-cell-pulse');
+    expect(gold.className).toContain('bg-gold');
+    expect(screen.getByRole('img', { name })).toBe(grid);
+    expect(grid.textContent).toBe(contentBefore);
+  });
+
+  it('never pulses under reduced motion', () => {
+    setReducedMotion(true);
+    const observer = stubObserver();
+    render(<BoardFragment highlight={{ left: 7, top: 4 }} />);
+    const grid = screen.getByRole('img', { name: 'Board fragment with the winning square at PHI 4, KC 7' });
+    act(() => observer.fire(true));
+    expect((grid.querySelector('[data-cell="7-4"]') as HTMLElement).className).not.toContain('board-cell-pulse');
+  });
 });
 
 describe('useCountUp', () => {
