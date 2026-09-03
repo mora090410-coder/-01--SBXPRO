@@ -7,10 +7,16 @@ interface SheetProps {
   title: string;
   children: React.ReactNode;
   height?: 'auto' | 'full';
+  /**
+   * Stacking layer. `raised` puts the sheet above a `base` sheet that is already open,
+   * regardless of DOM order — the viewer's Share sheet is mounted before the organizer
+   * preview sheet but opens on top of it.
+   */
+  layer?: 'base' | 'raised';
 }
 
 /** Bottom sheet dialog. Springs up from the bottom edge; Escape or backdrop closes it. */
-export function Sheet({ open, onClose, title, children, height = 'auto' }: SheetProps) {
+export function Sheet({ open, onClose, title, children, height = 'auto', layer = 'base' }: SheetProps) {
   const panelRef = useRef<HTMLElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const openerRef = useRef<HTMLElement | null>(null);
@@ -67,9 +73,10 @@ export function Sheet({ open, onClose, title, children, height = 'auto' }: Sheet
   };
 
   const heightClass = height === 'full' ? 'h-[calc(100dvh-24px)]' : 'max-h-[85dvh]';
+  const layerClass = layer === 'raised' ? 'z-[60]' : 'z-50';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center" onKeyDown={onKeyDown}>
+    <div className={`fixed inset-0 ${layerClass} flex items-end justify-center`} onKeyDown={onKeyDown}>
       <div
         data-testid="sheet-backdrop"
         className="absolute inset-0 bg-ink/60 animate-[sheet-fade_var(--g-dur-state)_var(--g-ease-state)]"

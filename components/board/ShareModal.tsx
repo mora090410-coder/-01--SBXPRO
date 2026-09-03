@@ -25,7 +25,7 @@ const ShareModal: React.FC<ShareModalProps> = ({ shareUrl, onClose }) => {
 
     return (
         <div data-base="dark">
-            <Sheet open onClose={onClose} title="Share link">
+            <Sheet open onClose={onClose} title="Share link" layer="raised">
                 <div className="flex flex-col items-center gap-4">
                     <div className="rounded-card border border-hairline bg-broadcast-white p-4">
                         <QRCodeSVG value={shareUrl} size={160} />

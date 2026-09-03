@@ -96,6 +96,9 @@ test.describe('axe accessibility sweep', () => {
     await installOrganizerSupport(page);
 
     await page.goto('/create');
+    // A create-specific landmark, so an unauthenticated redirect to /login can
+    // never be scanned in place of the create route.
+    await expect(page.getByRole('heading', { level: 1, name: 'Name your board' })).toBeVisible();
     await expect(page.getByRole('main')).toBeVisible();
     await settle(page);
     await runAxe(page, testInfo);

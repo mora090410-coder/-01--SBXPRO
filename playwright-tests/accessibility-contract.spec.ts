@@ -135,6 +135,10 @@ const installOrganizerBoard = async (page: Page, options: {
   revision?: number;
   /** Answer every save with a revision conflict, as a second session would. */
   saveConflict?: boolean;
+  /** Paid activation: the viewer surfaces expose Share and game day exposes manual scoring. */
+  activated?: boolean;
+  /** Already published: the workspace opens on the game-day layout. */
+  published?: boolean;
 } = {}) => {
   await installOrganizerSession(page);
   await page.route(`**/api/pools/${ownerId}`, async (route) => {
@@ -175,20 +179,31 @@ const installOrganizerBoard = async (page: Page, options: {
         topName: 'Washington Commanders',
         payoutDescriptions: {},
         board: options.board ?? organizerDraftBoard,
-        score: null,
-        is_activated: false,
+        score: options.published ? liveScore : null,
+        is_activated: options.activated ?? false,
         locked: false,
-        published_at: null,
+        published_at: options.published ? '2026-09-12T20:00:00.000Z' : null,
         winner_history: [],
         pending_milestones: [],
       }),
     });
   });
-  await page.route(`**/api/pools/${ownerId}/score`, (route) => route.fulfill({
-    status: 402,
+  await page.route(`**/api/pools/${ownerId}/score/manual`, (route) => route.fulfill({
+    status: 200,
     contentType: 'application/json',
-    body: JSON.stringify({ error: 'Publish this board to use automatic live scoring and updates.' }),
+    body: JSON.stringify({ ok: true, useManualScores: true }),
   }));
+  await page.route(`**/api/pools/${ownerId}/score`, (route) => (options.published
+    ? route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ score: liveScore, winnerHistory: [], pendingMilestones: [] }),
+    })
+    : route.fulfill({
+      status: 402,
+      contentType: 'application/json',
+      body: JSON.stringify({ error: 'Publish this board to use automatic live scoring and updates.' }),
+    })));
   await page.route('**/rest/v1/contest_entries*', (route) => route.fulfill({
     status: 200,
     contentType: 'application/json',
@@ -240,7 +255,7 @@ const expectNoPageOverflowExceptBoardViewport = async (page: Page) => {
       .filter((element) => {
         const style = getComputedStyle(element);
         if (style.display === 'none' || style.visibility === 'hidden') return false;
-        if (element.closest('.gridone-board-frame, .gridone-viewer-board-viewport, .sr-only')) return false;
+        if (element.closest('.gridone-viewer-board-viewport, .sr-only')) return false;
         return element.scrollWidth > element.clientWidth + 1 || element.getBoundingClientRect().right > documentWidth + 1;
       })
       .map((element) => ({
@@ -495,6 +510,66 @@ test.describe('Slice 2 signed-out accessibility contract automation', () => {
 
     await cancel.click();
     await expect(publish).toBeHidden();
+  });
+
+  test('the share sheet paints above the private preview and Escape closes only the share sheet', async ({ page }) => {
+    await installOrganizerBoard(page, { board: organizerReadyBoard, activated: true });
+    await page.goto(`/boards/${ownerId}`);
+    const island = await openIsland(page);
+    await island.getByRole('button', { name: 'Preview', exact: true }).click();
+
+    const preview = page.getByRole('dialog', { name: 'Private preview — sharing is off' });
+    await expect(preview).toBeVisible();
+
+    const shareTrigger = preview.getByRole('button', { name: 'Share', exact: true });
+    await expect(shareTrigger).toBeVisible();
+    await shareTrigger.click();
+
+    const share = page.getByRole('dialog', { name: 'Share link' });
+    await expect(share).toBeVisible();
+    const copy = share.getByRole('button', { name: 'Copy', exact: true });
+    await expect(copy).toBeVisible();
+    await expect(copy).toBeEnabled();
+
+    // The share sheet is mounted before the preview in the DOM, so the only
+    // thing that keeps it clickable is its stacking layer: hit-test the Copy
+    // button rather than trusting document order.
+    const hit = await copy.evaluate((element) => {
+      const box = element.getBoundingClientRect();
+      const top = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+      const dialog = top?.closest('[role="dialog"]');
+      return {
+        insideCopy: element.contains(top),
+        dialogLabel: dialog?.querySelector('h2')?.textContent ?? null,
+      };
+    });
+    expect(hit.insideCopy).toBe(true);
+    expect(hit.dialogLabel).toBe('Share link');
+
+    await page.keyboard.press('Escape');
+    await expect(share).toBeHidden();
+    await expect(preview).toBeVisible();
+    await expect(shareTrigger).toBeFocused();
+  });
+
+  test('manual score controls expose a visible focus ring', async ({ page }) => {
+    await installOrganizerBoard(page, { board: organizerReadyBoard, activated: true, published: true });
+    await page.goto(`/boards/${ownerId}`);
+    await expect(page.getByRole('main', { name: 'QA draft board workspace' })).toBeVisible();
+
+    await page.getByRole('button', { name: 'Manual', exact: true }).click();
+
+    const status = page.getByLabel('Game Status');
+    await expect(status).toBeVisible();
+    const quarter = page.locator('input[type="number"]').first();
+    await expect(quarter).toBeVisible();
+
+    for (const control of [status, quarter]) {
+      await control.focus();
+      await expect(control).toBeFocused();
+      const shadow = await control.evaluate((element) => getComputedStyle(element).boxShadow);
+      expect(shadow).not.toBe('none');
+    }
   });
 
   test('organizer save conflict blocks progression with a live recoverable alert', async ({ page }) => {
