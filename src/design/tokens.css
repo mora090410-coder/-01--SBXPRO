@@ -120,6 +120,16 @@
   animation: spotlight-breathe 12s ease-in-out infinite alternate;
 }
 
+/* Live dot. Decorative only: the word "Live" beside it carries the meaning, so
+   the pulse never encodes state. Opacity only, so it cannot shift layout. */
+@keyframes live-dot-pulse {
+  from { opacity: 1; }
+  to { opacity: 0.35; }
+}
+.live-dot {
+  animation: live-dot-pulse 2.4s ease-in-out infinite alternate;
+}
+
 /* Reveal. The resting state is VISIBLE: an element with no `data-reveal`
    attribute has no transition and no transform, so no-JS, no-observer, and
    server renders show finished content. `Reveal` only adds the attribute from
@@ -142,6 +152,10 @@
   .spotlight-breathe {
     animation: none;
     scale: none;
+  }
+  .live-dot {
+    animation: none;
+    opacity: 1;
   }
   [data-reveal] {
     transition: none;
