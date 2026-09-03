@@ -240,7 +240,7 @@ const expectNoPageOverflowExceptBoardViewport = async (page: Page) => {
       .filter((element) => {
         const style = getComputedStyle(element);
         if (style.display === 'none' || style.visibility === 'hidden') return false;
-        if (element.closest('.gridone-board-frame, .gridone-viewer-board-viewport, .gdh-board-viewport, .sr-only')) return false;
+        if (element.closest('.gridone-board-frame, .gridone-viewer-board-viewport, .sr-only')) return false;
         return element.scrollWidth > element.clientWidth + 1 || element.getBoundingClientRect().right > documentWidth + 1;
       })
       .map((element) => ({
@@ -276,6 +276,51 @@ test.describe('Slice 2 signed-out accessibility contract automation', () => {
     await page.getByRole('button', { name: 'Create organizer account' }).click();
     await expect(page.getByRole('alert')).toContainText('Passwords do not match');
     await expect(page.getByLabel('Confirm Password')).toHaveAttribute('aria-describedby', 'auth-error');
+  });
+
+  // Folded in from the retired playwright-tests/phase5-accessibility.spec.ts:
+  // the sign-in fields are the only text inputs a signed-out organizer meets,
+  // so their rendered boundary, focus change, touch geometry, and wordy (not
+  // iconographic) error stay under contract.
+  test('sign-in fields render a boundary, a focus change, 44 by 44 geometry, and a wordless-icon-free error', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/login');
+
+    const email = page.getByLabel('Email Address');
+    const submit = page.getByRole('button', { name: 'Sign In', exact: true });
+
+    await expect(email).toHaveCSS('border-top-style', 'solid');
+    // The input draws a 1px boundary; a hairline that renders at 0 or thickens
+    // under a stray override are both regressions.
+    await expect.poll(() => email.evaluate((element) => getComputedStyle(element).borderTopWidth))
+      .toBe('1px');
+
+    await expectTouchTarget(email);
+    await expectTouchTarget(submit);
+
+    const restingBorder = await email.evaluate((element) => getComputedStyle(element).borderTopColor);
+    await email.focus();
+    await expect(email).toBeFocused();
+    // The focused boundary changes colour and gains a ring; either alone would
+    // leave a keyboard organizer guessing where they are.
+    await expect.poll(() => email.evaluate((element) => getComputedStyle(element).borderTopColor))
+      .not.toBe(restingBorder);
+    await expect.poll(() => email.evaluate((element) => getComputedStyle(element).boxShadow))
+      .not.toBe('none');
+
+    await page.getByRole('button', { name: /Don't have an account/i }).click();
+    await page.getByLabel('Email Address').fill('organizer@example.test');
+    await page.getByLabel('Password', { exact: true }).fill('abcdef');
+    await page.getByLabel('Confirm Password').fill('uvwxyz');
+    await page.getByRole('button', { name: 'Create organizer account' }).click();
+
+    const alert = page.getByRole('alert');
+    await expect(alert).toContainText('Passwords do not match');
+    await expect(alert).toHaveAttribute('id', 'auth-error');
+    // The dark base carries no icons: the alert says it in words.
+    await expect(alert.locator('svg')).toHaveCount(0);
+    await expect(page.getByLabel('Email Address')).toHaveAttribute('aria-invalid', 'true');
+    await expect(page.getByLabel('Email Address')).toHaveAttribute('aria-describedby', 'auth-error');
   });
 
   test('demo and published routes expose semantic headings and synthetic/demo identity', async ({ page }) => {

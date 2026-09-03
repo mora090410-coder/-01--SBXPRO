@@ -38,13 +38,6 @@ export function rangeBetween(a: number, b: number): number[] {
   return out;
 }
 
-/** Adds the whole rectangular block between two corners to the selection. */
-export function addRange(sel: Selection, a: number, b: number): Selection {
-  const next = new Set(sel);
-  for (const index of rangeBetween(a, b)) next.add(index);
-  return next;
-}
-
 /**
  * Splits the selected indices into the ones this board will accept and the
  * ones it refuses. A published board only accepts OPEN cells: a sold square is

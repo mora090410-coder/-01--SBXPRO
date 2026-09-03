@@ -13,7 +13,7 @@ export default function FinalRecordCard({ winnerHistory }: FinalRecordCardProps)
   return (
     <Glass padding="lg" className="flex flex-col gap-4 border-gold/40">
       <Eyebrow>Final record</Eyebrow>
-      <h2 className="oa-headline text-2xl text-fg">This board is locked as the Final record.</h2>
+      <h2 className="font-display text-2xl text-fg">This board is locked as the Final record.</h2>
       <p className="font-ui text-[15px] text-fg-2">
         Scores, winners, OPEN outcomes, and public corrections stay visible for trust. Regular setup editing is closed; create another board for the next fundraiser or game.
       </p>

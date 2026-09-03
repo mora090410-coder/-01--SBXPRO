@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { addRange, assignable, rangeBetween, toggle } from '../../src/features/organizer/workspace/selection';
+import { assignable, rangeBetween, toggle } from '../../src/features/organizer/workspace/selection';
 
 const squares = (filled: number[]): string[][] =>
   Array.from({ length: 100 }, (_, index) => (filled.includes(index) ? ['Ann R.'] : []));
@@ -34,12 +34,6 @@ describe('selection.rangeBetween', () => {
     expect(block).toHaveLength(20);
     expect(block[0]).toBe(0);
     expect(block.at(-1)).toBe(19);
-  });
-});
-
-describe('selection.addRange', () => {
-  it('unions the block into the existing selection', () => {
-    expect([...addRange(new Set([50]), 0, 11)].sort((a, b) => a - b)).toEqual([0, 1, 10, 11, 50]);
   });
 });
 

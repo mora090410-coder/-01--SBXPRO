@@ -36,9 +36,9 @@ export const ManualScoringPanel = ({
   if (!isActivated) {
     return (
       <Glass padding="lg">
-        <p className="oa-slab mb-2 text-cardinal">Ready when the board goes live</p>
-        <h5 className="oa-headline !text-2xl">Every published board gets the full game-day experience.</h5>
-        <p className="oa-body mt-3 text-sm text-ink/70">
+        <p className="font-ui text-[12px] font-semibold uppercase tracking-[0.14em] mb-2 text-tone-cardinal">Ready when the board goes live</p>
+        <h5 className="font-display text-2xl text-fg">Every published board gets the full game-day experience.</h5>
+        <p className="font-ui mt-3 text-sm text-fg-2">
           Keep building and previewing for free. After you publish, the score, winner emails, QR code, and public board link are ready for game day.
         </p>
       </Glass>
@@ -55,7 +55,7 @@ export const ManualScoringPanel = ({
   return (
     <>
       <div className="flex items-center justify-between mb-4">
-        <h5 className="text-xs font-bold text-ink/50 uppercase tracking-widest">Live Scoring</h5>
+        <h5 className="font-ui text-xs font-bold text-fg-3 uppercase tracking-widest">Live Scoring</h5>
         <div className="flex gap-2">
           <CapsuleButton
             type="button"
@@ -76,37 +76,37 @@ export const ManualScoringPanel = ({
       </div>
 
       {!game.useManualScores ? (
-        <p className="text-xs text-ink/50 leading-relaxed">
+        <p className="font-ui text-xs text-fg-3 leading-relaxed">
           Automatic score checks show their source and freshness. Switch to Manual any time you want your entered score to be the official board score.
         </p>
       ) : (
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
-              <label htmlFor="manual-game-status" className="oa-slab text-ink/60">Game Status</label>
+              <label htmlFor="manual-game-status" className="font-ui text-[12px] font-semibold uppercase tracking-[0.14em] text-fg-2">Game Status</label>
               <div className="relative">
                 <select
                   id="manual-game-status"
                   value={manualState}
                   onChange={(e) => onUpdateManualGameState(e.target.value as ManualGameState)}
-                  className="w-full rounded-control bg-panel border border-hairline h-11 px-4 font-ui text-[16px] appearance-none text-ink"
+                  className="w-full rounded-control bg-panel border border-hairline h-11 px-4 font-ui text-[16px] appearance-none text-fg"
                 >
                   <option value="pre">Scheduled</option>
                   <option value="in">In progress</option>
                   <option value="post">Final</option>
                 </select>
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-ink/50">▼</div>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-fg-3">▼</div>
               </div>
             </div>
             <div className="space-y-1">
-              <label htmlFor="manual-current-period" className="oa-slab text-ink/60">Current Period</label>
+              <label htmlFor="manual-current-period" className="font-ui text-[12px] font-semibold uppercase tracking-[0.14em] text-fg-2">Current Period</label>
               <div className="relative">
                 <select
                   id="manual-current-period"
                   value={manualPeriod}
                   onChange={(e) => onUpdateManualPeriod(parseInt(e.target.value))}
                   disabled={manualState !== 'in'}
-                  className="w-full rounded-control bg-panel border border-hairline h-11 px-4 font-ui text-[16px] appearance-none text-ink"
+                  className="w-full rounded-control bg-panel border border-hairline h-11 px-4 font-ui text-[16px] appearance-none text-fg"
                 >
                   {manualState === 'pre' && (
                     <option value={0}>Not started</option>
@@ -117,7 +117,7 @@ export const ManualScoringPanel = ({
                   <option value={4}>Q4</option>
                   <option value={5}>Overtime</option>
                 </select>
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-ink/50">▼</div>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-fg-3">▼</div>
               </div>
             </div>
           </div>
@@ -125,12 +125,12 @@ export const ManualScoringPanel = ({
           <div className="space-y-2">
             <div className="grid grid-cols-[3rem_1fr_1fr] gap-2 items-center">
               <span></span>
-              <span className="text-[10px] font-bold text-ink/50 uppercase tracking-widest text-center">{game.leftAbbr}</span>
-              <span className="text-[10px] font-bold text-ink/50 uppercase tracking-widest text-center">{game.topAbbr}</span>
+              <span className="font-ui text-[10px] font-bold text-fg-3 uppercase tracking-widest text-center">{game.leftAbbr}</span>
+              <span className="font-ui text-[10px] font-bold text-fg-3 uppercase tracking-widest text-center">{game.topAbbr}</span>
             </div>
             {MANUAL_SCORE_PERIODS.map((q) => (
               <div key={q} className="grid grid-cols-[3rem_1fr_1fr] gap-2 items-center">
-                <span className="text-xs font-bold text-ink/60">{q}</span>
+                <span className="font-ui text-xs font-bold text-fg-2">{q}</span>
                 <input
                   type="number"
                   min={0}
@@ -147,24 +147,24 @@ export const ManualScoringPanel = ({
                 />
               </div>
             ))}
-            <div className="grid grid-cols-[3rem_1fr_1fr] gap-2 items-center pt-1 border-t border-newsprint">
-              <span className="text-xs font-bold text-gold">Total</span>
-              <span className="text-sm font-bold text-ink text-center">
+            <div className="grid grid-cols-[3rem_1fr_1fr] gap-2 items-center pt-1 border-t border-hairline">
+              <span className="font-ui text-xs font-bold text-gold">Total</span>
+              <span className="font-ui text-sm font-bold text-fg text-center">
                 {manualScoreTotal(game.manualQuarterScores, 'left')}
               </span>
-              <span className="text-sm font-bold text-ink text-center">
+              <span className="font-ui text-sm font-bold text-fg text-center">
                 {manualScoreTotal(game.manualQuarterScores, 'top')}
               </span>
             </div>
           </div>
-          <p className="text-[11px] text-ink/50 leading-relaxed">
+          <p className="font-ui text-[11px] text-fg-3 leading-relaxed">
             Enter each quarter's points, not running totals. Publishing a completed period confirms its result and prepares winner emails.
           </p>
           <button
             type="button"
             onClick={onSaveManualScore}
             disabled={scoreSaveStatus === 'saving'}
-            className="oa-btn oa-btn-primary w-full"
+            className="inline-flex w-full items-center justify-center rounded-capsule bg-action px-5 h-11 font-ui text-[15px] font-semibold leading-none text-action-text transition-colors hover:bg-action-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action focus-visible:ring-offset-2 focus-visible:ring-offset-ground disabled:opacity-60 active:scale-[0.98]"
           >
             {scoreSaveStatus === 'saving' ? 'Publishing score…' : 'Publish manual score'}
           </button>
