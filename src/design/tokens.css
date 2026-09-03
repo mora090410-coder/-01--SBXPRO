@@ -109,6 +109,17 @@
   to { opacity: 1; }
 }
 
+/* Ambient drift for the one spotlight. Uses the independent `scale` property,
+   not `transform`, so the spotlight's positioning translate survives. Opt-in
+   via <Spotlight breathe /> and neutralized in the reduced-motion block below. */
+@keyframes spotlight-breathe {
+  from { scale: 1; }
+  to { scale: 1.04; }
+}
+.spotlight-breathe {
+  animation: spotlight-breathe 12s ease-in-out infinite alternate;
+}
+
 /* Reveal. The resting state is VISIBLE: an element with no `data-reveal`
    attribute has no transition and no transform, so no-JS, no-observer, and
    server renders show finished content. `Reveal` only adds the attribute from
@@ -128,6 +139,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .spotlight-breathe {
+    animation: none;
+    scale: none;
+  }
   [data-reveal] {
     transition: none;
     transition-delay: 0ms !important;

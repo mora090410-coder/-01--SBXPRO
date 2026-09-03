@@ -1,7 +1,9 @@
 import React from 'react';
-import { render, screen, within } from '@testing-library/react';
+import { render, renderHook, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { Spotlight } from '../../src/design/primitives';
+import { useParallax } from '../../src/features/homepage/atmosphere/useParallax';
 import Homepage from '../../src/features/homepage/Homepage';
 
 const renderPage = () => render(<MemoryRouter><Homepage /></MemoryRouter>);
@@ -69,5 +71,89 @@ describe('Homepage', () => {
     expect(screen.getByRole('contentinfo')).toBeInTheDocument();
     expect(screen.getByRole('main')).not.toContainElement(screen.getByRole('contentinfo'));
     expect(screen.getAllByText('+').length).toBe(4);
+  });
+});
+
+describe('Hero atmosphere', () => {
+  const setMatchMedia = (answer: (query: string) => boolean) => {
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      configurable: true,
+      value: (query: string) => ({
+        matches: answer(query),
+        media: query,
+        onchange: null,
+        addListener: () => {},
+        removeListener: () => {},
+        addEventListener: () => {},
+        removeEventListener: () => {},
+        dispatchEvent: () => false,
+      }),
+    });
+  };
+
+  const original = window.matchMedia;
+  afterEach(() => {
+    Object.defineProperty(window, 'matchMedia', { writable: true, configurable: true, value: original });
+    vi.restoreAllMocks();
+  });
+
+  it('keeps exactly one h1 and both calls to action inside the first viewport', () => {
+    renderPage();
+    const hero = screen.getByTestId('homepage-first-viewport');
+    expect(within(hero).getAllByRole('heading', { level: 1 })).toHaveLength(1);
+    expect(within(hero).getByRole('link', { name: 'Create your free board' })).toBeInTheDocument();
+    expect(within(hero).getByRole('link', { name: 'See a live board' })).toBeInTheDocument();
+  });
+
+  it('useParallax attaches no scroll listener and writes nothing under reduced motion', () => {
+    setMatchMedia((q) => q.includes('prefers-reduced-motion') || q.includes('min-width'));
+    const add = vi.spyOn(window, 'addEventListener');
+    const { result } = renderHook(() => useParallax<HTMLDivElement>({ maxPx: 40, rotateFromDeg: -3, rotateToDeg: -1 }));
+    const node = document.createElement('div');
+    result.current.current = node;
+    expect(add.mock.calls.filter(([type]) => type === 'scroll')).toHaveLength(0);
+    expect(node.style.transform).toBe('');
+  });
+
+  it('useParallax is inert below the md breakpoint', () => {
+    setMatchMedia(() => false);
+    const add = vi.spyOn(window, 'addEventListener');
+    renderHook(() => useParallax<HTMLDivElement>({ maxPx: 40 }));
+    expect(add.mock.calls.filter(([type]) => type === 'scroll')).toHaveLength(0);
+  });
+
+  it('useParallax writes a vertical-only transform on desktop and cleans up on unmount', () => {
+    setMatchMedia((q) => q.includes('min-width'));
+    const add = vi.spyOn(window, 'addEventListener');
+    const remove = vi.spyOn(window, 'removeEventListener');
+    const Probe = () => {
+      const ref = useParallax<HTMLDivElement>({ maxPx: 40, rotateFromDeg: -3, rotateToDeg: -1 });
+      return <div ref={ref} data-testid="probe" />;
+    };
+    const view = render(<Probe />);
+    const probe = screen.getByTestId('probe');
+    expect(add.mock.calls.filter(([type]) => type === 'scroll')).toHaveLength(1);
+    expect(add.mock.calls.find(([type]) => type === 'scroll')?.[2]).toEqual({ passive: true });
+    expect(probe.style.transform).toContain('translate3d(0,');
+    expect(probe.style.transform).toContain('rotate(-3.000deg)');
+    expect(probe.style.transform).not.toMatch(/translateX|translate3d\((?!0,)/);
+    view.unmount();
+    expect(remove.mock.calls.filter(([type]) => type === 'scroll')).toHaveLength(1);
+  });
+
+  it('Spotlight breathes only when motion is allowed', () => {
+    setMatchMedia(() => false);
+    const { container, unmount } = render(<Spotlight breathe />);
+    expect(container.firstElementChild?.className).toContain('spotlight-breathe');
+    unmount();
+
+    setMatchMedia((q) => q.includes('prefers-reduced-motion'));
+    const reduced = render(<Spotlight breathe />);
+    expect(reduced.container.firstElementChild?.className).not.toContain('spotlight-breathe');
+    reduced.unmount();
+
+    const plain = render(<Spotlight />);
+    expect(plain.container.firstElementChild?.className).not.toContain('spotlight-breathe');
   });
 });

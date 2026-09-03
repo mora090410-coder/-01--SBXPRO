@@ -1,5 +1,5 @@
 import React from 'react';
-import { Base } from '../../design/primitives';
+import { Base, Grain } from '../../design/primitives';
 import { Footer } from './sections/Footer';
 import { Hero } from './sections/Hero';
 import { OrganizerSection } from './sections/OrganizerSection';
@@ -10,6 +10,7 @@ import { ScoreSection } from './sections/ScoreSection';
 export default function Homepage() {
   return (
     <Base kind="dark" className="overflow-x-hidden">
+      <Grain />
       <div className="mx-auto max-w-[1200px]">
         <main data-testid="homepage">
           <Hero />
