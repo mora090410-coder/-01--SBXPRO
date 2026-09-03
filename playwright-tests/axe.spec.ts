@@ -30,6 +30,8 @@ const settle = async (page: Page) => {
     await page.waitForTimeout(80);
   }
   await page.evaluate(() => window.scrollTo(0, 0));
+  // Scrolling triggers the lazy homepage chunks; wait for them to land before analysing.
+  await page.waitForLoadState('networkidle');
   await page.waitForTimeout(600);
 };
 
