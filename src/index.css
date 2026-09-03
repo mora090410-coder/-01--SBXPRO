@@ -38,13 +38,8 @@
     /* Core design tokens */
     --gridone-color-background: #0E0F12;
 
-    --gridone-color-brand-primary-subtle: color-mix(in srgb, #8F1D2C 15%, #EFF0F1);
-
-    /* ── "On Air" world — the legacy broadcast package still worn by the
-       pre-redesign screens (board view, create, share). ── */
+    /* Deep cardinal fill for the button background re-assertion below. */
     --gridone-color-brand-primary-deep: #6E1622;
-    --gridone-font-condensed: "Archivo", "Helvetica Neue", "Arial Narrow", Arial, sans-serif;
-    --gridone-font-data: "Chivo Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 
     --gridone-color-text-primary: #EFF0F1;
 
@@ -56,9 +51,6 @@
 
     /* App aliases so current styling stays visually stable */
     --color-background: var(--gridone-color-background);
-    --color-cardinal-subtle: var(--gridone-color-brand-primary-subtle);
-    --font-condensed: var(--gridone-font-condensed);
-    --font-data: var(--gridone-font-data);
     --color-text-primary: var(--gridone-color-text-primary);
 }
 
@@ -69,35 +61,16 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════
-   "ON AIR" — broadcast graphics package. See DESIGN.md.
-   Invariants: soft controls (8px) and surfaces (12px), one raised elevation,
-   no pills, no gradient, no blur, and no translucent content surfaces.
-   The 10×10 grid stays deliberately sharp at 0px. Depth is otherwise opaque
-   planes + 3px key lines.
+   Cascade guards for the Broadcast Glass surfaces. See DESIGN.md.
 
    Deliberately UNLAYERED. Tailwind's preflight (@layer base) resets
    headings to `font-size: inherit`, so layered component rules lose to it.
    Unlayered CSS wins the cascade regardless of layer order, so these hold.
    ══════════════════════════════════════════════════════════════════ */
 
-    /* On Air surfaces opt into the light working field. */
-    body:has(.oa-root) {
-        background-color: var(--color-broadcast-white);
-        background-image: none;
-    }
-
-    /* On Air surfaces default bare text to Archivo (the body voice), not the
-       inherited Tailwind `font-sans` utility (ui-sans-serif) or legacy Inter.
-       Unlayered, so it wins over the `font-sans` utility on article roots.
-       Elements with oa-slab/oa-headline/oa-data set their own family. */
-    .oa-root {
-        font-family: var(--font-condensed);
-        font-variation-settings: 'wdth' 100;
-    }
-
     /* Tailwind preflight resets <button> background to transparent, and in this
        setup that reset wins over the layered bg-* utilities — so a bg-cardinal
-       button renders transparent (ink text on nothing). Re-assert the On Air
+       button renders transparent (ink text on nothing). Re-assert the brand
        fills for buttons at element+class specificity so utilities paint them. */
     button.bg-cardinal { background-color: var(--color-cardinal); }
     button.bg-cardinal-deep { background-color: var(--gridone-color-brand-primary-deep); }
@@ -106,100 +79,6 @@
     button.bg-gold { background-color: var(--color-gold); }
     button.bg-ink { background-color: var(--color-ink); }
     button.bg-chyron { background-color: var(--color-chyron); }
-
-    .oa-headline {
-        font-family: var(--font-condensed);
-        font-variation-settings: 'wdth' 82;
-        font-weight: 800;
-        text-transform: uppercase;
-        line-height: 1;
-        letter-spacing: -0.01em;
-        font-size: clamp(1.5rem, 3.5vw, 2.5rem);
-    }
-
-    .oa-slab {
-        font-family: var(--font-condensed);
-        font-variation-settings: 'wdth' 100;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        font-size: 0.8125rem;
-        line-height: 1;
-    }
-
-    .oa-data {
-        font-family: var(--font-data);
-        font-weight: 600;
-        font-variant-numeric: tabular-nums;
-        letter-spacing: 0;
-    }
-
-    .oa-body {
-        font-family: var(--font-condensed);
-        font-variation-settings: 'wdth' 100;
-        font-weight: 400;
-        font-size: 1.0625rem;
-        line-height: 1.5;
-    }
-
-    /* Buttons ── one uppercase primary cue; quieter sentence-case support. */
-    .oa-btn {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        font-family: var(--font-condensed);
-        font-variation-settings: 'wdth' 100;
-        min-height: 44px;
-        font-weight: 600;
-        text-transform: none;
-        letter-spacing: 0;
-        font-size: 0.8125rem;
-        line-height: 1;
-        white-space: nowrap;
-        border-radius: var(--gridone-radius-control);
-        padding: 13px 20px;
-        border: 1px solid transparent;
-        cursor: pointer;
-        transition: background-color 160ms linear, border-color 160ms linear, color 160ms linear;
-    }
-
-    .oa-btn-primary,
-    .oa-btn-cardinal {
-        padding: 14px 26px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-    }
-
-    .oa-btn-primary {
-        background: var(--color-gold);
-        color: var(--color-ink);
-    }
-
-    .oa-btn-cardinal {
-        background: var(--color-cardinal);
-        color: var(--color-broadcast-white);
-    }
-
-    .oa-btn-primary:hover {
-        background: var(--color-gold-deep);
-        border-color: var(--color-ink);
-    }
-
-    .oa-btn-cardinal:hover {
-        background: var(--color-cardinal-deep);
-        border-color: var(--color-ink);
-    }
-
-    .oa-btn-ghost {
-        background: var(--color-broadcast-white);
-        color: var(--color-ink);
-        border: 1px solid var(--color-ink);
-    }
-
-    .oa-btn-ghost:hover {
-        background: var(--color-newsprint);
-    }
 
     /* Focus is a system-wide 3px ink rule, not a per-component afterthought.
        Inverts to gold on dark and cardinal grounds. */

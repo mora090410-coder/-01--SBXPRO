@@ -70,4 +70,4 @@ JS constants and `useReducedMotion()` live in `src/design/primitives/motion.ts`.
 
 ## Legacy
 
-The `--gridone-*` variables and `font-condensed` / `font-data` aliases in `src/index.css` support surfaces scheduled for deletion in stages 3–5 of the redesign. Do not use them in new code.
+The remaining `--gridone-*` variables in `src/index.css` back the unlayered cascade guards there (button fill re-assertion, dialog and organizer-header elevation, sharp board radius). The `Archivo` / `Chivo Mono` families and their `font-condensed` / `font-data` aliases are gone. Do not add new `--gridone-*` variables; use the `--g-*` tokens above.
