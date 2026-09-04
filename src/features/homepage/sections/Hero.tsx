@@ -18,7 +18,7 @@ export function Hero() {
   const artifact = useParallax<HTMLDivElement>({ maxPx: 40, rotateFromDeg: 3, rotateToDeg: 1 });
 
   return (
-    <section data-testid="homepage-first-viewport" className="relative overflow-hidden">
+    <section data-testid="homepage-first-viewport" className="relative overflow-x-clip">
       {/* Ambient ground tone. Content below carries `relative z-10` so the tint stays behind it. */}
       <SectionTone tone="cardinal" side="right" />
 

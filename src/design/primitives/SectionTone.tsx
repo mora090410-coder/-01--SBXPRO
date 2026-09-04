@@ -32,9 +32,15 @@ const TINT: Record<SectionToneName, string> = {
  * even at full token alpha, which is well above the 0.75 layer opacity here.
  *
  * The section it sits in is full-bleed: only the section's CONTENT is capped at
- * 1200px. If the section were width-capped instead, `overflow-hidden` would clip
- * this blob at the column edge and the tint would read as a lit rectangle rather
- * than as light in the room. Keep the clip off-screen.
+ * 1200px. If the section were width-capped instead, the clip would cut this blob
+ * at the column edge and the tint would read as a lit rectangle rather than as
+ * light in the room. Keep the clip off-screen.
+ *
+ * Clip the host on the X AXIS ONLY (`overflow-x-clip`, not `overflow-hidden`).
+ * X keeps the edge-anchored blob from widening the document. Leaving Y visible
+ * lets the radial fade into the sections above and below instead of being cut
+ * at a hard horizontal seam — the blob is taller than most sections, so
+ * `overflow-hidden` leaves a visible band edge at every section boundary.
  */
 export function SectionTone({ tone, side = 'right', className = '' }: SectionToneProps) {
   const edge = side === 'left' ? 'left-0 -translate-x-1/2' : 'right-0 translate-x-1/2';

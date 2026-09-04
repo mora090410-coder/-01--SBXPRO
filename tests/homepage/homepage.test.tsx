@@ -220,7 +220,7 @@ describe('Pricing bookend and list interactions', () => {
   it('closes the colour loop with a cardinal tone and leaves the final call to action untinted', () => {
     const { container } = renderClose();
     const plans = screen.getByRole('region', { name: 'Plans' });
-    const priceSection = plans.closest('section[class*="overflow-hidden"]');
+    const priceSection = plans.closest('section[class*="overflow-x-clip"]');
     expect(priceSection).not.toBeNull();
 
     // The tint is decorative: never read, never clickable, always behind content.
@@ -230,7 +230,8 @@ describe('Pricing bookend and list interactions', () => {
     // Edge-anchored on the left, and the section clips so the page cannot widen.
     expect(tint!.className).toContain('left-0');
     expect(priceSection!.className).toContain('relative');
-    expect(priceSection!.className).toContain('overflow-hidden');
+    // X-only clip: stops the blob widening the page, lets it fade vertically.
+    expect(priceSection!.className).toContain('overflow-x-clip');
     for (const child of Array.from(priceSection!.children)) {
       if (child === tint) continue;
       expect(child.className).toContain('relative z-10');

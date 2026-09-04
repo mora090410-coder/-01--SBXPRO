@@ -62,7 +62,7 @@ export function PriceAndClose() {
       {/* Cardinal on the left edge, closing the loop the hero opened on the right.
           The section clips and its content carries `relative z-10`, so the
           edge-anchored tint sits behind the copy and can never widen the page. */}
-      <section className="relative overflow-hidden">
+      <section className="relative overflow-x-clip">
         <SectionTone tone="cardinal" side="left" />
         {/* Full-bleed section, capped content: the tone clips off-screen, not at
             a 1200px column edge. Padding lives inside the cap, so the column is

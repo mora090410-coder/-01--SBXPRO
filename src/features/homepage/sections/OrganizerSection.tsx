@@ -4,7 +4,7 @@ import { OrganizerPreview } from '../renders/OrganizerPreview';
 
 export function OrganizerSection() {
   return (
-    <section className="relative overflow-hidden">
+    <section className="relative overflow-x-clip">
       <SectionTone tone="gold" side="right" />
       {/* Full-bleed section, capped content: the tone clips off-screen, not at
           a 1200px column edge. Padding lives inside the cap, so the column is

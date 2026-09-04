@@ -4,7 +4,7 @@ import { ScoreMoment } from '../artifacts/ScoreMoment';
 
 export function ScoreSection() {
   return (
-    <section className="relative overflow-hidden">
+    <section className="relative overflow-x-clip">
       <SectionTone tone="live" side="left" />
       {/* Full-bleed section, capped content: the tone clips off-screen, not at
           a 1200px column edge. Padding lives inside the cap, so the column is
