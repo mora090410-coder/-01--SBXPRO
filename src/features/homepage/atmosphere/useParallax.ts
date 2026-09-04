@@ -28,8 +28,10 @@ const DESKTOP = '(min-width: 768px)';
  *     at 3deg + 3deg = 6deg. Writing `rotate` replaces the class value, which
  *     is what the caller means.
  *  2. `translate` is applied BEFORE `rotate`, so the travel is exactly
- *     vertical. Inside a `transform` string the translate ran in the already
- *     rotated coordinate space and leaked a couple of real horizontal pixels.
+ *     vertical. Previously the element's CLASS rotation (`rotate: 3deg`) was
+ *     applied before the `transform` property, so the translate inside that
+ *     string ran in an already rotated frame and leaked 40*sin(3deg) ~ 2px of
+ *     real horizontal displacement.
  *
  * Writes are coalesced into one `requestAnimationFrame` per frame and the
  * scroll listener is `passive`. The first write happens in `useLayoutEffect`,
