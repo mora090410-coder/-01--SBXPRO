@@ -7,6 +7,7 @@ const liveCopyFiles = [
   'src/features/homepage/pricing.ts',
   'src/features/homepage/demoData.ts',
   'src/features/homepage/sections/Hero.tsx',
+  'src/features/homepage/sections/BoardFillSection.tsx',
   'src/features/homepage/sections/ScoreSection.tsx',
   'src/features/homepage/sections/ParentMoments.tsx',
   'src/features/homepage/sections/OrganizerSection.tsx',

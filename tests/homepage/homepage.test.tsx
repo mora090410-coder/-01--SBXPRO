@@ -4,6 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Spotlight } from '../../src/design/primitives';
 import { useParallax } from '../../src/features/homepage/atmosphere/useParallax';
+import { useScrollProgress } from '../../src/features/homepage/atmosphere/useScrollProgress';
 import Homepage from '../../src/features/homepage/Homepage';
 
 const renderPage = () => render(<MemoryRouter><Homepage /></MemoryRouter>);
@@ -325,5 +326,204 @@ describe('Pricing bookend and list interactions', () => {
     expect(link.className).toContain('bg-[length:0%_1px]');
     expect(link.className).toContain('hover:bg-[length:100%_1px]');
     expect(link.className).toContain('transition-[background-size,color]');
+  });
+});
+
+describe('The board fills as you scroll', () => {
+  const setMatchMedia = (answer: (query: string) => boolean) => {
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      configurable: true,
+      value: (query: string) => ({
+        matches: answer(query),
+        media: query,
+        onchange: null,
+        addListener: () => {},
+        removeListener: () => {},
+        addEventListener: () => {},
+        removeEventListener: () => {},
+        dispatchEvent: () => false,
+      }),
+    });
+  };
+
+  /** A minimal observer, so `BoardFill` and `Reveal` can arm at all. */
+  const stubObserver = () => {
+    class Stub {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+      takeRecords() { return []; }
+      root = null;
+      rootMargin = '';
+      thresholds: number[] = [];
+    }
+    vi.stubGlobal('IntersectionObserver', Stub);
+  };
+
+  /** A detached element plus a stable ref to it, the way the section holds one. */
+  const probe = () => {
+    const el = document.createElement('div');
+    return { el, ref: { current: el } as React.RefObject<HTMLDivElement | null> };
+  };
+
+  /** A track whose rect we control, since jsdom does no layout at all. */
+  const track = (top: number, height: number) => {
+    const el = document.createElement('div');
+    el.getBoundingClientRect = () => ({
+      top, height, bottom: top + height, left: 0, right: 0, width: 0, x: 0, y: top,
+      toJSON: () => ({}),
+    }) as DOMRect;
+    return { current: el } as React.RefObject<HTMLDivElement | null>;
+  };
+
+  const FACTS = [
+    '100 squares. Your group fills them.',
+    'OPEN stays visible, so nobody argues about who had what.',
+    'Numbers are drawn only once the board is full.',
+  ];
+
+  const original = window.matchMedia;
+  afterEach(() => {
+    Object.defineProperty(window, 'matchMedia', { writable: true, configurable: true, value: original });
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it('renders the finished board and all three facts under reduced motion', () => {
+    // Reduced motion AND a desktop viewport AND an observer: every ingredient
+    // for the animation is present except permission, and the reader still gets
+    // the whole thing, finished, without scrolling.
+    setMatchMedia((q) => q.includes('prefers-reduced-motion') || q.includes('min-width'));
+    stubObserver();
+    renderPage();
+
+    const section = screen.getByTestId('board-fill-section');
+    const board = within(section).getByRole('img');
+    expect(board).toHaveAccessibleName(/full 100-square board/);
+    // The resting state is the finished board: no attribute, no property.
+    expect(board).not.toHaveAttribute('data-fill');
+    expect(board.style.getPropertyValue('--fill-progress')).toBe('');
+    expect(board.querySelectorAll('[data-fill-cell]')).toHaveLength(100);
+    expect(within(section).getAllByText('OPEN').length).toBeGreaterThan(0);
+
+    for (const fact of FACTS) expect(within(section).getByText(fact)).toBeInTheDocument();
+    expect(section.querySelectorAll('[data-reveal]')).toHaveLength(0);
+  });
+
+  it('renders the finished board and all three facts with no observer at all', () => {
+    setMatchMedia(() => false);
+    renderPage();
+    const section = screen.getByTestId('board-fill-section');
+    expect(within(section).getByRole('img')).not.toHaveAttribute('data-fill');
+    for (const fact of FACTS) expect(within(section).getByText(fact)).toBeInTheDocument();
+  });
+
+  it('is full-bleed with capped content, and pins the board only from md up', () => {
+    renderPage();
+    const section = screen.getByTestId('board-fill-section');
+    expect(section.className).toContain('relative');
+    expect(section.className).toContain('overflow-x-clip');
+    expect(section.querySelector('[class*="max-w-[1200px]"]')).not.toBeNull();
+
+    // A phone must not fight a pinned element: the sticky is `md:` only.
+    const pinned = within(section).getByRole('img').parentElement!;
+    expect(pinned.className).toContain('md:sticky');
+    expect(pinned.className).toContain('md:top-24');
+    expect(pinned.className).not.toMatch(/(^|\s)(sticky|fixed)(\s|$)/);
+  });
+
+  it('clips the page root rather than hiding it, so the sticky board can pin at all', () => {
+    // `overflow-x: hidden` forces the other axis to `auto`, making the page root
+    // a scroll container — and `position: sticky` resolves against the nearest
+    // scroll container. With `hidden` the board tracked the page instead of
+    // holding at `top-24`. This is the fence around that regression.
+    const { container } = renderPage();
+    const base = container.querySelector('[data-base]')!;
+    expect(base.className).toContain('overflow-x-clip');
+    expect(base.className).not.toContain('overflow-x-hidden');
+  });
+
+  it('useScrollProgress attaches nothing and writes nothing under reduced motion', () => {
+    setMatchMedia((q) => q.includes('prefers-reduced-motion') || q.includes('min-width'));
+    const add = vi.spyOn(window, 'addEventListener');
+    const { el, ref } = probe();
+    const { result } = renderHook(() => useScrollProgress({ ref, trackRef: track(-100, 2000) }));
+    expect(result.current).toBeUndefined();
+    expect(add.mock.calls.filter(([type]) => type === 'scroll')).toHaveLength(0);
+    expect(el.style.getPropertyValue('--fill-progress')).toBe('');
+    expect(el.getAttribute('style')).toBeNull();
+  });
+
+  it('useScrollProgress attaches nothing and writes nothing when disabled', () => {
+    setMatchMedia((q) => q.includes('min-width'));
+    const add = vi.spyOn(window, 'addEventListener');
+    const { el, ref } = probe();
+    renderHook(() => useScrollProgress({ ref, trackRef: track(-100, 2000), disabled: true }));
+    expect(add.mock.calls.filter(([type]) => type === 'scroll')).toHaveLength(0);
+    expect(el.style.getPropertyValue('--fill-progress')).toBe('');
+  });
+
+  it('useScrollProgress is inert below the md breakpoint', () => {
+    setMatchMedia(() => false);
+    const add = vi.spyOn(window, 'addEventListener');
+    const { el, ref } = probe();
+    renderHook(() => useScrollProgress({ ref, trackRef: track(-100, 2000) }));
+    expect(add.mock.calls.filter(([type]) => type === 'scroll')).toHaveLength(0);
+    expect(el.style.getPropertyValue('--fill-progress')).toBe('');
+  });
+
+  it('useScrollProgress writes one custom property passively and clears it on unmount', () => {
+    setMatchMedia((q) => q.includes('min-width'));
+    const add = vi.spyOn(window, 'addEventListener');
+    const remove = vi.spyOn(window, 'removeEventListener');
+    const { el, ref } = probe();
+    const view = renderHook(() => useScrollProgress({ ref, trackRef: track(-100, 2000) }));
+
+    const scroll = add.mock.calls.filter(([type]) => type === 'scroll');
+    expect(scroll).toHaveLength(1);
+    expect(scroll[0][2]).toEqual({ passive: true });
+
+    // The first write happens in useLayoutEffect, before paint, so a page
+    // loaded already scrolled is correct on its first frame.
+    const value = Number(el.style.getPropertyValue('--fill-progress'));
+    expect(value).toBeGreaterThan(0);
+    expect(value).toBeLessThan(1);
+    // ONE property, and nothing else. No transform, no opacity, no class.
+    expect(el.getAttribute('style')).toBe('--fill-progress: ' + el.style.getPropertyValue('--fill-progress') + ';');
+
+    view.unmount();
+    expect(remove.mock.calls.filter(([type]) => type === 'scroll')).toHaveLength(1);
+    expect(el.style.getPropertyValue('--fill-progress')).toBe('');
+  });
+
+  it('useScrollProgress clamps to 0 before the section arrives and to 1 once it is through', () => {
+    setMatchMedia((q) => q.includes('min-width'));
+    const below = probe();
+    renderHook(() => useScrollProgress({ ref: below.ref, trackRef: track(10_000, 2000) }));
+    expect(Number(below.el.style.getPropertyValue('--fill-progress'))).toBe(0);
+
+    const past = probe();
+    renderHook(() => useScrollProgress({ ref: past.ref, trackRef: track(-10_000, 2000) }));
+    expect(Number(past.el.style.getPropertyValue('--fill-progress'))).toBe(1);
+
+    // A section shorter than the fill window has no travel to spend, so it is
+    // finished rather than stuck at zero.
+    const short = probe();
+    renderHook(() => useScrollProgress({ ref: short.ref, trackRef: track(0, 10) }));
+    expect(Number(short.el.style.getPropertyValue('--fill-progress'))).toBe(1);
+  });
+
+  it('drives the board root itself on desktop, never a wrapper', () => {
+    setMatchMedia((q) => q.includes('min-width'));
+    stubObserver();
+    renderPage();
+
+    const board = within(screen.getByTestId('board-fill-section')).getByRole('img');
+    // Same node carries the arming attribute and the driven value: an element's
+    // own custom property shadows an inherited one, so a wrapper would not work.
+    expect(board).toHaveAttribute('data-fill', 'on');
+    expect(board.style.getPropertyValue('--fill-progress')).not.toBe('');
+    expect(board.parentElement!.style.getPropertyValue('--fill-progress')).toBe('');
   });
 });
