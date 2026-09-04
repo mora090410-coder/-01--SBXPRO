@@ -22,6 +22,8 @@ const liveCopyFiles = [
   'src/features/homepage/renders/ScenariosInner.tsx',
   'src/features/homepage/artifacts/ScoreMoment.tsx',
   'src/features/homepage/artifacts/BoardFragment.tsx',
+  'src/features/homepage/artifacts/BoardFill.tsx',
+  'src/features/homepage/artifacts/fillOrder.ts',
   'src/features/site/SiteHeader.tsx',
   'src/features/site/SiteFooter.tsx',
   'src/features/site/SitePage.tsx',
