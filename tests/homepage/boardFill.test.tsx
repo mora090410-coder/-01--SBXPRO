@@ -260,7 +260,7 @@ describe('BoardFill CSS contract', () => {
     const axis = block(css, '[data-fill="on"] .board-fill-axis');
     expect(axis).toContain('digit-roll');
     expect(axis).toContain('paused');
-    expect(axis).toMatch(/animation-delay:\s*calc\(\(var\(--fill-progress\) - var\(--fill-threshold\)\) \* -10s\)/);
+    expect(axis).toMatch(/animation-delay:\s*calc\(\(var\(--fill-progress\) - var\(--fill-threshold\)\) \* -20s\)/);
   });
 
   it('neutralizes the whole fill under reduced motion and in print', () => {

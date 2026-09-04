@@ -212,7 +212,12 @@
    positive-delay phase, which is every frame before the digit's threshold. */
 [data-fill="on"] .board-fill-axis {
   animation: digit-roll 1s var(--g-ease-state) both paused;
-  animation-delay: calc((var(--fill-progress) - var(--fill-threshold)) * -10s);
+  /* -20s, not -10s: the ramp must finish the last digit before progress
+     reaches exactly 1.0. A driver that plateaus at 0.95 would otherwise rest
+     the axis rows permanently half-rolled, with no way for the reader to
+     finish them. The squares already carry that slack; this gives it to the
+     digits too. */
+  animation-delay: calc((var(--fill-progress) - var(--fill-threshold)) * -20s);
 }
 
 /* Reveal. The resting state is VISIBLE: an element with no `data-reveal`

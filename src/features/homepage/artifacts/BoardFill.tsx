@@ -86,7 +86,9 @@ export function BoardFill({ progress, className = '', ref }: BoardFillProps) {
     // Written imperatively rather than through `style`, so a scroll driver
     // holding the same element can keep writing it without React reclaiming
     // the value on its next render.
-    node.style.setProperty('--fill-progress', String(progress));
+    // Clamped: a negative value would hold `digit-roll`'s from-state and floor
+    // every square, blanking the board through the component's own prop.
+    node.style.setProperty('--fill-progress', String(Math.min(1, Math.max(0, progress))));
     return () => {
       node.removeAttribute('data-fill');
       node.style.removeProperty('--fill-progress');
