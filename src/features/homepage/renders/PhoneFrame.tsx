@@ -44,20 +44,43 @@ export interface PhoneFrameProps {
  * static decoration — no animation, no hover state — so there is nothing here
  * for `prefers-reduced-motion` to switch off.
  *
+ * Exported so every framed artifact on the page carries the same edge from one
+ * definition: the two phone aspects here, and the organizer preview's own
+ * frame in `OrganizerPreview.tsx`. Sharing the class, not the CSS.
+ *
  * `relative` is the rim's containing block and nothing else: `position:
  * relative` with no offsets moves no pixel and changes no box size, and the
  * rim itself is an absolutely positioned pseudo-element inside a frame that
  * already clips, so it can add neither height, width, nor horizontal overflow.
- * `relative` sits at the FRONT of the class list, before the caller's
- * `className`, so a caller that positions the frame itself still wins.
+ *
+ * It is NOT defensive against a caller who positions the frame. Where a class
+ * sits in the `class` attribute has no bearing on the cascade — only the order
+ * the rules are emitted in the stylesheet does — and Tailwind emits `.relative`
+ * AFTER both `.absolute` and `.fixed`. So a caller passing either would lose to
+ * this `relative` at equal specificity, and the frame would not move where the
+ * caller asked. No caller does that today (all three pass sizing and spacing
+ * only); a future one that needs to position a framed artifact has to wrap it
+ * rather than pass a position class down.
+ *
+ * `isolate` gives the frame its own stacking context, which is what makes the
+ * pseudo-element's `z-index: 1` mean "above this frame's contents" instead of
+ * quietly joining an ancestor's context. `overflow-hidden` already kept the rim
+ * from escaping, so this is scoping made explicit rather than a bug fix.
  */
-const RIM = 'relative device-rim';
+export const RIM = 'relative isolate device-rim';
 
 /**
  * A real component rendered as a picture: the inner region is `inert` and `aria-hidden`,
  * so nothing inside can be clicked, focused, or read, and the caption carries the meaning.
  *
  * The frame lifts slightly on hover via the shared `HOVER_LIFT` above.
+ *
+ * The corner radius is `Glass`'s `rounded-card` (20px) and the rim inherits it.
+ * A `rounded-[32px]` used to ride along here; it never took effect, because
+ * Tailwind emits the theme utility after the arbitrary one and `rounded-card`
+ * won, so the frames have shipped at 20px from the start. It is deleted rather
+ * than made real: 20px is what was designed against and reviewed, and it is the
+ * radius every other artifact on the page already uses.
  */
 export function PhoneFrame({ children, caption, className = '', aspect = 'phone' }: PhoneFrameProps) {
   if (aspect === 'auto') {
@@ -66,7 +89,7 @@ export function PhoneFrame({ children, caption, className = '', aspect = 'phone'
         as="figure"
         padding="lg"
         style={HOVER_LIFT_STYLE}
-        className={`${RIM} w-full max-w-[390px] min-h-[220px] overflow-hidden rounded-[32px] ${HOVER_LIFT} ${className}`.trim()}
+        className={`${RIM} w-full max-w-[390px] min-h-[220px] overflow-hidden ${HOVER_LIFT} ${className}`.trim()}
       >
         {/* `isolate` keeps the picture's own stacking context below the rim.
             Without it a positioned descendant with its own z-index could paint
@@ -82,7 +105,7 @@ export function PhoneFrame({ children, caption, className = '', aspect = 'phone'
       as="figure"
       padding="none"
       style={HOVER_LIFT_STYLE}
-      className={`${RIM} w-[300px] max-w-full aspect-[390/780] overflow-hidden rounded-[32px] ${HOVER_LIFT} ${className}`.trim()}
+      className={`${RIM} w-[300px] max-w-full aspect-[390/780] overflow-hidden ${HOVER_LIFT} ${className}`.trim()}
     >
       {/* The 390 -> 300 downscale is a bare `transform` on purpose: this inner element
           carries no `scale-*`/`translate-*`/`rotate-*` class, so there is nothing for it

@@ -54,7 +54,7 @@ Large, soft ground light for one section. Derived with `color-mix` from the lock
 
 ### Rim light
 
-A hard, ~1px specular edge along the top-left of the homepage device frame (`.device-rim`, consumed by `PhoneFrame`). One hue — white — at three alphas, so it is a highlight and not a second color. Static and decorative: no animation, no hover state, nothing for reduced motion to switch off.
+A hard, ~1px specular edge along the top-left of every framed artifact on the homepage (`.device-rim`, exported as `RIM` from `PhoneFrame` and applied by both phone aspects and `OrganizerPreview`, so all four frames read alike). One hue — white — at three alphas, so it is a highlight and not a second color. Static and decorative: no animation, no hover state, nothing for reduced motion to switch off. The frames carry no radius of their own — the rim inherits `Glass`'s `rounded-card`, 20px.
 
 | Meaning | CSS variable | Tailwind | Value |
 |---|---|---|---|
