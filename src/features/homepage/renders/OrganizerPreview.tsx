@@ -1,5 +1,6 @@
 import React, { Suspense } from 'react';
 import { Glass } from '../../../design/primitives';
+import { HOVER_LIFT, HOVER_LIFT_STYLE } from './PhoneFrame';
 
 const OrganizerPreviewInner = React.lazy(() => import('./OrganizerPreviewInner'));
 
@@ -12,7 +13,14 @@ export const ORGANIZER_PREVIEW_CAPTION = 'Organizer workspace with 61 of 100 squ
 
 function OrganizerFrame({ children, className = '' }: { children?: React.ReactNode; className?: string }) {
   return (
-    <Glass as="figure" padding="none" className={`w-full max-w-[560px] aspect-[4/3] overflow-hidden ${className}`.trim()}>
+    // The inert render inside is untouched; only the frame gains the shared
+    // hover lift, so this artifact answers the pointer like the phone frames do.
+    <Glass
+      as="figure"
+      padding="none"
+      style={HOVER_LIFT_STYLE}
+      className={`w-full max-w-[560px] aspect-[4/3] overflow-hidden ${HOVER_LIFT} ${className}`.trim()}
+    >
       <div
         inert
         aria-hidden="true"

@@ -25,10 +25,10 @@
 
 | Meaning | CSS variable | Tailwind | Dark | Cream |
 |---|---|---|---|---|
-| Page ground | `--g-ground` | `bg-ground` | `#0B0C0F` | `#F5F1EA` |
-| Panel fill | `--g-panel` | `bg-panel` | white 6% | white 70% |
-| Panel hover | `--g-panel-hover` | `bg-panel-hover` | white 8% | white 85% |
-| Hairline | `--g-hairline` | `border-hairline` | white 10% | ink 8% |
+| Page ground | `--g-ground` | `bg-ground` | `#111318` | `#F5F1EA` |
+| Panel fill | `--g-panel` | `bg-panel` | white 7% | white 70% |
+| Panel hover | `--g-panel-hover` | `bg-panel-hover` | white 10% | white 85% |
+| Hairline | `--g-hairline` | `border-hairline` | white 12% | ink 8% |
 | Text primary | `--g-text` | `text-fg` | broadcast white | ink |
 | Text secondary | `--g-text-2` | `text-fg-2` | 60% | 60% |
 | Text muted | `--g-text-3` | `text-fg-3` | 40% | 40% |
@@ -39,6 +39,18 @@
 | Spotlight | `--g-glow` | used by `Spotlight` | cardinal 55% | gold 30% |
 
 The base is set by `<Base kind="dark" | "cream">` from `src/design/Base.tsx`.
+
+## Ambient tints (`:root`, base-independent)
+
+Large, soft ground light for one section. Derived with `color-mix` from the locked palette (`transparent` first, so a downlevelled build falls back to no tint rather than a full-strength blob), so no new hue enters the system. Consumed only by `SectionTone`.
+
+| Meaning | CSS variable | Tailwind | Value |
+|---|---|---|---|
+| Hero and pricing ambience | `--g-tint-cardinal` | `tint-cardinal` | cardinal 14% |
+| Score-moment ambience | `--g-tint-live` | `tint-live` | live 14% |
+| Organizer ambience | `--g-tint-gold` | `tint-gold` | gold 14% |
+
+14% is a contrast cap, not a taste call. Against the `#111318` ground, the worst case — `--g-text-3` over a full-strength gold tint — is 5.15:1, and `SectionTone` renders the tint at 0.55 layer opacity with radial falloff on top of that, so nothing on screen is ever this strong. Raising the alpha without re-running `tests/design/contrast.test.ts` is a contrast regression.
 
 ## Type
 
@@ -66,7 +78,9 @@ The base is set by `<Base kind="dark" | "cream">` from `src/design/Base.tsx`.
 | Spring duration | `--g-dur-spring` | 450ms |
 | Reduced motion | `--g-dur-reduced` | 120ms, replaces both under `prefers-reduced-motion` |
 
-JS constants and `useReducedMotion()` live in `src/design/primitives/motion.ts`.
+| Reveal state | `[data-reveal]` in `tokens.css` | `pending` = opacity 0 + `translateY(20px)`; `in` = opacity 1 + no transform; **no attribute = visible, untransitioned resting state** |
+
+JS constants and `useReducedMotion()` live in `src/design/primitives/motion.ts`. `Reveal`, `SectionTone`, and `Grain` live in `src/design/primitives/`. The `@media (prefers-reduced-motion: reduce)` block in `tokens.css` neutralizes the reveal transition and the `pending` state, so the attribute can never hide content from a reduced-motion reader.
 
 ## Legacy
 

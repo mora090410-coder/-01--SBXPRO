@@ -14,7 +14,10 @@ const SIZE: Record<Size, string> = {
   lg: 'h-13 px-7 text-[17px]',
 };
 
-const BASE = 'inline-flex items-center justify-center gap-2 rounded-capsule font-ui leading-none select-none transition-[background-color,color,transform] duration-[var(--g-dur-state)] ease-[var(--g-ease-state)] active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action focus-visible:ring-offset-2 focus-visible:ring-offset-ground';
+// The transition list names `scale`, NOT `transform`: Tailwind v4 compiles
+// `motion-safe:active:scale-[0.98]` to the independent `scale` property, so a list naming
+// `transform` transitions nothing and the press snaps.
+const BASE = 'inline-flex items-center justify-center gap-2 rounded-capsule font-ui leading-none select-none transition-[background-color,color,scale] duration-[var(--g-dur-state)] ease-[var(--g-ease-state)] motion-safe:active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action focus-visible:ring-offset-2 focus-visible:ring-offset-ground';
 
 export interface CapsuleButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant;

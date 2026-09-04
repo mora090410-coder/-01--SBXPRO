@@ -8,7 +8,7 @@ import { INITIAL_GAME, EMPTY_BOARD } from '../hooks/usePoolData';
 import ScheduledGamePicker from '../components/ScheduledGamePicker';
 import { Base, CapsuleButton, Eyebrow, Glass, CapsuleInput } from '../src/design/primitives';
 
-const CAPSULE_LINK = 'inline-flex items-center justify-center gap-2 rounded-capsule bg-panel border border-hairline px-5 h-11 font-ui text-[15px] font-semibold leading-none text-fg transition-colors hover:bg-panel-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action focus-visible:ring-offset-2 focus-visible:ring-offset-ground active:scale-[0.98]';
+const CAPSULE_LINK = 'inline-flex items-center justify-center gap-2 rounded-capsule bg-panel border border-hairline px-5 h-11 font-ui text-[15px] font-semibold leading-none text-fg transition-[color,background-color,border-color,scale] hover:bg-panel-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action focus-visible:ring-offset-2 focus-visible:ring-offset-ground motion-safe:active:scale-[0.98]';
 
 const CreateContest: React.FC = () => {
     const { user, session, signOut } = useAuth();

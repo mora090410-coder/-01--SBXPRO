@@ -11,8 +11,64 @@ describe('design tokens', () => {
   });
 
   it('defines both grounds', () => {
-    expect(tokens).toContain('#0B0C0F');
+    expect(tokens).toContain('#14161D');
     expect(tokens).toContain('#F5F1EA');
+  });
+
+  it('lifts the dark ground, panel, and hairline off pure black', () => {
+    const dark = tokens.slice(tokens.indexOf('[data-base="dark"]'), tokens.indexOf('[data-base="cream"]'));
+    expect(dark).toMatch(/--g-ground:\s*#14161D/);
+    expect(dark).toMatch(/--g-panel:\s*rgba\(255,\s*255,\s*255,\s*0\.07\)/);
+    expect(dark).toMatch(/--g-panel-hover:\s*rgba\(255,\s*255,\s*255,\s*0\.10\)/);
+    expect(dark).toMatch(/--g-hairline:\s*rgba\(255,\s*255,\s*255,\s*0\.12\)/);
+  });
+
+  it('leaves the cream base untouched', () => {
+    const cream = tokens.slice(tokens.indexOf('[data-base="cream"]'));
+    expect(cream).toMatch(/--g-ground:\s*#F5F1EA/);
+    expect(cream).toMatch(/--g-panel:\s*rgba\(255,\s*255,\s*255,\s*0\.70\)/);
+    expect(cream).toMatch(/--g-panel-hover:\s*rgba\(255,\s*255,\s*255,\s*0\.85\)/);
+    expect(cream).toMatch(/--g-hairline:\s*rgba\(14,\s*15,\s*18,\s*0\.08\)/);
+  });
+
+  it('derives the three ambient tints from brand colors with color-mix, at 22%', () => {
+    for (const [name, brand] of [
+      ['--g-tint-cardinal', '--g-cardinal'],
+      ['--g-tint-live', '--g-live'],
+      ['--g-tint-gold', '--g-gold'],
+    ] as const) {
+      const re = new RegExp(`${name}:\\s*color-mix\\(in srgb, transparent 78%, var\\(${brand}\\)\\);`);
+      expect(tokens, name).toMatch(re);
+    }
+  });
+
+  it('introduces no hue outside gold, cardinal, live, and neutral', () => {
+    const BRAND_HUES = [44.1, 142.1, 352.1]; // gold, live, cardinal
+    const literals: [number, number, number][] = [];
+    for (const m of tokens.matchAll(/#([0-9a-fA-F]{6})\b/g)) {
+      const h = m[1];
+      literals.push([parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)]);
+    }
+    for (const m of tokens.matchAll(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/g)) {
+      literals.push([Number(m[1]), Number(m[2]), Number(m[3])]);
+    }
+    expect(literals.length).toBeGreaterThan(0);
+
+    for (const [r, g, b] of literals) {
+      const max = Math.max(r, g, b);
+      const min = Math.min(r, g, b);
+      const chroma = max - min;
+      if (chroma <= 12) continue; // neutral: no hue to police
+      let hue: number;
+      if (max === r) hue = 60 * (((g - b) / chroma + 6) % 6);
+      else if (max === g) hue = 60 * ((b - r) / chroma + 2);
+      else hue = 60 * ((r - g) / chroma + 4);
+      const nearest = Math.min(...BRAND_HUES.map((h) => {
+        const d = Math.abs(hue - h);
+        return Math.min(d, 360 - d);
+      }));
+      expect(nearest, `rgb(${r}, ${g}, ${b}) hue ${hue.toFixed(1)} is outside the locked palette`).toBeLessThanOrEqual(10);
+    }
   });
 
   it('defines the radius scale', () => {

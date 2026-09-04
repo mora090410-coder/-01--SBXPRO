@@ -11,7 +11,7 @@ colors:
   neutral-quiet: "#DEE0E1"
   ink: "#0E0F12"
   surface-dark: "#16181D"
-  ground-dark: "#0B0C0F"
+  ground-dark: "#111318"
   ground-cream: "#F5F1EA"
   live: "#22C55E"
 typography:
@@ -104,10 +104,12 @@ Game day should feel like a broadcast graphic on a quiet phone: one number that 
 
 ## Two bases, one palette
 
-- **Dark** (viewer, homepage, article pages): ground `#0B0C0F`, one cardinal spotlight behind the hero artifact, glass panels (white 6%, hairline white 10%, blur 20px). Gold is the only action color. Cardinal appears in the glow, the brand mark, and destructive confirmations with explicit text.
+- **Dark** (viewer, homepage, article pages): ground `#111318`, one cardinal spotlight behind the hero artifact, glass panels (white 7%, hairline white 12%, blur 20px). Gold is the only action color. Cardinal appears in the glow, the brand mark, and destructive confirmations with explicit text.
 - **Cream** (organizer workspace, dashboard): ground `#F5F1EA`, cards white 70% with ink hairline 8%. Cardinal is the action color. Gold marks committed and settled states only.
 - Live green means an in-progress NFL game and nothing else.
 - No state relies on color alone.
+
+**Ambient tone.** A long page may carry color as *light* rather than as chromatic UI: one large, soft, low-alpha ground tint per section, drawn from the same three brand colors, sitting on a section's vertical mid-edge. The landing page journey is cardinal at the hero, live green at the score moment, nothing at all through the parent moments (the deliberate rest), warm gold at the organizer workroom, and cardinal again at pricing to close the loop. The final call to action stays untinted so the last thing on screen is the action. Tints are capped at 14% of their brand color so body text over one still meets AA; they are never a gradient, never a corner, and never carry meaning.
 
 ## Type
 
@@ -124,6 +126,10 @@ Controls 12px. Cards, sheets, glass 20px. Buttons, tags, chips, island: capsule.
 
 State ease 200ms `cubic-bezier(0.2, 0, 0, 1)`. Soft spring ~450ms, no overshoot, for island, sheet, shared-element moves, and the draw. Reduced motion collapses both to a 120ms fade. Routes never hard-swap.
 
+**Reveal is visible by default.** Scroll-entry reveals use `Reveal`, whose *resting* CSS state is finished content: no transform, no opacity change, no transition. The hidden start state is applied only from a `useLayoutEffect` — before paint, so nothing flashes — and only when JS is running, `IntersectionObserver` exists, and motion is allowed. A server render, a no-JS browser, a browser without an observer, and a reduced-motion reader all see the completed page immediately. Reveals animate opacity and `translateY` only, so they can never shift layout.
+
+**Parallax is capped.** Scroll-driven parallax moves vertically only, never horizontally (horizontal transforms change page overflow), is clamped to 40px of travel, and is inert under reduced motion and below the `md` breakpoint.
+
 ## The Island
 
 Capsule hugging the top edge on phone, bottom-right on desktop. Collapsed: rings or score. Expanded on tap or hover: full state and exactly one primary action. Always dark. Keyboard operable; Escape collapses. The island's outer `<section>` is the single named landmark (present even when collapsed); the expanded content is an unnamed region referenced by aria-controls.
@@ -134,7 +140,7 @@ Score freshness is information, not decoration: viewer updates arrive about ever
 
 1. The product is the hero image. No illustrations, stock, or abstract 3D.
 2. Asymmetric, left-anchored layouts on desktop. Centered only on single-column phone.
-3. One spotlight per page, behind the artifact.
+3. One spotlight per page, focused behind the artifact. A section may additionally carry one ambient ground tint (`SectionTone`) — light in the room, not a second spotlight: far larger, far softer, edge-anchored, and never focused on anything. A section may hold both.
 4. Hierarchy from scale contrast, not card count. No three-up feature rows.
 5. Real numbers and real team names everywhere, including empty states.
 6. Icons almost never. When required: one set, one stroke weight, 16px, muted.
