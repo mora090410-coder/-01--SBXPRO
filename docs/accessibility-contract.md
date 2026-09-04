@@ -2,7 +2,7 @@
 
 **Status:** Product, design, and release authority
 **Standard baseline:** WCAG 2.2 Level AA
-**Executable half:** `playwright-tests/accessibility-contract.spec.ts`
+**Executable half:** `playwright-tests/accessibility-contract.spec.ts`, with the homepage motion and reflow contract in `playwright-tests/homepage.spec.ts` and the automated WCAG sweep in `playwright-tests/axe.spec.ts`
 **References:** W3C WCAG 2.2; WAI-ARIA Authoring Practices, grid and modal-dialog patterns
 
 ## Conformance posture
@@ -141,11 +141,13 @@ A blocker and an advisory must never look or sound alike. The organizer's `Befor
 - Disabled meaning is never expressed by low opacity alone.
 - Live, selected, current winner, resolved winner, OPEN, stale, error, and corrected states all carry text or state semantics in addition to color.
 - Forced-colors mode preserves boundaries, focus, and state.
+- Ambient section tints (`SectionTone`, one large soft radial per section in cardinal, live green, or gold) are **light, not UI**. Each is capped so that text over it still meets its normal ratio: the tint token resolves to roughly 14% of its brand color, the layer renders at about 0.55 opacity behind content that carries its own stacking context, and no tint may raise or lower the effective ground past the pairs checked in `tests/design/contrast.test.ts`. A tint carries no meaning — removing every tint must change nothing a reader needs. The axe sweep over `/` and `/demo` reports zero serious and zero critical with the tints in place; a tint that drops any text below AA is a tint that must be reduced, not an exception to be filed.
 - `npm run design:lint` supplements rendered contrast testing; it does not replace it.
 
 ## Reflow, zoom, and text
 
 - At 320 and 390 CSS pixels the page has no horizontal overflow outside the intentional board viewport — asserted at both widths.
+- Scroll-driven motion never widens the document. `document.documentElement.scrollWidth` equals `clientWidth` on the homepage at **390 and 1280 CSS pixels, both before and after a full scroll to the bottom** — asserted at both widths in `playwright-tests/homepage.spec.ts`. Reveals and parallax animate `opacity`, `translate`, and `rotate` on the vertical axis only, and reserve or collapse no space.
 - At 400% browser zoom, content reflows without loss of information or function; the board stays in its controlled viewport.
 - At 200% text scaling, controls, errors, dialogs, and sticky regions remain usable (manual gate).
 - Long participant, organization, board, team, and correction text wraps or truncates with an accessible path to the full value.
@@ -156,6 +158,20 @@ A blocker and an advisory must never look or sound alike. The organizer's `Befor
 - `prefers-reduced-motion` removes non-essential transforms, parallax, score rolls, and cinematic choreography; `src/design/primitives/motion.ts` collapses every duration to `--g-dur-reduced`.
 - Reduced motion preserves all content and state — asserted: with reduced motion forced, the homepage `Scores update themselves.` heading and `Create your free board` link and the viewer's `Find my squares` button all remain reachable.
 - No content flashes above safe thresholds. Motion is interruptible and never required to progress. No autoplaying sound.
+
+### The reveal contract
+
+Scroll reveals (`src/design/primitives/Reveal.tsx`, with the `[data-reveal]` rules in `src/design/tokens.css`) are decoration laid over finished content. They are bound by three rules, in this order:
+
+1. **The resting state is visible.** Markup that carries no `data-reveal` attribute has no transition, no transform, and no opacity change. That is what a server render, a browser with JavaScript off, and a browser without `IntersectionObserver` all receive: the finished section, immediately. The hidden state is an attribute that only running JavaScript can add.
+2. **The hidden state is motion-gated.** `Reveal` applies `data-reveal="pending"` from a `useLayoutEffect` — before paint, so there is no flash in either direction — and only when `prefers-reduced-motion` is not `reduce`. Under reduced motion the element carries no `data-reveal` attribute at all, and the reduced-motion CSS block neutralizes `pending` a second time in case the preference flips after mount.
+3. **The observer is optional.** No content depends on an intersection ever being reported. If `IntersectionObserver` is absent the attribute is never set; if it is present but never fires, the element it governs was never scrolled to.
+
+A reveal may therefore hide only what a reader has not yet reached. It may never gate a landmark, a heading a reader can already see, an error, a status message, or anything focusable that is reachable by `Tab` before the reveal fires.
+
+Asserted in `playwright-tests/homepage.spec.ts`: in a `reducedMotion: 'reduce'` context and **without scrolling at all**, one heading from each of the homepage's six blocks is present at computed `opacity: 1`, and no element in the document carries `data-reveal` in any state. Separately, at 1280 pixels a below-fold section heading sits at `pending` with `opacity: 0` and reaches a computed `opacity: 1` once scrolled into view — polled to a timeout, never slept past. The no-JS test asserts the same headline, actions, and money boundary with JavaScript disabled.
+
+Count-ups, the score pulse, the winning-cell pulse, the spotlight drift, and hero parallax follow the same shape: each renders its true final value when motion is reduced, when JavaScript is off, or when the observer never fires. A number that animates is never the only place that number appears.
 
 ## Loading, stale, offline, and recovery
 
@@ -181,7 +197,8 @@ Required on every release:
 
 - semantic queries in the unit suite — role, label, and text, never class names or test ids where a role exists;
 - `npx playwright test --project=chromium`, which runs `accessibility-contract.spec.ts` over the signed-out auth errors, homepage, demo, published viewer, organizer draft workspace, selection mode, Reconcile, Draw, Preview and Publish, save conflict, viewer authority states, the find-my-squares dialog, board keyboard navigation, 320/390 reflow, reduced motion, and forced colors;
-- zero critical or serious violations from the axe pass, unless an explicit, time-bounded, documented exception is approved;
+- `playwright-tests/homepage.spec.ts`, which carries the homepage reveal and reduced-motion contract, the no-JS fallback, the 390-pixel first viewport, and the 390/1280 overflow-after-scroll checks;
+- zero critical or serious violations from the axe pass over every public route, including `/` and `/demo` with the ambient tints and scroll reveals in place, unless an explicit, time-bounded, documented exception is approved. Suppressing an axe rule to pass is not an exception; it is a removal of the check;
 - `npm run design:lint`.
 
 Add Firefox and WebKit runs before a whole-app release unless a documented environment blocker remains.
