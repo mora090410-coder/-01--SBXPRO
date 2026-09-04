@@ -37,6 +37,11 @@ const DESKTOP = '(min-width: 768px)';
  * scroll listener is `passive`. The first write happens in `useLayoutEffect`,
  * before paint, so a page that loads already scrolled never shows a jump.
  *
+ * The hook also OWNS the `will-change` hint, setting it on attach and clearing
+ * it on detach. Do not put `will-change` on the element as a class: that pins a
+ * compositor layer permanently, on every visitor, including the phones where
+ * this hook is inert and the layer can never pay for itself.
+ *
  * The hook is completely inert — no listener, no frame, no style write — when
  * `disabled`, when `prefers-reduced-motion: reduce` is set, or when the
  * viewport is below `md`. It also SUBSCRIBES to that breakpoint: narrowing a
@@ -87,11 +92,21 @@ export function useParallax<T extends HTMLElement = HTMLDivElement>({
     const attach = () => {
       if (attached) return;
       attached = true;
+      const el = ref.current;
+      if (el) {
+        touched = el;
+        // The compositor hint belongs to the hook, not to a class. A permanent
+        // `will-change` on the element would hold a layer for every visitor,
+        // including phones, where this hook never attaches and the animation
+        // can therefore never run. It lives exactly as long as the listener.
+        el.style.willChange = 'translate, rotate';
+      }
       write();
       window.addEventListener('scroll', onScroll, { passive: true });
     };
 
-    /** Detach and hand both properties back to the class values. */
+    /** Detach, drop the compositor hint, and hand both properties back to the
+     *  class values. */
     const detach = () => {
       if (!attached) return;
       attached = false;
@@ -105,6 +120,7 @@ export function useParallax<T extends HTMLElement = HTMLDivElement>({
       if (el) {
         el.style.translate = '';
         el.style.rotate = '';
+        el.style.willChange = '';
       }
     };
 

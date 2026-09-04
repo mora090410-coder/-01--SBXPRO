@@ -76,9 +76,32 @@ describe('Reveal', () => {
     expect(node.hasAttribute('data-reveal')).toBe(false);
   });
 
+  it('never hides content that already intersects the first viewport', () => {
+    setReducedMotion(false);
+    const observer = stubObserver();
+    // jsdom lays everything out at 0x0, which reads as above the fold anyway.
+    // Pin it explicitly so the assertion is about the rule, not about jsdom.
+    const rect = vi
+      .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+      .mockReturnValue({ top: 120, bottom: 260, left: 0, right: 0, width: 0, height: 140, x: 0, y: 120, toJSON: () => ({}) } as DOMRect);
+
+    render(<Reveal delay={180}><p>above the fold</p></Reveal>);
+    const node = screen.getByText('above the fold').parentElement!;
+
+    // No attribute, so no `opacity: 0` — it is the LCP candidate it looks like,
+    // and anything focusable inside it is focusable at full opacity.
+    expect(node.hasAttribute('data-reveal')).toBe(false);
+    expect(observer.observed).toHaveLength(0);
+    rect.mockRestore();
+  });
+
   it('sets pending before paint, then in when the observer intersects, then disconnects', () => {
     setReducedMotion(false);
     const observer = stubObserver();
+    // Below the fold: window.innerHeight is 768 in jsdom.
+    const rect = vi
+      .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+      .mockReturnValue({ top: 2000, bottom: 2140, left: 0, right: 0, width: 0, height: 140, x: 0, y: 2000, toJSON: () => ({}) } as DOMRect);
     render(<Reveal delay={120}><p>reveal me</p></Reveal>);
     const node = screen.getByText('reveal me').parentElement!;
 
@@ -92,6 +115,7 @@ describe('Reveal', () => {
     observer.fire(true);
     expect(node.getAttribute('data-reveal')).toBe('in');
     expect(observer.disconnected).toBeGreaterThan(0);
+    rect.mockRestore();
   });
 
   it('honors the `as` prop and applies className to the rendered element', () => {

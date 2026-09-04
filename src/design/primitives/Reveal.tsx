@@ -23,6 +23,24 @@ export interface RevealProps {
  * observer exists. So there is no flash of hidden content and no flash of
  * content that then hides. The reduced-motion CSS block neutralizes `pending`
  * as a second guard, in case the preference flips after the attribute is set.
+ *
+ * Content that already intersects the FIRST viewport never animates. It is
+ * measured before the attribute is set and left in the visible resting state.
+ * Two reasons, both hard requirements rather than taste:
+ *
+ *  1. Largest Contentful Paint. Chrome does not count an element at
+ *     `opacity: 0` as painted, so a reveal wrapped around above-the-fold copy
+ *     BECOMES the LCP element and pushes it out by the observer callback plus
+ *     `transition-delay` plus part of the spring — roughly doubling landing
+ *     page LCP.
+ *  2. Focus. A `Reveal` must never gate anything focusable that Tab can reach
+ *     before the reveal fires (`docs/accessibility-contract.md`). The hero CTAs
+ *     sit in a delayed reveal, so without this they were focusable at zero
+ *     opacity for the whole delay-plus-spring window.
+ *
+ * Nothing is lost visually: a reveal on content that is already on screen is
+ * not a scroll effect, it is a page-load animation. Only elements that start
+ * below the fold animate, which is exactly where the effect is perceivable.
  */
 export function Reveal({ children, as: Tag = 'div', delay = 0, className = '' }: RevealProps) {
   const ref = useRef<HTMLElement | null>(null);
@@ -35,6 +53,16 @@ export function Reveal({ children, as: Tag = 'div', delay = 0, className = '' }:
     // No motion allowed, or no observer to drive it: stay in the visible
     // resting state and carry no attribute at all.
     if (reduced || typeof IntersectionObserver === 'undefined') {
+      node.removeAttribute('data-reveal');
+      return;
+    }
+
+    // Already in (or above) the first viewport: no scroll will ever bring it
+    // in, so there is nothing to reveal. Stay visible and carry no attribute.
+    // Measured BEFORE `pending` is set, so the element is never hidden — not
+    // for a frame, not for the LCP, not for the first Tab press.
+    const viewport = typeof window === 'undefined' ? 0 : window.innerHeight;
+    if (node.getBoundingClientRect().top < viewport) {
       node.removeAttribute('data-reveal');
       return;
     }

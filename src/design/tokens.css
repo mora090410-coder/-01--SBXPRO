@@ -187,3 +187,18 @@
     transform: none;
   }
 }
+
+/* Print. A reveal that has not fired yet sits at `opacity: 0`, and print never
+   scrolls, so without this the printed page loses every section below the fold
+   — the score moment included. Same neutralization as reduced motion, and the
+   transition goes with it: print snapshots the page, so a 450ms fade would
+   print whatever frame it happened to catch. */
+@media print {
+  [data-reveal] {
+    transition: none;
+  }
+  [data-reveal="pending"] {
+    opacity: 1;
+    transform: none;
+  }
+}

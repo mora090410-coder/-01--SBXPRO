@@ -116,6 +116,8 @@ describe('Hero atmosphere', () => {
     expect(node.style.transform).toBe('');
     expect(node.style.translate).toBe('');
     expect(node.style.rotate).toBe('');
+    // No animation can run, so no compositor layer is requested either.
+    expect(node.style.willChange).toBe('');
   });
 
   it('useParallax is inert below the md breakpoint', () => {
@@ -155,12 +157,15 @@ describe('Hero atmosphere', () => {
     // The whole point: `transform` is never touched.
     expect(probe.style.transform).toBe('');
     expect(probe.getAttribute('style') ?? '').not.toContain('transform');
+    // The compositor hint is the hook's, and lives only while it is attached.
+    expect(probe.style.willChange).toBe('translate, rotate');
 
     view.unmount();
     expect(remove.mock.calls.filter(([type]) => type === 'scroll')).toHaveLength(1);
-    // Cleanup hands both properties back to the class values.
+    // Cleanup hands both properties back to the class values and drops the layer.
     expect(node!.style.translate).toBe('');
     expect(node!.style.rotate).toBe('');
+    expect(node!.style.willChange).toBe('');
   });
 
   it('useParallax clears its inline values when the viewport narrows past md', () => {
@@ -195,6 +200,7 @@ describe('Hero atmosphere', () => {
     act(() => { for (const fn of listeners) fn({ matches: false } as MediaQueryListEvent); });
     expect(probe.style.rotate).toBe('');
     expect(probe.style.translate).toBe('');
+    expect(probe.style.willChange).toBe('');
     expect(listeners.size).toBeGreaterThan(0);
   });
 
