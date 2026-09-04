@@ -5,7 +5,7 @@ const tokens = readFileSync('src/design/tokens.css', 'utf8');
 
 describe('design tokens', () => {
   it('locks the palette', () => {
-    for (const hex of ['#8F1D2C', '#6E1622', '#FFC72C', '#E0A600', '#22C55E', '#0E0F12', '#16181D', '#EFF0F1', '#DEE0E1']) {
+    for (const hex of ['#8F1D2C', '#6E1622', '#FFC72C', '#E0A600', '#22C55E', '#0E0F12', '#282B32', '#EFF0F1', '#DEE0E1']) {
       expect(tokens).toContain(hex);
     }
   });

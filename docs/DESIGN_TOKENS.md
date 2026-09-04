@@ -17,7 +17,7 @@
 | Gold pressed | `--g-gold-deep` | `gold-deep` | `#E0A600` |
 | In-progress NFL game only | `--g-live` | `live` | `#22C55E` |
 | Ink | `--g-ink` | `ink` | `#0E0F12` |
-| Island and chyron ground | `--g-chyron` | `chyron` | `#16181D` |
+| Island and chyron ground | `--g-chyron` | `chyron` | `#282B32` |
 | Broadcast white | `--g-white` | `broadcast-white` | `#EFF0F1` |
 | Newsprint | `--g-newsprint` | `newsprint` | `#DEE0E1` |
 
@@ -25,13 +25,13 @@
 
 | Meaning | CSS variable | Tailwind | Dark | Cream |
 |---|---|---|---|---|
-| Page ground | `--g-ground` | `bg-ground` | `#111318` | `#F5F1EA` |
+| Page ground | `--g-ground` | `bg-ground` | `#14161D` | `#F5F1EA` |
 | Panel fill | `--g-panel` | `bg-panel` | white 7% | white 70% |
 | Panel hover | `--g-panel-hover` | `bg-panel-hover` | white 10% | white 85% |
 | Hairline | `--g-hairline` | `border-hairline` | white 12% | ink 8% |
 | Text primary | `--g-text` | `text-fg` | broadcast white | ink |
 | Text secondary | `--g-text-2` | `text-fg-2` | 60% | 60% |
-| Text muted | `--g-text-3` | `text-fg-3` | 40% | 40% |
+| Text muted | `--g-text-3` | `text-fg-3` | 64% | 62% |
 | Action fill | `--g-action` | `bg-action` | gold | cardinal |
 | Action hover | `--g-action-hover` | `bg-action-hover` | gold deep | cardinal deep |
 | Action text | `--g-action-text` | `text-action-text` | ink | white |
@@ -46,11 +46,11 @@ Large, soft ground light for one section. Derived with `color-mix` from the lock
 
 | Meaning | CSS variable | Tailwind | Value |
 |---|---|---|---|
-| Hero and pricing ambience | `--g-tint-cardinal` | `tint-cardinal` | cardinal 14% |
-| Score-moment ambience | `--g-tint-live` | `tint-live` | live 14% |
-| Organizer ambience | `--g-tint-gold` | `tint-gold` | gold 14% |
+| Hero and pricing ambience | `--g-tint-cardinal` | `tint-cardinal` | cardinal 22% |
+| Score-moment ambience | `--g-tint-live` | `tint-live` | live 22% |
+| Organizer ambience | `--g-tint-gold` | `tint-gold` | gold 22% |
 
-14% is a contrast cap, not a taste call. Against the `#111318` ground, the worst case — `--g-text-3` over a full-strength gold tint — is 5.15:1, and `SectionTone` renders the tint at 0.55 layer opacity with radial falloff on top of that, so nothing on screen is ever this strong. Raising the alpha without re-running `tests/design/contrast.test.ts` is a contrast regression.
+22% is a contrast cap, not a taste call, and it is a **hard ceiling** — the margin over AA is thin. Against the `#14161D` ground, the worst case is `--g-text-2` over a full-strength gold tint at **4.53:1**, which clears the 4.5:1 requirement by 0.03. `SectionTone` renders the tint at 0.75 layer opacity with radial falloff on top of that, so nothing on screen is ever this strong, but the token itself has no headroom left. Raising any tint past 22% puts secondary text below AA. `tests/design/contrast.test.ts` asserts both the cap and the composited ratio; `tests/design/docDrift.test.ts` asserts that this table and `DESIGN.md` still name the value `src/design/tokens.css` ships.
 
 ## Type
 

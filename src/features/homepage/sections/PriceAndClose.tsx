@@ -100,8 +100,13 @@ export function PriceAndClose() {
         </div>
       </section>
 
-      {/* Deliberately untinted. The last thing on screen is the action, not the
-          atmosphere, so this section carries no `SectionTone` — do not add one. */}
+      {/* Deliberately carries no tone OF ITS OWN. The last thing on screen is the
+          action, not the atmosphere, so this section places no `SectionTone` — do
+          not add one. It still receives the soft vertical bleed from the cardinal
+          tone in the pricing section above, which is intended: the toned sections
+          clip on X only so their radials fade across section boundaries instead of
+          stopping at a seam. That bleed is decorative and far below the contrast
+          floor. */}
       <section className="mx-auto w-full max-w-[1200px] px-6 py-16 md:px-12 md:py-24">
         <div className="flex flex-col gap-8 max-w-[720px]">
         <Reveal className="flex flex-col gap-8">

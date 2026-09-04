@@ -109,7 +109,7 @@ export const ScheduledGamePicker: React.FC<ScheduledGamePickerProps> = ({
             <div className={`space-y-3 ${className}`} aria-live="polite" aria-busy="true">
                 <span className="sr-only">Loading NFL games</span>
                 {[0, 1, 2].map(item => (
-                    <div key={item} className="h-[78px] rounded-card border border-hairline bg-panel animate-pulse" />
+                    <div key={item} className="h-[78px] rounded-card border border-hairline bg-panel motion-safe:animate-pulse" />
                 ))}
             </div>
         );

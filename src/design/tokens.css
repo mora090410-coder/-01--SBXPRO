@@ -8,7 +8,13 @@
   --g-gold-deep: #E0A600;
   --g-live: #22C55E;
   --g-ink: #0E0F12;
-  --g-chyron: #16181D;
+  /* Raised surface for the island, the chyron strip, and the board axis rails.
+     It has to sit visibly ABOVE --g-ground. When the dark ground was lifted to
+     #14161D this token was left at #16181D and the step collapsed to 1.02:1 —
+     the axis rails and the score island stopped reading as raised at all.
+     #282B32 restores the separation at 1.28:1. Text on it is unaffected:
+     broadcast white is 12.42:1 and gold 9.08:1, both far past AA. */
+  --g-chyron: #282B32;
   --g-white: #EFF0F1;
   --g-newsprint: #DEE0E1;
 

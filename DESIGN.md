@@ -10,8 +10,8 @@ colors:
   neutral: "#EFF0F1"
   neutral-quiet: "#DEE0E1"
   ink: "#0E0F12"
-  surface-dark: "#16181D"
-  ground-dark: "#111318"
+  surface-dark: "#282B32"
+  ground-dark: "#14161D"
   ground-cream: "#F5F1EA"
   live: "#22C55E"
 typography:
@@ -104,12 +104,12 @@ Game day should feel like a broadcast graphic on a quiet phone: one number that 
 
 ## Two bases, one palette
 
-- **Dark** (viewer, homepage, article pages): ground `#111318`, one cardinal spotlight behind the hero artifact, glass panels (white 7%, hairline white 12%, blur 20px). Gold is the only action color. Cardinal appears in the glow, the brand mark, and destructive confirmations with explicit text.
+- **Dark** (viewer, homepage, article pages): ground `#14161D`, one cardinal spotlight behind the hero artifact, glass panels (white 7%, hairline white 12%, blur 20px). Gold is the only action color. Cardinal appears in the glow, the brand mark, and destructive confirmations with explicit text.
 - **Cream** (organizer workspace, dashboard): ground `#F5F1EA`, cards white 70% with ink hairline 8%. Cardinal is the action color. Gold marks committed and settled states only.
 - Live green means an in-progress NFL game and nothing else.
 - No state relies on color alone.
 
-**Ambient tone.** A long page may carry color as *light* rather than as chromatic UI: one large, soft, low-alpha ground tint per section, drawn from the same three brand colors, sitting on a section's vertical mid-edge. The landing page journey is cardinal at the hero, live green at the score moment, nothing at all through the parent moments (the deliberate rest), warm gold at the organizer workroom, and cardinal again at pricing to close the loop. The final call to action stays untinted so the last thing on screen is the action. Tints are capped at 14% of their brand color so body text over one still meets AA; they are never a gradient, never a corner, and never carry meaning.
+**Ambient tone.** A long page may carry color as *light* rather than as chromatic UI: one large, soft, low-alpha ground tint per section, drawn from the same three brand colors, sitting on a section's vertical mid-edge. The landing page journey is cardinal at the hero, live green at the score moment, nothing at all through the parent moments (the deliberate rest), warm gold at the organizer workroom, and cardinal again at pricing to close the loop. The parent moments and the final call to action carry no tone **of their own** — no `SectionTone` is placed in either — so the last thing on screen is the action, not the atmosphere. They are not sealed off from their neighbours: the toned sections clip on the X axis only, and the radial is taller than a section, so each receives a soft vertical bleed from the tones above and below. That bleed is intended, it is what keeps the tones from ending at a hard horizontal seam, and it is far too weak to matter — measured, it moves the untinted heading from 15.84:1 to 15.69:1. Tints are capped at 22% of their brand color so body text over one still meets AA; they are never a gradient, never a corner, and never carry meaning.
 
 ## Type
 

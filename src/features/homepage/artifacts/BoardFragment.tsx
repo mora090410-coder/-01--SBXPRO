@@ -66,10 +66,14 @@ export function BoardFragment({ highlight, size = 4, className = '' }: BoardFrag
             const isOpen = name === 'OPEN' || name === '';
             const isHit = r === row && c === col;
             // An OPEN tile is `bg-panel` over the grid's `bg-hairline` over the
-            // fragment ground, which composites to #3d3e42. The muted `text-fg-3`
-            // on that measures 4.33:1 and fails AA, so the OPEN label uses the
-            // full `text-fg` token (9.40:1). The tile's lighter fill, not the ink,
-            // is what still reads OPEN as the quieter of the two states.
+            // fragment ground, which composites to #3F4046 — the lightest surface
+            // on the page. At the shipped `--g-text-3: 0.64` the muted token on
+            // that measures 4.79:1 and does clear AA, so this is headroom rather
+            // than a rescue: the OPEN label uses the full `text-fg` token (9.03:1)
+            // because 0.29 of margin is not enough to spend on decoration, and a
+            // tint or a token nudge could take it back. The tile's lighter fill,
+            // not the ink, is what still reads OPEN as the quieter of the two
+            // states.
             return (
               <div
                 key={`c${r}-${c}`}

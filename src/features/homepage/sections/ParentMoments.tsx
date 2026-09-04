@@ -35,10 +35,18 @@ const moments = [
 /**
  * The rest between the green score moment and the gold organizer moment.
  *
- * This section deliberately carries NO `SectionTone`. The eye needs somewhere
+ * This section deliberately carries no tone OF ITS OWN. The eye needs somewhere
  * to stop between the two lit moments, so the symmetry is broken on purpose —
- * do not add a tint here. With no tone there is nothing to clip and nothing to
- * stack against, so the section stays a plain block with no `relative z-10`.
+ * do not add a `SectionTone` here. Having none of its own means there is nothing
+ * to clip and nothing to stack against, so the section stays a plain block with
+ * no `relative z-10`.
+ *
+ * It is not sealed off, and it is not meant to be. Its toned neighbours clip on
+ * the X axis only and their radials are taller than a section, so this block
+ * receives a soft vertical bleed from the green above and the gold below — which
+ * is exactly what keeps those tones from ending at a hard horizontal seam. The
+ * bleed is far too weak to read as a tint or to matter for contrast: measured,
+ * the heading here sits at 15.69:1 against 15.84:1 on a truly untinted ground.
  */
 export function ParentMoments() {
   return (
