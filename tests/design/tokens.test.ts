@@ -11,13 +11,13 @@ describe('design tokens', () => {
   });
 
   it('defines both grounds', () => {
-    expect(tokens).toContain('#111318');
+    expect(tokens).toContain('#14161D');
     expect(tokens).toContain('#F5F1EA');
   });
 
   it('lifts the dark ground, panel, and hairline off pure black', () => {
     const dark = tokens.slice(tokens.indexOf('[data-base="dark"]'), tokens.indexOf('[data-base="cream"]'));
-    expect(dark).toMatch(/--g-ground:\s*#111318/);
+    expect(dark).toMatch(/--g-ground:\s*#14161D/);
     expect(dark).toMatch(/--g-panel:\s*rgba\(255,\s*255,\s*255,\s*0\.07\)/);
     expect(dark).toMatch(/--g-panel-hover:\s*rgba\(255,\s*255,\s*255,\s*0\.10\)/);
     expect(dark).toMatch(/--g-hairline:\s*rgba\(255,\s*255,\s*255,\s*0\.12\)/);
@@ -31,13 +31,13 @@ describe('design tokens', () => {
     expect(cream).toMatch(/--g-hairline:\s*rgba\(14,\s*15,\s*18,\s*0\.08\)/);
   });
 
-  it('derives the three ambient tints from brand colors with color-mix, at 14%', () => {
+  it('derives the three ambient tints from brand colors with color-mix, at 22%', () => {
     for (const [name, brand] of [
       ['--g-tint-cardinal', '--g-cardinal'],
       ['--g-tint-live', '--g-live'],
       ['--g-tint-gold', '--g-gold'],
     ] as const) {
-      const re = new RegExp(`${name}:\\s*color-mix\\(in srgb, transparent 86%, var\\(${brand}\\)\\);`);
+      const re = new RegExp(`${name}:\\s*color-mix\\(in srgb, transparent 78%, var\\(${brand}\\)\\);`);
       expect(tokens, name).toMatch(re);
     }
   });

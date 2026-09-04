@@ -28,14 +28,20 @@ const TINT: Record<SectionToneName, string> = {
  * box, and a transformed element contributes to scrollable overflow — without
  * `overflow-hidden` (or `overflow-x-clip`) the page grows horizontally. It
  * is `aria-hidden` and `pointer-events-none`, so it can never be read or clicked.
- * The tint alpha is capped in `tokens.css` so text over it still clears WCAG AA.
+ * The tint alpha is capped in `tokens.css` so text over it still clears WCAG AA
+ * even at full token alpha, which is well above the 0.75 layer opacity here.
+ *
+ * The section it sits in is full-bleed: only the section's CONTENT is capped at
+ * 1200px. If the section were width-capped instead, `overflow-hidden` would clip
+ * this blob at the column edge and the tint would read as a lit rectangle rather
+ * than as light in the room. Keep the clip off-screen.
  */
 export function SectionTone({ tone, side = 'right', className = '' }: SectionToneProps) {
   const edge = side === 'left' ? 'left-0 -translate-x-1/2' : 'right-0 translate-x-1/2';
   return (
     <div
       aria-hidden="true"
-      className={`absolute z-0 top-1/2 -translate-y-1/2 ${edge} pointer-events-none rounded-full blur-[90px] opacity-[0.55] ${className}`.trim()}
+      className={`absolute z-0 top-1/2 -translate-y-1/2 ${edge} pointer-events-none rounded-full blur-[90px] opacity-[0.75] ${className}`.trim()}
       style={{
         width: 'min(1100px, 140vw)',
         height: 'min(1100px, 140vw)',

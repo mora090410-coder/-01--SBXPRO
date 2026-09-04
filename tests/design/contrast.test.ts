@@ -123,8 +123,8 @@ function parseTint(value: string): { rgb: [number, number, number]; alpha: numbe
 describe('lifted dark ground', () => {
   const ground = parseRgba(resolveVar(darkGround)).rgb;
 
-  it('is #111318 and clears AA for all three dark text tokens', () => {
-    expect(ground).toEqual([17, 19, 24]);
+  it('is #14161D and clears AA for all three dark text tokens', () => {
+    expect(ground).toEqual([20, 22, 29]);
     for (const name of ['--g-text', '--g-text-2', '--g-text-3']) {
       const c = contrastAgainstGround(readVar(darkBlock, name), darkGround);
       expect(c, `${name} on the lifted dark ground`).toBeGreaterThanOrEqual(4.5);
@@ -140,7 +140,7 @@ describe('ambient tints keep text at AA', () => {
     for (const tintName of TINTS) {
       const { rgb, alpha } = parseTint(readVar(rootBlock, tintName));
       // Worst case: the tint at its FULL token alpha, ignoring SectionTone's
-      // 0.55 layer opacity and its radial falloff, so the assertion is stricter
+      // 0.75 layer opacity and its radial falloff, so the assertion is stricter
       // than anything that can render.
       const tinted = composite(rgb, alpha, ground);
       for (const textName of ['--g-text', '--g-text-2', '--g-text-3']) {
@@ -152,9 +152,9 @@ describe('ambient tints keep text at AA', () => {
     }
   });
 
-  it('holds every tint at or below 14% of its brand color', () => {
+  it('holds every tint at or below 22% of its brand color', () => {
     for (const tintName of TINTS) {
-      expect(parseTint(readVar(rootBlock, tintName)).alpha, tintName).toBeLessThanOrEqual(0.14);
+      expect(parseTint(readVar(rootBlock, tintName)).alpha, tintName).toBeLessThanOrEqual(0.22);
     }
   });
 });

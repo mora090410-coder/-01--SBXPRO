@@ -20,7 +20,7 @@ const guides: Array<{ path: string; label: string }> = [
 
 export function SiteFooter() {
   return (
-    <footer className="px-6 py-12 md:px-12 border-t border-hairline flex flex-col gap-8">
+    <footer className="mx-auto w-full max-w-[1200px] px-6 py-12 md:px-12 border-t border-hairline flex flex-col gap-8">
       <div className="flex flex-col gap-3">
         <Eyebrow>Guides</Eyebrow>
         <ul className="grid gap-x-8 gap-y-1 sm:grid-cols-2 md:grid-cols-3">

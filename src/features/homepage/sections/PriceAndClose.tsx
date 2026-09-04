@@ -62,8 +62,12 @@ export function PriceAndClose() {
       {/* Cardinal on the left edge, closing the loop the hero opened on the right.
           The section clips and its content carries `relative z-10`, so the
           edge-anchored tint sits behind the copy and can never widen the page. */}
-      <section className="relative overflow-hidden px-6 py-16 md:px-12 md:py-24 grid gap-10 md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] md:items-start">
+      <section className="relative overflow-hidden">
         <SectionTone tone="cardinal" side="left" />
+        {/* Full-bleed section, capped content: the tone clips off-screen, not at
+            a 1200px column edge. Padding lives inside the cap, so the column is
+            unchanged from when the cap was a page-level wrapper. */}
+        <div className="relative z-10 mx-auto w-full max-w-[1200px] px-6 py-16 md:px-12 md:py-24 grid gap-10 md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] md:items-start">
 
         <Reveal className="relative z-10 flex flex-col gap-3 max-w-[460px]">
           <Eyebrow>2026 pricing</Eyebrow>
@@ -93,11 +97,13 @@ export function PriceAndClose() {
             ))}
           </Glass>
         </Reveal>
+        </div>
       </section>
 
       {/* Deliberately untinted. The last thing on screen is the action, not the
           atmosphere, so this section carries no `SectionTone` — do not add one. */}
-      <section className="px-6 py-16 md:px-12 md:py-24 flex flex-col gap-8 max-w-[720px]">
+      <section className="mx-auto w-full max-w-[1200px] px-6 py-16 md:px-12 md:py-24">
+        <div className="flex flex-col gap-8 max-w-[720px]">
         <Reveal className="flex flex-col gap-8">
           <h2 className="font-display text-[34px] leading-[1.05] text-fg md:text-[44px]">Ready to build the board?</h2>
           <div className="flex flex-wrap items-center gap-3">
@@ -119,6 +125,7 @@ export function PriceAndClose() {
             </details>
           ))}
         </Reveal>
+        </div>
       </section>
     </>
   );

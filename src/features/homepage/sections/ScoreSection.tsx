@@ -4,11 +4,15 @@ import { ScoreMoment } from '../artifacts/ScoreMoment';
 
 export function ScoreSection() {
   return (
-    <section className="relative overflow-hidden px-6 py-16 md:px-12 md:py-24 flex flex-col gap-8">
+    <section className="relative overflow-hidden">
+      <SectionTone tone="live" side="left" />
+      {/* Full-bleed section, capped content: the tone clips off-screen, not at
+          a 1200px column edge. Padding lives inside the cap, so the column is
+          unchanged from when the cap was a page-level wrapper. */}
+      <div className="relative z-10 mx-auto w-full max-w-[1200px] px-6 py-16 md:px-12 md:py-24 flex flex-col gap-8">
       {/* The broadcast moment: field green on the left edge. Content below carries
           `relative z-10`, and the section clips, so the edge-anchored tint can
           never widen the document. */}
-      <SectionTone tone="live" side="left" />
 
       <Reveal className="relative z-10 flex flex-col gap-3 max-w-[560px]">
         <Eyebrow>The score follows the game</Eyebrow>
@@ -21,6 +25,7 @@ export function ScoreSection() {
       <Reveal delay={120} className="relative z-10">
         <ScoreMoment />
       </Reveal>
+      </div>
     </section>
   );
 }

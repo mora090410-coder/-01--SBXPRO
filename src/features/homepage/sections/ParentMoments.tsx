@@ -42,7 +42,7 @@ const moments = [
  */
 export function ParentMoments() {
   return (
-    <section className="px-6 py-16 md:px-12 md:py-24 flex flex-col gap-16">
+    <section className="mx-auto w-full max-w-[1200px] px-6 py-16 md:px-12 md:py-24 flex flex-col gap-16">
       <Reveal className="flex flex-col gap-3 max-w-[560px]">
         <Eyebrow>What a parent sees</Eyebrow>
         <h2 className="font-display text-[34px] leading-[1.05] text-fg md:text-[44px]">Three answers, no scrolling.</h2>
