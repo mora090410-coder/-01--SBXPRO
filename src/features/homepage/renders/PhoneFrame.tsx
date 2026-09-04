@@ -9,16 +9,21 @@ const DEVICE_WIDTH = 390;
  * artifact (phone frames, the moment fragment, the organizer preview) shares
  * a single definition instead of each growing its own near-copy.
  *
- * The lift is a transform, so it sits behind `motion-safe:` and never runs
- * under `prefers-reduced-motion: reduce`; the deeper shadow is a colour change
- * and stays. `HOVER_LIFT_STYLE` is applied inline because `Glass` already
- * declares a `transition-property` and the inline value settles the cascade.
+ * The lift is motion, so it sits behind `motion-safe:` and never runs under
+ * `prefers-reduced-motion: reduce`; the deeper shadow is a colour change and
+ * stays. `HOVER_LIFT_STYLE` is applied inline because `Glass` already declares
+ * a `transition-property` and the inline value settles the cascade.
+ *
+ * The list names `translate`, NOT `transform`: Tailwind v4 compiles
+ * `-translate-y-1` to the independent `translate` property, so a list naming
+ * `transform` transitions nothing and the lift snaps. Nothing here scales or
+ * rotates, so those two properties are left out.
  */
 export const HOVER_LIFT =
   'motion-safe:hover:-translate-y-1 hover:shadow-[0_28px_64px_-28px_rgba(0,0,0,0.75)] duration-[var(--g-dur-state)] ease-[var(--g-ease-state)]';
 
 export const HOVER_LIFT_STYLE: React.CSSProperties = {
-  transitionProperty: 'background-color, transform, box-shadow',
+  transitionProperty: 'background-color, translate, box-shadow',
 };
 
 export interface PhoneFrameProps {
@@ -61,6 +66,9 @@ export function PhoneFrame({ children, caption, className = '', aspect = 'phone'
       style={HOVER_LIFT_STYLE}
       className={`w-[300px] max-w-full aspect-[390/780] overflow-hidden rounded-[32px] ${HOVER_LIFT} ${className}`.trim()}
     >
+      {/* The 390 -> 300 downscale is a bare `transform` on purpose: this inner element
+          carries no `scale-*`/`translate-*`/`rotate-*` class, so there is nothing for it
+          to silently compose with, and the hover lift lives on the frame above, not here. */}
       <div
         inert
         aria-hidden="true"

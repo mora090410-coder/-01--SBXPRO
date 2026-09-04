@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, renderHook, screen, within } from '@testing-library/react';
+import { act, render, renderHook, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Spotlight } from '../../src/design/primitives';
@@ -114,6 +114,8 @@ describe('Hero atmosphere', () => {
     result.current.current = node;
     expect(add.mock.calls.filter(([type]) => type === 'scroll')).toHaveLength(0);
     expect(node.style.transform).toBe('');
+    expect(node.style.translate).toBe('');
+    expect(node.style.rotate).toBe('');
   });
 
   it('useParallax is inert below the md breakpoint', () => {
@@ -123,23 +125,77 @@ describe('Hero atmosphere', () => {
     expect(add.mock.calls.filter(([type]) => type === 'scroll')).toHaveLength(0);
   });
 
-  it('useParallax writes a vertical-only transform on desktop and cleans up on unmount', () => {
+  // Structural assertions only: jsdom has no layout and does not compose
+  // `translate`/`rotate`/`transform` into a matrix, so what is checked here is
+  // WHICH properties the hook writes, not the rendered result. That is the point
+  // — writing `transform` is exactly the regression being fenced off, because
+  // `transform` composes with (rather than overrides) the element's
+  // `md:rotate-[3deg]` class and rests the hero at 6deg.
+  it('useParallax drives translate and rotate, never transform, and clears both on unmount', () => {
     setMatchMedia((q) => q.includes('min-width'));
     const add = vi.spyOn(window, 'addEventListener');
     const remove = vi.spyOn(window, 'removeEventListener');
+    let node: HTMLDivElement | null = null;
     const Probe = () => {
-      const ref = useParallax<HTMLDivElement>({ maxPx: 40, rotateFromDeg: -3, rotateToDeg: -1 });
-      return <div ref={ref} data-testid="probe" />;
+      const ref = useParallax<HTMLDivElement>({ maxPx: 40, rotateFromDeg: 3, rotateToDeg: 1 });
+      // Keep our own handle: React detaches `ref` on unmount, and the assertion
+      // below is about the element the hook wrote to, not about React's bookkeeping.
+      return <div ref={(el) => { ref.current = el; if (el) node = el; }} data-testid="probe" />;
     };
     const view = render(<Probe />);
     const probe = screen.getByTestId('probe');
     expect(add.mock.calls.filter(([type]) => type === 'scroll')).toHaveLength(1);
     expect(add.mock.calls.find(([type]) => type === 'scroll')?.[2]).toEqual({ passive: true });
-    expect(probe.style.transform).toContain('translate3d(0,');
-    expect(probe.style.transform).toContain('rotate(-3.000deg)');
-    expect(probe.style.transform).not.toMatch(/translateX|translate3d\((?!0,)/);
+
+    // Independent properties, written before paint by useLayoutEffect.
+    expect(probe.style.rotate).toBe('3.000deg');
+    expect(probe.style.translate).toMatch(/^0 [\d.]+px$/);
+    // Vertical only: the x component of `translate` is a literal 0.
+    expect(probe.style.translate.split(' ')[0]).toBe('0');
+    // The whole point: `transform` is never touched.
+    expect(probe.style.transform).toBe('');
+    expect(probe.getAttribute('style') ?? '').not.toContain('transform');
+
     view.unmount();
     expect(remove.mock.calls.filter(([type]) => type === 'scroll')).toHaveLength(1);
+    // Cleanup hands both properties back to the class values.
+    expect(node!.style.translate).toBe('');
+    expect(node!.style.rotate).toBe('');
+  });
+
+  it('useParallax clears its inline values when the viewport narrows past md', () => {
+    let desktop = true;
+    const listeners = new Set<(e: MediaQueryListEvent) => void>();
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      configurable: true,
+      value: (query: string) => ({
+        get matches() { return query.includes('min-width') ? desktop : false; },
+        media: query,
+        onchange: null,
+        addListener: () => {},
+        removeListener: () => {},
+        addEventListener: (_t: string, fn: (e: MediaQueryListEvent) => void) => { if (query.includes('min-width')) listeners.add(fn); },
+        removeEventListener: (_t: string, fn: (e: MediaQueryListEvent) => void) => { listeners.delete(fn); },
+        dispatchEvent: () => false,
+      }),
+    });
+
+    const Probe = () => {
+      const ref = useParallax<HTMLDivElement>({ maxPx: 40, rotateFromDeg: 3, rotateToDeg: 1 });
+      return <div ref={ref} data-testid="probe" />;
+    };
+    render(<Probe />);
+    const probe = screen.getByTestId('probe');
+    expect(probe.style.rotate).toBe('3.000deg');
+
+    // Narrow the window below md. The class rotation must take over again, so the
+    // inline desktop values have to go — otherwise they cancel the phone tilt.
+    desktop = false;
+    act(() => { for (const fn of listeners) fn({ matches: false } as MediaQueryListEvent); });
+    expect(probe.style.rotate).toBe('');
+    expect(probe.style.translate).toBe('');
+    expect(listeners.size).toBeGreaterThan(0);
   });
 
   it('Spotlight breathes only when motion is allowed', () => {

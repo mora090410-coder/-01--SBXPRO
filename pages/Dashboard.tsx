@@ -25,7 +25,7 @@ interface BillingSummary {
     organizationDisplayName?: string | null;
 }
 
-const CAPSULE_LINK = 'inline-flex items-center justify-center gap-2 rounded-capsule bg-action px-5 h-11 font-ui text-[15px] font-semibold leading-none text-action-text transition-colors hover:bg-action-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action focus-visible:ring-offset-2 focus-visible:ring-offset-ground active:scale-[0.98]';
+const CAPSULE_LINK = 'inline-flex items-center justify-center gap-2 rounded-capsule bg-action px-5 h-11 font-ui text-[15px] font-semibold leading-none text-action-text transition-[color,background-color,border-color,scale] hover:bg-action-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action focus-visible:ring-offset-2 focus-visible:ring-offset-ground active:scale-[0.98]';
 
 const tierLabel = (summary: BillingSummary): string =>
     summary.organizationDisplayName

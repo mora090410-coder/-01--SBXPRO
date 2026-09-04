@@ -9,7 +9,11 @@ import { SiteHeader } from '../../site/SiteHeader';
 import { primaryLink, quietLink } from './cta';
 
 export function Hero() {
-  // Vertical travel and a rotation easing -3deg -> -1deg, in one transform string.
+  // Vertical travel plus a rotation easing 3deg -> 1deg on desktop. The hook drives
+  // the independent `translate` and `rotate` properties, so `rotate` REPLACES the
+  // `md:rotate-[3deg]` class rather than composing with it (an inline `transform`
+  // would have added to it and rested the artifact at 6deg). The class value is the
+  // same 3deg the hook writes at scrollY 0, so there is nothing to snap between.
   // Inert under reduced motion and below md; never writes a horizontal translate.
   const artifact = useParallax<HTMLDivElement>({ maxPx: 40, rotateFromDeg: 3, rotateToDeg: 1 });
 
@@ -50,7 +54,7 @@ export function Hero() {
 
         <div className="relative flex flex-col items-center gap-3 md:items-end">
           <Spotlight className="left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" breathe />
-          <div ref={artifact} className="relative z-10 w-fit max-w-full rotate-[-3deg] md:rotate-[3deg] will-change-transform">
+          <div ref={artifact} className="relative z-10 w-fit max-w-full rotate-[-3deg] md:rotate-[3deg] will-change-[translate,rotate]">
             <HeroViewer />
           </div>
           <p className="relative z-10 font-mono text-[12px] text-fg-3">{DEMO_LABEL}</p>
