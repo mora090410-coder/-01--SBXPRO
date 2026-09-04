@@ -1,5 +1,5 @@
 import React from 'react';
-import { act, render, renderHook, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, renderHook, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Spotlight } from '../../src/design/primitives';
@@ -211,5 +211,112 @@ describe('Hero atmosphere', () => {
 
     const plain = render(<Spotlight />);
     expect(plain.container.firstElementChild?.className).not.toContain('spotlight-breathe');
+  });
+});
+
+describe('Pricing bookend and list interactions', () => {
+  const renderClose = () => renderPage();
+
+  it('closes the colour loop with a cardinal tone and leaves the final call to action untinted', () => {
+    const { container } = renderClose();
+    const plans = screen.getByRole('region', { name: 'Plans' });
+    const priceSection = plans.closest('section[class*="overflow-hidden"]');
+    expect(priceSection).not.toBeNull();
+
+    // The tint is decorative: never read, never clickable, always behind content.
+    const tint = priceSection!.querySelector(':scope > [aria-hidden="true"][class*="blur-"]');
+    expect(tint).not.toBeNull();
+    expect(tint!.className).toContain('pointer-events-none');
+    // Edge-anchored on the left, and the section clips so the page cannot widen.
+    expect(tint!.className).toContain('left-0');
+    expect(priceSection!.className).toContain('relative');
+    expect(priceSection!.className).toContain('overflow-hidden');
+    for (const child of Array.from(priceSection!.children)) {
+      if (child === tint) continue;
+      expect(child.className).toContain('relative z-10');
+    }
+
+    // The last section on the page is the action, not the atmosphere.
+    const closing = screen.getByRole('heading', { name: 'Ready to build the board?' }).closest('section')!;
+    expect(closing.querySelector('[class*="blur-"]')).toBeNull();
+    expect(container.querySelectorAll('section [class*="blur-"][aria-hidden="true"]').length).toBeGreaterThan(0);
+  });
+
+  it('marks the free figure as the offer and leaves the other two tiers alone', () => {
+    renderClose();
+    const free = screen.getByRole('img', { name: '$0 per season' });
+    expect(free.className).toContain('text-tone-gold');
+    expect(screen.getByRole('img', { name: '$9.99 once' }).className).not.toContain('text-tone-gold');
+    expect(screen.getByRole('img', { name: '$79 per season' }).className).not.toContain('text-tone-gold');
+  });
+
+  it('lifts a plan row on hover and on focus-within, and names the properties it transitions', () => {
+    renderClose();
+    const row = screen.getByText('1 published board per account per season').closest('div')!.parentElement!;
+    expect(row.className).toContain('hover:bg-panel-hover');
+    expect(row.className).toContain('focus-within:bg-panel-hover');
+    expect(row.className).toContain('hover:border-tone-gold/30');
+    expect(row.className).toContain('focus-within:border-tone-gold/30');
+    expect(row.className).toContain('transition-[background-color,border-color]');
+  });
+
+  it('keeps all four questions and both markers in the DOM whatever is open', () => {
+    renderClose();
+    const questions = ['Do viewers need an account?', 'Does GridOne collect square money?', 'When do I pay?', 'Who can edit the board?'];
+
+    const assertIntact = () => {
+      for (const q of questions) expect(screen.getByText(q)).toBeInTheDocument();
+      // Both glyphs are always present. The open/closed state is carried by which
+      // one CSS shows, never by motion or colour alone.
+      expect(screen.getAllByText('+')).toHaveLength(4);
+      expect(screen.getAllByText('−')).toHaveLength(4);
+    };
+
+    assertIntact();
+    for (const q of questions) expect(screen.getByText(q).closest('details')!.open).toBe(false);
+
+    const first = screen.getByText(questions[0]).closest('details')!;
+    fireEvent.click(first.querySelector('summary')!);
+    expect(first.open).toBe(true);
+    assertIntact();
+
+    fireEvent.click(first.querySelector('summary')!);
+    expect(first.open).toBe(false);
+    assertIntact();
+  });
+
+  it('rotates the marker via the independent rotate property, only when motion is allowed', () => {
+    renderClose();
+    const marker = screen.getAllByText('+')[0].parentElement!;
+    // Tailwind v4 compiles `-rotate-90` to `rotate:`, which a `transform` list
+    // would not animate. This assertion is the fence around that bug.
+    expect(marker.className).toContain('transition-[rotate]');
+    expect(marker.className).not.toMatch(/transition-\[[^\]]*transform/);
+    expect(marker.className).toContain('motion-safe:-rotate-90');
+    // `rotate-0` would compile to `rotate: none`; the explicit angle keeps both
+    // ends of the transition in the same unit.
+    expect(marker.className).toContain('motion-safe:group-open:rotate-[0deg]');
+    expect(marker).toHaveAttribute('aria-hidden', 'true');
+
+    const answer = screen.getByText(/Viewers open the link without creating an account\. Only the organizer signs in\./);
+    expect(answer.className).toContain('motion-safe:animate-[sheet-fade');
+  });
+
+  it('keeps every summary at the 44px target with its focus ring intact', () => {
+    renderClose();
+    for (const q of ['Do viewers need an account?', 'When do I pay?']) {
+      const summary = screen.getByText(q).closest('summary')!;
+      expect(summary.className).toContain('min-h-11');
+      expect(summary.className).toContain('cursor-pointer');
+    }
+  });
+
+  it('gives the footer guide links the same underline wipe as every other ghost link', () => {
+    renderClose();
+    const footer = screen.getByRole('contentinfo');
+    const link = within(footer).getByRole('link', { name: 'How football squares work' });
+    expect(link.className).toContain('bg-[length:0%_1px]');
+    expect(link.className).toContain('hover:bg-[length:100%_1px]');
+    expect(link.className).toContain('transition-[background-size,color]');
   });
 });
