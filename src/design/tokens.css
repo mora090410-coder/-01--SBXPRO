@@ -38,6 +38,17 @@
   /* Glass */
   --g-blur: 20px;
 
+  /* Rim light. ONE hue — white — at three alphas, so the highlight is a
+     specular edge and never a second color creeping into the palette. The
+     fade stop is written as `rgba(255, 255, 255, 0)` and not `transparent`:
+     `transparent` is transparent BLACK, and interpolating white to it in sRGB
+     walks through grey, which reads as a dirty smudge on the frame's edge.
+     These are base-agnostic on purpose — the only surface that uses them is
+     the homepage device frame, which is a dark-base artifact. */
+  --g-rim: rgba(255, 255, 255, 0.55);
+  --g-rim-soft: rgba(255, 255, 255, 0.14);
+  --g-rim-none: rgba(255, 255, 255, 0);
+
   /* Tone fallbacks for tags rendered outside a Base; each base overrides. */
   --g-tone-gold: var(--g-gold);
   --g-tone-live: var(--g-live);
@@ -151,6 +162,57 @@
 }
 .board-cell-pulse {
   animation: board-cell-pulse 900ms var(--g-ease-state) 1;
+}
+
+/* ── Rim light on the device frame. ──────────────────────────────────────────
+   A hard, ~1px specular edge along the frame's top-left, the detail that
+   separates a rendered product shot from a flat panel. Static and purely
+   decorative: no animation, no hover state, nothing to neutralize under
+   reduced motion.
+
+   It is a HAIRLINE, not a glow. The gradient runs at 145deg — down and to the
+   right — and is fully out by 46%, so what lands on screen is a bright edge on
+   the top-left that dies away along the frame's flank. Anti-slop rule 8 bans
+   corner glows and multi-color gradients; this is one hue at three alphas,
+   confined to a 1px ring, and it is brightest along the whole top and left
+   EDGE rather than pooled at the corner.
+
+   Zero effect on layout: an absolutely positioned pseudo-element contributes
+   no size, `inset: 0` cannot exceed its frame, and the frame already carries
+   `overflow-hidden`, so the rim can never add a scrollable pixel.
+
+   `padding: 1px` plus the two-layer mask is the border-gradient trick: the
+   element paints the gradient across its whole box, then the mask subtracts
+   the content box and leaves only the 1px padding ring, which follows the
+   inherited 32px radius exactly. It is wrapped in @supports because an engine
+   without mask compositing would paint the UNSUBTRACTED gradient — a soft
+   wash over the artifact, which is precisely the corner glow rule 8 bans.
+   Where the trick is unavailable the frame simply has no rim. */
+@supports ((-webkit-mask-composite: xor) or (mask-composite: exclude)) {
+  .device-rim::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: inherit;
+    padding: 1px;
+    pointer-events: none;
+    background: linear-gradient(
+      145deg,
+      var(--g-rim) 0%,
+      var(--g-rim) 7%,
+      var(--g-rim-soft) 22%,
+      var(--g-rim-none) 46%
+    );
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    mask-composite: exclude;
+  }
 }
 
 /* ── BoardFill. One style write per frame. ───────────────────────────────────

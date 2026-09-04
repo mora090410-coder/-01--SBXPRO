@@ -52,6 +52,18 @@ Large, soft ground light for one section. Derived with `color-mix` from the lock
 
 22% is a contrast cap, not a taste call, and it is a **hard ceiling** — the margin over AA is thin. Against the `#14161D` ground, the worst case is `--g-text-2` over a full-strength gold tint at **4.53:1**, which clears the 4.5:1 requirement by 0.03. `SectionTone` renders the tint at 0.75 layer opacity with radial falloff on top of that, so nothing on screen is ever this strong, but the token itself has no headroom left. Raising any tint past 22% puts secondary text below AA. `tests/design/contrast.test.ts` asserts both the cap and the composited ratio; `tests/design/docDrift.test.ts` asserts that this table and `DESIGN.md` still name the value `src/design/tokens.css` ships.
 
+### Rim light
+
+A hard, ~1px specular edge along the top-left of the homepage device frame (`.device-rim`, consumed by `PhoneFrame`). One hue — white — at three alphas, so it is a highlight and not a second color. Static and decorative: no animation, no hover state, nothing for reduced motion to switch off.
+
+| Meaning | CSS variable | Tailwind | Value |
+|---|---|---|---|
+| Rim highlight | `--g-rim` | used by `.device-rim` | white 55% |
+| Rim falloff | `--g-rim-soft` | used by `.device-rim` | white 14% |
+| Rim end | `--g-rim-none` | used by `.device-rim` | white 0% |
+
+The end stop is written `rgba(255, 255, 255, 0)` and not `transparent`, which is transparent *black*: interpolating white to it in sRGB walks the gradient through grey and reads as a smudge on the frame's edge. The rule is wrapped in `@supports` for mask compositing, because an engine that cannot subtract the content box would paint the whole gradient as a soft wash over the artifact — the corner glow DESIGN.md rule 8 bans. Where the trick is unavailable the frame simply has no rim.
+
 ## Type
 
 | Role | CSS variable | Tailwind | Family |

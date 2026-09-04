@@ -1,7 +1,8 @@
+import { readFileSync } from 'node:fs';
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { Grain, Reveal, SectionTone } from '../../src/design/primitives';
+import { Grain, IslandRings, Reveal, Ring, SectionTone } from '../../src/design/primitives';
 
 const realMatchMedia = window.matchMedia;
 const realObserver = (globalThis as { IntersectionObserver?: unknown }).IntersectionObserver;
@@ -168,5 +169,149 @@ describe('Grain', () => {
   it('accepts an opacity override', () => {
     const { container } = render(<Grain opacity={0.02} />);
     expect((container.firstElementChild as HTMLElement).style.opacity).toBe('0.02');
+  });
+});
+
+describe('Ring', () => {
+  const SIZE = 28;
+  const CIRCUMFERENCE = 2 * Math.PI * ((SIZE - 3) / 2);
+  /** The finished arc for value=0.75: three quarters of the circle drawn. */
+  const FINAL = String(CIRCUMFERENCE * 0.25);
+
+  /** The one circle that carries the value; the first is the hairline track. */
+  function arcOf(container: HTMLElement): SVGCircleElement {
+    return container.querySelectorAll('circle')[1] as SVGCircleElement;
+  }
+
+  it('renders its final stroke-dashoffset immediately with no growOnEnter', () => {
+    setReducedMotion(false);
+    const observer = stubObserver();
+    const { container } = render(<Ring value={0.75} label="75 of 100 squares filled" caption="75%" />);
+    const arc = arcOf(container);
+
+    // The attribute is the resting state and it is already correct.
+    expect(arc.getAttribute('stroke-dashoffset')).toBe(FINAL);
+    // Nothing was written inline, so nothing has to be released later.
+    expect(arc.style.getPropertyValue('stroke-dashoffset')).toBe('');
+    // A ring that did not opt in never watches the viewport at all.
+    expect(observer.observed).toHaveLength(0);
+    expect(screen.getByRole('img')).toHaveAttribute('aria-label', '75 of 100 squares filled');
+    expect(screen.getByText('75%')).toBeInTheDocument();
+  });
+
+  it('renders its final stroke-dashoffset immediately with growOnEnter under reduced motion', () => {
+    setReducedMotion(true);
+    const observer = stubObserver();
+    const { container } = render(<Ring value={0.75} label="75 of 100 squares filled" caption="75%" growOnEnter />);
+    const arc = arcOf(container);
+
+    expect(arc.getAttribute('stroke-dashoffset')).toBe(FINAL);
+    expect(arc.style.getPropertyValue('stroke-dashoffset')).toBe('');
+    expect(observer.observed).toHaveLength(0);
+    expect(screen.getByRole('img')).toHaveAttribute('aria-label', '75 of 100 squares filled');
+    expect(screen.getByText('75%')).toBeInTheDocument();
+  });
+
+  it('renders its final stroke-dashoffset immediately with growOnEnter and no IntersectionObserver', () => {
+    setReducedMotion(false);
+    (globalThis as { IntersectionObserver?: unknown }).IntersectionObserver = undefined;
+    const { container } = render(<Ring value={0.75} label="75 of 100 squares filled" caption="75%" growOnEnter />);
+    const arc = arcOf(container);
+
+    expect(arc.getAttribute('stroke-dashoffset')).toBe(FINAL);
+    expect(arc.style.getPropertyValue('stroke-dashoffset')).toBe('');
+  });
+
+  it('starts empty before paint, releases to the real value on first intersection, then disconnects', () => {
+    setReducedMotion(false);
+    const observer = stubObserver();
+    const { container } = render(<Ring value={0.75} label="75 of 100 squares filled" caption="75%" growOnEnter />);
+    const arc = arcOf(container);
+
+    // Empty start is an INLINE style. The attribute underneath still holds the
+    // real value, so the number is never lost even mid-animation.
+    expect(arc.style.getPropertyValue('stroke-dashoffset')).toBe(String(CIRCUMFERENCE));
+    expect(arc.getAttribute('stroke-dashoffset')).toBe(FINAL);
+    // The label states the real value while the arc is still empty.
+    expect(screen.getByRole('img')).toHaveAttribute('aria-label', '75 of 100 squares filled');
+    expect(screen.getByText('75%')).toBeInTheDocument();
+
+    observer.fire(false);
+    expect(arc.style.getPropertyValue('stroke-dashoffset')).toBe(String(CIRCUMFERENCE));
+
+    observer.fire(true);
+    // Released by REMOVAL, so the attribute takes over again.
+    expect(arc.style.getPropertyValue('stroke-dashoffset')).toBe('');
+    expect(arc.getAttribute('stroke-dashoffset')).toBe(FINAL);
+    expect(observer.disconnected).toBeGreaterThan(0);
+  });
+
+  it('disconnects the observer on unmount without ever having intersected', () => {
+    setReducedMotion(false);
+    const observer = stubObserver();
+    const { unmount } = render(<Ring value={0.4} label="40 of 100 squares filled" caption="40%" growOnEnter />);
+    expect(observer.disconnected).toBe(0);
+    unmount();
+    expect(observer.disconnected).toBeGreaterThan(0);
+  });
+});
+
+describe('IslandRings growOnEnter', () => {
+  const rings = [
+    { value: 0.75, label: '75 of 100 squares filled', caption: '75%' },
+    { value: 0.5, label: '50 of 75 squares paid', caption: '50%' },
+  ];
+
+  it('does not opt any ring in by default, so the organizer workspace is untouched', () => {
+    setReducedMotion(false);
+    const observer = stubObserver();
+    render(<IslandRings rings={rings} />);
+    expect(observer.observed).toHaveLength(0);
+  });
+
+  it('forwards the opt-in to every ring when the homepage preview asks for it', () => {
+    setReducedMotion(false);
+    const observer = stubObserver();
+    render(<IslandRings rings={rings} growOnEnter />);
+    expect(observer.observed).toHaveLength(2);
+  });
+});
+
+describe('device rim light', () => {
+  const tokens = readFileSync('src/design/tokens.css', 'utf8');
+  const rule = tokens.slice(tokens.indexOf('.device-rim::before'), tokens.indexOf('}', tokens.indexOf('mask-composite: exclude')));
+
+  it('is a single-hue gradient, not a multi-color one', () => {
+    const stops = [...rule.matchAll(/rgba?\([^)]*\)|var\(--g-rim[\w-]*\)/g)].map(([s]) => s);
+    // Every stop resolves to one of the three white rim tokens: one hue, three alphas.
+    expect(stops.length).toBeGreaterThan(2);
+    for (const stop of stops) expect(stop).toMatch(/^var\(--g-rim(-soft|-none)?\)$/);
+    for (const name of ['--g-rim', '--g-rim-soft', '--g-rim-none']) {
+      expect(tokens).toMatch(new RegExp(`${name}:\\s*rgba\\(255, 255, 255, [\\d.]+\\)`));
+    }
+  });
+
+  it('is an edge, not a corner glow: the gradient is directional and fully out before halfway', () => {
+    expect(rule).toContain('linear-gradient(');
+    expect(rule).not.toContain('radial-gradient');
+    expect(rule).toMatch(/linear-gradient\(\s*145deg/);
+    const lastStop = Number(rule.match(/var\(--g-rim-none\)\s*(\d+)%/)![1]);
+    expect(lastStop).toBeLessThanOrEqual(50);
+  });
+
+  it('cannot change the frame box or add overflow, and is not animated', () => {
+    expect(rule).toContain('position: absolute');
+    expect(rule).toContain('inset: 0');
+    expect(rule).toContain('pointer-events: none');
+    expect(rule).not.toMatch(/animation|transition/);
+  });
+
+  it('is applied to the phone frame in both aspects, with a containing block and nothing else', () => {
+    const frame = readFileSync('src/features/homepage/renders/PhoneFrame.tsx', 'utf8');
+    expect(frame).toMatch(/const RIM = 'relative device-rim'/);
+    expect([...frame.matchAll(/\$\{RIM\}/g)]).toHaveLength(2);
+    // The exported hover lift is untouched: still `translate`, still motion-safe.
+    expect(frame).toContain('motion-safe:hover:-translate-y-1');
+    expect(frame).toContain("transitionProperty: 'background-color, translate, box-shadow'");
   });
 });

@@ -16,10 +16,16 @@ export interface OrganizerIslandProps {
   primary: OrganizerIslandAction | null;
   secondary?: OrganizerIslandAction[];
   note?: string;
+  /**
+   * Grow the collapsed rings from empty on first scroll entry. Off by default:
+   * the real organizer workspace keeps today's rendering, and only the
+   * homepage's inert preview of this island opts in.
+   */
+  growOnEnter?: boolean;
 }
 
 /** Always-dark status island: collapsed rings summarize fill/paid/draw, expanded surfaces the one primary action. */
-export default function OrganizerIsland({ filled, paid, drawn, phase, primary, secondary, note }: OrganizerIslandProps) {
+export default function OrganizerIsland({ filled, paid, drawn, phase, primary, secondary, note, growOnEnter = false }: OrganizerIslandProps) {
   const paidRatio = filled ? paid / filled : 0;
   const rings = [
     { value: filled / 100, caption: `${filled}%`, label: `${filled} of 100 squares filled` },
@@ -31,7 +37,7 @@ export default function OrganizerIsland({ filled, paid, drawn, phase, primary, s
     <Island
       label="Organizer status"
       placement="top"
-      collapsed={<IslandRings rings={rings} />}
+      collapsed={<IslandRings rings={rings} growOnEnter={growOnEnter} />}
       expanded={
         <div className="flex flex-col gap-3">
           <Eyebrow>{phase}</Eyebrow>

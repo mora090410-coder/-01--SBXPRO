@@ -17,6 +17,7 @@ export default function OrganizerPreviewInner() {
         paid={ORGANIZER_PAID}
         drawn={false}
         phase="Fill"
+        growOnEnter
         primary={{ label: 'Draw numbers', onClick: noop, disabled: true }}
       />
       <div className="px-4 pt-20 pb-4">

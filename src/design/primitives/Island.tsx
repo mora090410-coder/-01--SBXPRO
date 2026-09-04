@@ -96,13 +96,15 @@ export function Island({ label, collapsed, expanded, placement = 'top', defaultO
 
 interface IslandRingsProps {
   rings: Array<Pick<RingProps, 'value' | 'label' | 'caption' | 'tone'>>;
+  /** Forwarded to every ring. Off by default, so the real island is untouched. */
+  growOnEnter?: boolean;
 }
 
 /** Convenience row of up to three rings for the collapsed slot. */
-export function IslandRings({ rings }: IslandRingsProps) {
+export function IslandRings({ rings, growOnEnter = false }: IslandRingsProps) {
   return (
     <span className="flex items-center gap-5">
-      {rings.slice(0, 3).map((r) => <Ring key={r.label} {...r} />)}
+      {rings.slice(0, 3).map((r) => <Ring key={r.label} {...r} growOnEnter={growOnEnter} />)}
     </span>
   );
 }
