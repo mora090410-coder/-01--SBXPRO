@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { BoardFill } from '../../src/features/homepage/artifacts/BoardFill';
 import {
   AXIS_FROM,
+  AXIS_TO,
   FILL_SEED,
   SQUARE_SPAN,
   WINNER_INDEX,
@@ -191,6 +192,30 @@ describe('BoardFill driven state', () => {
     const root = screen.getByRole('img');
     expect(root).toHaveAttribute('data-fill', 'on');
     expect(root.style.getPropertyValue('--fill-progress')).toBe('0.4');
+  });
+
+  it('floors a negative progress so the prop can never blank the board', () => {
+    // A negative value would hold digit-roll's from-state and floor every
+    // square via the clamp — a blank board through the component's own API.
+    setReducedMotion(false);
+    stubObserver();
+    render(<BoardFill progress={-1} />);
+    expect(screen.getByRole('img').style.getPropertyValue('--fill-progress')).toBe('0');
+  });
+
+  it('finishes the last axis digit before progress reaches 1', () => {
+    // The squares carry slack; the digits must too. A driver that plateaus just
+    // short of 1.0 would otherwise rest both axis rows permanently half-rolled,
+    // with no way for the reader to finish them.
+    const css = readTokens();
+    const ramp = css.match(/\.board-fill-axis\b[^}]*?\*\s*-(\d+)s\)/s);
+    expect(ramp, 'axis ramp not found in tokens.css').not.toBeNull();
+    const seconds = Number(ramp![1]);
+    // digit-roll runs 1s, so a digit at threshold t completes at t + 1/seconds.
+    const lastDigitDoneAt = AXIS_TO + 1 / seconds;
+    // Assert the headroom, not a magic bound: the fill must be visibly finished
+    // before a driver that plateaus short of 1.0 leaves it stranded.
+    expect(1 - lastDigitDoneAt).toBeGreaterThan(0.04);
   });
 
   it('stays finished under prefers-reduced-motion even when progress is passed', () => {

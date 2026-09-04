@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { Eyebrow, Reveal } from '../../../design/primitives';
+import { Eyebrow, Reveal, useReducedMotion } from '../../../design/primitives';
 import { BoardFill } from '../artifacts/BoardFill';
 import { useFillDriven, useScrollProgress } from '../atmosphere/useScrollProgress';
 
@@ -40,6 +40,7 @@ export function BoardFillSection() {
   // its own rect.top is a constant and it cannot measure its own travel. The
   // section does the measuring; the board's root takes the write, because an
   // element's own `--fill-progress` shadows an inherited one.
+  const reduced = useReducedMotion();
   const sectionRef = useRef<HTMLElement | null>(null);
   const boardRef = useRef<HTMLDivElement | null>(null);
   const driven = useFillDriven();
@@ -58,10 +59,12 @@ export function BoardFillSection() {
           would turn a journey into a swatch board. */}
       <div className="relative z-10 mx-auto w-full max-w-[1200px] px-6 py-16 md:px-12 md:py-24">
         <div className="grid gap-10 md:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] md:items-start md:gap-16">
-          {/* Sticky only from md up. `top-24` clears the header's height with
-              room to spare, and the board is capped so it always fits under it
-              on a laptop viewport. */}
-          <div className="md:sticky md:top-24">
+          {/* Sticky only from md up, and only when the board is actually going
+              to fill. Under reduced motion the board is already finished, so
+              pinning it would hold ~1.8 viewports of layout and return nothing.
+              `useReducedMotion` seeds from matchMedia in its state initializer,
+              so this is correct on the first render and cannot shift on paint. */}
+          <div className={reduced ? undefined : 'md:sticky md:top-24'}>
             <BoardFill
               ref={boardRef}
               progress={driven ? 0 : undefined}

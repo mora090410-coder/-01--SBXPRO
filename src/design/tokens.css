@@ -358,3 +358,17 @@
     transform: none;
   }
 }
+
+/* Safari < 16 and Firefox < 97 do not support `overflow: clip`, so every
+   `overflow-x-clip` on the page — the root and all four toned sections — is
+   dropped there. SectionTone is edge-anchored and reaches up to ~550px past the
+   viewport, so without a fallback those browsers gain real horizontal scroll.
+   `hidden` restores the clip. It also makes the root a scroll container again,
+   which costs the sticky board its pin on those browsers — the board still
+   fills, it just scrolls with the page. Overflow is the guarantee; the pin is
+   the enhancement. */
+@supports not (overflow: clip) {
+  [data-base] {
+    overflow-x: hidden;
+  }
+}
