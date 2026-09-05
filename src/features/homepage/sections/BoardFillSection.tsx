@@ -1,7 +1,8 @@
 import React, { useRef } from 'react';
-import { Eyebrow, Reveal, useReducedMotion } from '../../../design/primitives';
+import { Eyebrow, Reveal } from '../../../design/primitives';
 import { BoardFill } from '../artifacts/BoardFill';
 import { useFillDriven, useScrollProgress } from '../atmosphere/useScrollProgress';
+import { demoGame } from '../demoData';
 
 /**
  * Three facts, not three claims. Each one is checkable against the board sitting
@@ -10,9 +11,11 @@ import { useFillDriven, useScrollProgress } from '../atmosphere/useScrollProgres
  */
 const FACTS = [
   '100 squares. Your group fills them.',
-  'OPEN stays visible, so nobody argues about who had what.',
-  'Numbers are drawn only once the board is full.',
+  'Open squares stay clearly marked.',
+  'Draw the numbers when you\'re ready.',
 ] as const;
+
+const EXAMPLE_MATCHUP = demoGame.meta.split(' · ')[0];
 
 /**
  * The board fills as you scroll, with the facts accumulating beside it.
@@ -40,7 +43,6 @@ export function BoardFillSection() {
   // its own rect.top is a constant and it cannot measure its own travel. The
   // section does the measuring; the board's root takes the write, because an
   // element's own `--fill-progress` shadows an inherited one.
-  const reduced = useReducedMotion();
   const sectionRef = useRef<HTMLElement | null>(null);
   const boardRef = useRef<HTMLDivElement | null>(null);
   const driven = useFillDriven();
@@ -58,35 +60,38 @@ export function BoardFillSection() {
           cardinal and the score section's live, and a third tone in that gap
           would turn a journey into a swatch board. */}
       <div className="relative z-10 mx-auto w-full max-w-[1200px] px-6 py-16 md:px-12 md:py-24">
-        <div className="grid gap-10 md:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] md:items-start md:gap-16">
+        <div className="grid gap-8 md:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] md:items-start md:gap-x-16 md:gap-y-8">
+          <Reveal className="flex max-w-[520px] flex-col gap-3 md:col-start-2 md:row-start-1">
+            <Eyebrow>How a board fills</Eyebrow>
+            <h2 className="font-display text-[34px] leading-[1.05] text-fg md:text-[44px]">
+              Add your names. Then draw the numbers.
+            </h2>
+          </Reveal>
+
           {/* Sticky only from md up, and only when the board is actually going
               to fill. Under reduced motion the board is already finished, so
               pinning it would hold ~1.8 viewports of layout and return nothing.
-              `useReducedMotion` seeds from matchMedia in its state initializer,
-              so this is correct on the first render and cannot shift on paint. */}
-          <div className={reduced ? undefined : 'md:sticky md:top-24'}>
+              `driven` also stays false on phone and without an observer, keeping
+              every static fallback compact. */}
+          <figure className={`m-0 md:col-start-1 md:row-start-1 md:row-span-2 ${driven ? 'md:sticky md:top-24' : ''}`.trim()}>
             <BoardFill
               ref={boardRef}
               progress={driven ? 0 : undefined}
               className="mx-auto w-full max-w-[440px]"
             />
-          </div>
+            <figcaption className="mx-auto mt-3 w-full max-w-[440px] font-mono text-[12px] uppercase leading-none tracking-[0.12em] text-fg-3">
+              Example board · {EXAMPLE_MATCHUP}
+            </figcaption>
+          </figure>
 
-          <div className="flex flex-col gap-8">
-            <Reveal className="flex max-w-[520px] flex-col gap-3">
-              <Eyebrow>How a board fills</Eyebrow>
-              <h2 className="font-display text-[34px] leading-[1.05] text-fg md:text-[44px]">
-                Names go on. Numbers come last.
-              </h2>
-            </Reveal>
-
-            <ul className="flex flex-col gap-6 md:gap-0">
+          <div className="flex flex-col gap-8 md:col-start-2 md:row-start-2">
+            <ul className={`flex flex-col gap-6 ${driven ? 'md:gap-0' : ''}`.trim()}>
               {FACTS.map((fact, i) => (
                 <Reveal
                   as="li"
                   key={fact}
                   delay={i * 60}
-                  className="flex items-start md:min-h-[46vh] md:items-center"
+                  className={`flex items-start ${driven ? 'md:min-h-[46vh] md:items-center' : ''}`.trim()}
                 >
                   <p className="flex max-w-[420px] items-start gap-3 font-ui text-[17px] leading-[1.5] text-fg-2">
                     {/* The tick: a short hairline rule, not a bullet glyph. */}

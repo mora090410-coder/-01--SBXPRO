@@ -379,8 +379,8 @@ describe('The board fills as you scroll', () => {
 
   const FACTS = [
     '100 squares. Your group fills them.',
-    'OPEN stays visible, so nobody argues about who had what.',
-    'Numbers are drawn only once the board is full.',
+    'Open squares stay clearly marked.',
+    'Draw the numbers when you\'re ready.',
   ];
 
   const original = window.matchMedia;
@@ -400,7 +400,7 @@ describe('The board fills as you scroll', () => {
 
     const section = screen.getByTestId('board-fill-section');
     const board = within(section).getByRole('img');
-    expect(board).toHaveAccessibleName(/full 100-square board/);
+    expect(board).toHaveAccessibleName(/Example board/);
     // The resting state is the finished board: no attribute, no property.
     expect(board).not.toHaveAttribute('data-fill');
     expect(board.style.getPropertyValue('--fill-progress')).toBe('');
@@ -409,17 +409,24 @@ describe('The board fills as you scroll', () => {
 
     for (const fact of FACTS) expect(within(section).getByText(fact)).toBeInTheDocument();
     expect(section.querySelectorAll('[data-reveal]')).toHaveLength(0);
+    expect(board.parentElement!.className).not.toContain('md:sticky');
+    expect(section.querySelector('[class*="md:min-h-[46vh]"]')).toBeNull();
   });
 
   it('renders the finished board and all three facts with no observer at all', () => {
     setMatchMedia(() => false);
     renderPage();
     const section = screen.getByTestId('board-fill-section');
-    expect(within(section).getByRole('img')).not.toHaveAttribute('data-fill');
+    const board = within(section).getByRole('img');
+    expect(board).not.toHaveAttribute('data-fill');
     for (const fact of FACTS) expect(within(section).getByText(fact)).toBeInTheDocument();
+    expect(board.parentElement!.className).not.toContain('md:sticky');
+    expect(section.querySelector('[class*="md:min-h-[46vh]"]')).toBeNull();
   });
 
   it('is full-bleed with capped content, and pins the board only from md up', () => {
+    setMatchMedia((q) => q.includes('min-width'));
+    stubObserver();
     renderPage();
     const section = screen.getByTestId('board-fill-section');
     expect(section.className).toContain('relative');
@@ -431,6 +438,29 @@ describe('The board fills as you scroll', () => {
     expect(pinned.className).toContain('md:sticky');
     expect(pinned.className).toContain('md:top-24');
     expect(pinned.className).not.toMatch(/(^|\s)(sticky|fixed)(\s|$)/);
+  });
+
+  it('puts the heading before the example board in reading order and labels its matchup', () => {
+    renderPage();
+    const section = screen.getByTestId('board-fill-section');
+    const heading = within(section).getByRole('heading', { name: 'Add your names. Then draw the numbers.' });
+    const board = within(section).getByRole('img');
+    const caption = within(section).getByText('Example board · Chiefs at Eagles');
+
+    expect(heading.compareDocumentPosition(board) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(board).toHaveAccessibleName(/Example board.*Chiefs at Eagles/);
+    expect(caption).toBeVisible();
+    expect(within(section).getAllByRole('heading', { level: 2 })).toHaveLength(1);
+  });
+
+  it('uses compact spacing when the fill is not driven', () => {
+    setMatchMedia(() => false);
+    renderPage();
+    const section = screen.getByTestId('board-fill-section');
+    const boardWrapper = within(section).getByRole('img').parentElement!;
+
+    expect(boardWrapper.className).not.toContain('md:sticky');
+    expect(section.querySelector('[class*="md:min-h-[46vh]"]')).toBeNull();
   });
 
   it('clips the page root rather than hiding it, so the sticky board can pin at all', () => {

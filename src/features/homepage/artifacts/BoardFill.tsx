@@ -20,7 +20,7 @@ export interface BoardFillProps {
 
 const WINNER = demoWinnerSquares[0]!;
 
-const LABEL = `${demoGame.title} — the full 100-square board for ${demoGame.meta}. `
+const LABEL = `Example board: ${demoGame.title} — 100 squares for ${demoGame.meta}. `
   + `The winning square is ${demoGame.topAbbr} ${WINNER.top}, ${demoGame.leftAbbr} ${WINNER.left}, held by ${demoWinnerNow}.`;
 
 /** Custom properties are not in React's `CSSProperties`; this is the narrow cast. */

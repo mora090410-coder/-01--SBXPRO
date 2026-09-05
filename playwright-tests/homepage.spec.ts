@@ -67,8 +67,8 @@ const SECTION_HEADINGS: Array<[string, RegExp]> = [
  */
 const FILL_FACTS = [
   '100 squares. Your group fills them.',
-  'OPEN stays visible, so nobody argues about who had what.',
-  'Numbers are drawn only once the board is full.',
+  'Open squares stay clearly marked.',
+  'Draw the numbers when you\'re ready.',
 ] as const;
 
 /** A name that is really on the demo board, so "filled" means readable, not just present. */

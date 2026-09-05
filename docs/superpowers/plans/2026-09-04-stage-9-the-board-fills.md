@@ -2,6 +2,8 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+**Continuation (September 4):** Claude implemented Tasks 1–3 in `8f66c10` through `12c34aa`. The owner approved the heading “Add your names. Then draw the numbers.” and focused refinements that preserve the dark design. Current verification and remaining release boundary are recorded in `tasks/todo.md`; the owner subsequently approved commit and push to main on September 4.
+
 **Goal:** A second beat right after the hero where an empty 10×10 board fills with real names as you scroll, then the numbers draw and one square lights — the product telling its own story, with no video and no 3D.
 
 **Direction:** The owner reviewed apple.com/mac-studio and approved four techniques: a held visual with stat lines accumulating beside it, meters that grow on entry, rim lighting on the device artifact, and — the centrepiece — an empty grid that fills in. The dark aesthetic stays; there is **no** cream full-bleed flip and no gradient text (still banned). Apple's version leans on rendered film; ours leans on the real board, which is the stronger asset and the one anti-slop rule 1 demands.
@@ -45,10 +47,10 @@
 
 - `useScrollProgress({ ref, disabled })` returns nothing and instead writes `--fill-progress` directly onto the element via `el.style.setProperty`, rAF-throttled, `{ passive: true }`, cleaned up on unmount, and completely inert under reduced motion or when `disabled`. Progress is the section's travel through the viewport clamped to 0→1. Follow `useParallax.ts` for the shape, including the `matchMedia` change subscription.
 - `BoardFillSection`: `relative overflow-x-clip`, content capped at 1200px like every other section (see `Hero.tsx`). Two columns on `md`: the board sticky at `top-24` on the left, the copy on the right. Below `md` the board is **not** sticky and renders filled — a phone should not fight a pinned element.
-- Three fact lines accumulate as progress advances, each preceded by a short vertical rule in `text-fg-3` (the tick device from the reference). Each is a real fact about the product, not a claim: the number of squares, that OPEN stays visible, and that numbers are drawn only after the board is full. Draft copy — the implementer may tighten wording but not add claims:
+- Three fact lines accumulate as progress advances, each preceded by a short vertical rule in `text-fg-3` (the tick device from the reference). Each is a real fact about the product, not a claim: the number of squares, that OPEN stays visible, and that names are added before numbers are drawn. Draft copy — the implementer may tighten wording but not add claims:
   - `100 squares. Your group fills them.`
-  - `OPEN stays visible, so nobody argues about who had what.`
-  - `Numbers are drawn only once the board is full.`
+  - `Open squares stay clearly marked.`
+  - `Draw the numbers when you're ready.`
 - Section heading and eyebrow in the established scale (`Eyebrow`, `font-display text-[34px] md:text-[44px]`).
 - Placed in `Homepage.tsx` directly after `<Hero />` and before `<ScoreSection />`.
 - Under reduced motion the section renders the filled board and all three facts, with no sticky behaviour and no progress writes.

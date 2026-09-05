@@ -168,11 +168,12 @@ describe('BoardFill resting state', () => {
     }
   });
 
-  it('is one role="img" whose label names the board, the matchup, and the winning square', () => {
+  it('is one role="img" whose label identifies an example board, the matchup, and the winning square', () => {
     setReducedMotion(false);
     const { container } = render(<BoardFill />);
     const label = screen.getByRole('img').getAttribute('aria-label')!;
     const winner = demoWinnerSquares[0]!;
+    expect(label).toContain('Example board');
     expect(label).toContain(demoGame.title);
     expect(label).toContain(demoGame.meta);
     expect(label).toContain(`${demoGame.topAbbr} ${winner.top}`);
