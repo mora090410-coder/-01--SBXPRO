@@ -12,6 +12,7 @@ import { WinnerHighlights } from '../types';
 import { SAMPLE_BOARD } from '../constants';
 
 import ViewerShell from '../src/features/viewer/shell/ViewerShell';
+import SalesBoardViewer from '../src/features/viewer/sales/SalesBoardViewer';
 import OrganizerWorkspace from '../src/features/organizer/workspace/OrganizerWorkspace';
 import ErrorBoundary from './ErrorBoundary';
 import FullScreenLoading from './loading/FullScreenLoading';
@@ -47,13 +48,13 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
     const {
         game, setGame, board, setBoard, activePoolId, setActivePoolId, shareCode,
         ownerId, loadingPool, dataReady, loadPoolData, error: poolError, revision,
-        isActivated, isLocked, isPublished, winnerHistory, pendingMilestones,
+        isActivated, isLocked, isPublished, isShared, updatedAt, refreshing, refreshError, shareBoard, winnerHistory, pendingMilestones,
         notificationDeliveryIssues, updatePool, updatePayoutDescriptions, updatePublishedOpenSquares, publishPool
     } = poolData;
 
     const auth = useAuth();
     const isOwner = Boolean(auth.user && ownerId && auth.user.id === ownerId);
-    const boardServicesEnabled = Boolean(demoMode || isActivated || !isOwner);
+    const boardServicesEnabled = Boolean(demoMode || (isPublished && (isActivated || !isOwner)));
     const scoringBoardRef = routeShareCode || routeBoardId || (auth.user ? activePoolId : null) || shareCode;
     const liveScoring = useLiveScoring(
         game,
@@ -112,6 +113,29 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
     const ownerDataPoolId = isCommissionerMode ? activePoolId : null;
     const { entryMetaByIndex, setEntryMetaByIndex } = useContestEntries(ownerDataPoolId);
     const [billing, setBilling] = useState<BillingSummary | null>(null);
+    const [ownedPublicBoardId, setOwnedPublicBoardId] = useState<string | null>(null);
+    useEffect(() => {
+        let cancelled = false;
+        setOwnedPublicBoardId(null);
+        if (!routeShareCode || !auth.user) return;
+        void (async () => {
+            const { data, error } = await supabase.from('contests').select('id')
+                .eq('share_code', routeShareCode.toUpperCase()).eq('owner_id', auth.user!.id).maybeSingle();
+            if (!cancelled && !error) setOwnedPublicBoardId(data?.id || null);
+        })().catch(() => {});
+        return () => { cancelled = true; };
+    }, [routeShareCode, auth.user?.id]);
+
+    // Poll only the public sales record. Owner edits never get replaced by a timer.
+    useEffect(() => {
+        if (!routeShareCode || !isShared || isPublished || isCommissionerMode) return;
+        const refresh = () => {
+            if (document.visibilityState === 'visible') void loadPoolData(routeShareCode, { background: true });
+        };
+        const timer = window.setInterval(refresh, 30_000);
+        window.addEventListener('focus', refresh);
+        return () => { window.clearInterval(timer); window.removeEventListener('focus', refresh); };
+    }, [routeShareCode, isShared, isPublished, isCommissionerMode, loadPoolData]);
 
     // 5. Effects
     useEffect(() => {
@@ -254,7 +278,12 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
 
     const renderMainContent = (previewMode = false) => (
         <div className="flex-1 min-h-0">
-            {isLocked && !previewMode ? (
+            {isShared && !isPublished && !previewMode ? (
+                <SalesBoardViewer game={game} board={board} updatedAt={updatedAt}
+                    onRefresh={() => urlPoolId && void loadPoolData(urlPoolId, { background: true })}
+                    refreshing={refreshing} error={refreshError ? `Showing the last saved board. ${refreshError}` : null}
+                    organizerHref={ownedPublicBoardId ? `/boards/${ownedPublicBoardId}` : undefined} />
+            ) : isLocked && !previewMode ? (
                 <Base kind="dark"><main className="mx-auto max-w-[640px] px-6 py-20 flex flex-col gap-4" role="status">
                     <Eyebrow>Viewer link unavailable</Eyebrow>
                     <h1 className="font-display text-[34px] leading-[1.05] text-fg">This board is not published yet.</h1>
@@ -279,6 +308,7 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                         shareCode={routeShareCode || shareCode}
                         servicesEnabled={boardServicesEnabled}
                         organizerPreview={previewMode && isOwner}
+                        organizerHref={!previewMode && ownedPublicBoardId ? `/boards/${ownedPublicBoardId}` : undefined}
                         onShare={activePoolId && isActivated ? () => setShowShareModal(true) : undefined}
                     />
                 )}
@@ -294,9 +324,10 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
         return (
             <Base kind="dark"><main className="mx-auto max-w-[640px] px-6 py-20 flex flex-col gap-4" role="alert">
                 <Eyebrow>Board unavailable</Eyebrow>
-                <h1 className="font-display text-[34px] leading-[1.05] text-fg">This link does not open a published GridOne board.</h1>
+                <h1 className="font-display text-[34px] leading-[1.05] text-fg">This GridOne board is unavailable.</h1>
                 <p className="font-ui text-[17px] text-fg-2">{poolError}</p>
-                <CapsuleButton onClick={() => navigate('/')}>Go to GridOne</CapsuleButton>
+                <CapsuleButton onClick={() => urlPoolId && void loadPoolData(urlPoolId)}>Try again</CapsuleButton>
+                <CapsuleButton variant="quiet" onClick={() => navigate('/')}>Go to GridOne</CapsuleButton>
             </main></Base>
         );
     }
@@ -373,6 +404,8 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                     onLogout={handleLogout}
                     isActivated={isActivated}
                     isPublished={isPublished}
+                    isShared={isShared}
+                    onShareBoard={() => shareBoard(activePoolId || '')}
                     shareCode={shareCode}
                     renderPreview={() => (
                         <div className="relative z-50 flex min-h-[calc(100dvh-6rem)] w-full flex-col">

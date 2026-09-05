@@ -123,6 +123,7 @@ const buildAdmin = (script: AdminScript) => {
       const chain: any = {
         select: vi.fn(() => chain),
         not: vi.fn(() => chain),
+        in: vi.fn(() => chain),
         gte: vi.fn(() => chain),
         lte: vi.fn(async () => ({ data: script.contests || [], error: null })),
       };
@@ -165,6 +166,8 @@ const cronRequest = (secret = 'cron-secret') => new Request('https://example.tes
 
 const activeContest = (id: string) => ({
   id,
+  published_at: '2025-09-01',
+  status: 'published',
   game_external_id: '401000001',
   game_starts_at: '2025-09-28T20:25:00.000Z',
   side_team_abbr: 'DAL',

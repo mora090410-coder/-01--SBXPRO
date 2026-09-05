@@ -8,7 +8,7 @@ Responsive web application. React 19 + Vite on Cloudflare Pages, Cloudflare Page
 
 ## Product
 
-GridOne replaces the full paper football-squares workflow: building the 10×10 board, assigning sold squares, drawing and locking axis numbers, sharing one trustworthy viewer link, following the live NFL score, exploring next-score scenarios, and notifying quarter winners.
+GridOne replaces the full paper football-squares workflow: building the 10×10 board, allocating numbered squares to families, sharing one trustworthy viewer link during sales, recording buyers, drawing and locking axis numbers, following the live NFL score, exploring next-score scenarios, and notifying quarter winners.
 
 **Promise:** Build it once. Share one link. Let the board run game day.
 
@@ -24,7 +24,7 @@ One signed-in organizer owns and edits each board.
 
 ### Purchaser/viewer
 
-A parent, supporter, friend, or community member who receives a shared link. They do not need an account and cannot edit the board. On game day they want three answers immediately:
+A parent, supporter, friend, or community member who receives a shared link. They do not need an account and cannot edit the board. During sales they see permanent square numbers 1–100, public family allocations, buyer names, and unsold squares; families report purchases to the organizer. On game day they want three answers immediately:
 
 1. Where are my squares?
 2. Who wins now?
@@ -35,11 +35,11 @@ A parent, supporter, friend, or community member who receives a shared link. The
 The organizer workspace at `/boards/:boardId` moves through eight phases, evaluated by `src/features/organizer/lifecycle/organizerLifecycle.ts`.
 
 1. **Create Draft:** Name the board and link the scheduled NFL game. Native blank-board creation is primary; photo import is a recovery path.
-2. **Fill:** Assign purchaser/display names, one square at a time or as a selected block, and optionally record private seller and payment metadata.
+2. **Fill and share:** Allocate any selected squares to a publicly named family independently of recording buyers. Explicitly share the board before drawing game numbers; every team member sees all allocations and unsold squares. Private seller and payment metadata remains separate.
 3. **Reconcile:** Review what blocks publishing and what is only private follow-up. Advisories never block progression.
 4. **Draw:** Securely randomize and commit one fixed set of 0–9 digits per axis. Draft redraws are allowed before publication.
-5. **Preview:** Inspect the exact viewer experience and the public/private boundary while sharing is still off.
-6. **Go Live:** Publish the viewer record and short link. Publication — not the first draft draw — is the public trust boundary.
+5. **Preview:** Inspect the exact viewer experience and the public/private boundary before numbers are locked. If already shared, participants continue seeing the selling board without draft axis numbers.
+6. **Finalize:** Publish the locked viewer record through the existing atomic publication operation. The existing shared link switches from sales to game-day viewing. A draft draw is never exposed to participants.
 7. **Game Day:** Automatic ESPN scoring with explicit authority and freshness, plus a manual override the organizer controls.
 8. **Final Record:** Durably resolve Q1, Q2, Q3, and Final winners and deliver verified notifications exactly once.
 
@@ -49,7 +49,9 @@ Use `docs/organizer-journey-contract.md` for the exact control names, phase crit
 
 ## Viewer hierarchy
 
-The viewer at `/b/:shareCode` is composed by `src/features/viewer/shell/ViewerShell.tsx`. Phone viewers first see board identity, the score and current result, score authority and freshness, and **Find my squares**. Selecting a durable participant identity changes the structure to show:
+Before finalization, `/b/:shareCode` renders `SalesBoardViewer`: board identity, selling progress, a family filter, unsold highlighting, numbered board and accessible full square details. Saved changes refresh every 30 seconds while visible and on manual refresh; errors retain an explicitly last-known board. Finalization switches the same link to the game viewer.
+
+The finalized viewer at `/b/:shareCode` is composed by `src/features/viewer/shell/ViewerShell.tsx`. Phone viewers first see board identity, the score and current result, score authority and freshness, and **Find my squares**. Selecting a durable participant identity changes the structure to show:
 
 1. **Your squares:** count plus every matching coordinate/digit pair and `View on board`.
 2. **Your current result:** whether the selected viewer wins now.
@@ -94,6 +96,7 @@ The ladder is written once, in `src/features/homepage/pricing.ts`. Change it the
 - The Free tier includes **1 published board per account per season**.
 - The **Game Day** tier is **$9.99 once** for up to 5 published boards in the 2026 season.
 - The **Organization** tier is **$79 per season** for up to 50 published boards, an organization name on each board, one dashboard for all organization boards, and one receipt with the organization name.
+- First sharing reserves one board from the same seasonal allowance; finalizing that board never counts twice. Shared boards cannot be deleted to reclaim their allowance or break team links.
 - Payment gates published-board count only. Every published board includes live scores, scenarios, Find my squares, winner emails, and QR sharing.
 - "100 viewers" is a tested capacity target, not a hard gate or marketing guarantee.
 
@@ -101,7 +104,8 @@ The ladder is written once, in `src/features/homepage/pricing.ts`. Change it the
 
 ### Public through the board link
 
-- Published title, matchup, axis digits, privacy-reduced display names
+- Explicitly shared title, matchup, square IDs, buyer display names and public family allocations
+- Axis digits only after finalization; draft draws remain private
 - Organizer-published payout descriptions
 - Canonical score, winner history, and current-quarter scenarios
 
@@ -109,8 +113,8 @@ The ladder is written once, in `src/features/homepage/pricing.ts`. Change it the
 
 - Owner identity, full participant records, purchaser emails
 - Notification verification and delivery state
-- Seller attribution and paid/unpaid status
-- Draft data, Stripe identifiers, and audit history
+- Private seller attribution and paid/unpaid status (public family allocation is a separate, explicitly labelled field)
+- Unshared draft data, draft axis numbers, Stripe identifiers, and internal audit history
 
 ### System-only
 
@@ -127,7 +131,7 @@ Do not use pool, contest, player, guest, bet, wager, or payout-processing langua
 
 ## Scope
 
-### Shipped
+### Implemented surfaces
 
 - Organizer account and native board creation
 - Direct and block square assignment with private paid status and seller attribution

@@ -88,7 +88,7 @@ Primary action once the axes are committed: **`Preview`**. It opens the dialog `
 
 The confirming button is **`Publish viewer link`**. Publication is atomic (`010_atomic_board_publish.sql`) and mints the share code. If the tier allowance is spent, `UpgradeSheet` (`Choose a plan`) offers `Game Day · up to 5 boards` and `Organization · up to 50 boards`, with `Organization name` where it applies, and `Not now`.
 
-Success opens the `Published` sheet: `Copy link`, `Open public board`, the QR code, and `Enter game-day controls`. The island's primary action becomes `Copy link`.
+Success opens the `Published` sheet: `Copy link`, `Open public board`, the QR code, and `Manage board`. The island's primary action becomes `Copy link`.
 
 ### 6. Game Day
 
@@ -162,3 +162,12 @@ Presentation components hold no business rules. Every rule above is testable wit
 | Corrections | `tests/milestoneConfirmation.test.ts`, `tests/publishedSquareRename.integration.test.ts` |
 | Control names, focus, target size | `playwright-tests/accessibility-contract.spec.ts` |
 | Whole journey | `playwright-tests/organizer.spec.ts` |
+
+
+## Pre-game selling and public family allocation (September 4)
+
+Sharing and finalization are separate. The permanent IDs 1–100 identify positions before and after the 0–9 game axes are drawn. `Select squares` permits arbitrary selections including diagonals. `Allocate to family` opens `Assigned family`; `Allocate {n} squares` changes public allocation only. `Record buyer` retains buyer assignment behavior. Single-square `Assigned family (public)` is explicitly public. Private `Sold by (optional)` is never copied to public allocation. Clearing buyer names preserves family allocation.
+
+The visible selling summary contains `Share board` before sharing, or `Copy link` and `Open shared board` afterward. The next draw/preview action is visible without expanding Organizer status. `My boards` returns to `/dashboard` throughout. Dirty, failed, or conflicted saves block first sharing. `Share while selling` confirms public names and allocations, private payment/contact notes, and use of one seasonal allowance. `Enable shared board` calls the revision-checked owner endpoint. All 100 squares may be unsold when sharing; finalization still requires a buyer and explicit OPEN acknowledgment.
+
+For already shared boards, `Preview final board` leads to `Review and lock numbers` then `Lock game numbers`. Participants do not see draft axes; the same URL transitions only after final publication. `Manage board` closes success into the organizer workspace. Existing finalized-board edit/correction boundaries remain intact.

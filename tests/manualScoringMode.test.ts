@@ -62,7 +62,8 @@ const contestQuery = (gameExternalId: string | null) => ({
   maybeSingle: vi.fn().mockResolvedValue({
     data: {
       id: '11111111-1111-4111-8111-111111111111',
-      status: 'draft',
+      status: 'published',
+      published_at: '2026-09-01',
       game_external_id: gameExternalId,
     },
   }),
@@ -94,6 +95,7 @@ describe('manual scoring mode transitions', () => {
             id: '11111111-1111-4111-8111-111111111111',
             owner_id: 'owner',
             status: 'published',
+            published_at: '2026-09-01',
             game_external_id: '401000001',
             game_starts_at: '2026-09-13T17:00:00.000Z',
             side_team_abbr: 'CHI',

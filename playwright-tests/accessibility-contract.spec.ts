@@ -226,21 +226,6 @@ const installOrganizerBoard = async (page: Page, options: {
   }));
 };
 
-/**
- * The island opens on hover on pointer devices, so a plain click can toggle it
- * shut again. Keyboard activation is the deterministic path.
- */
-const openIsland = async (page: Page) => {
-  const island = page.getByRole('region', { name: 'Organizer status' });
-  const toggle = island.getByRole('button', { name: /Organizer status/ });
-  if ((await toggle.getAttribute('aria-expanded')) !== 'true') {
-    await toggle.focus();
-    await page.keyboard.press('Enter');
-  }
-  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
-  return island;
-};
-
 const expectTouchTarget = async (locator: Locator) => {
   const box = await locator.boundingBox();
   expect(box).not.toBeNull();
@@ -451,15 +436,13 @@ test.describe('Slice 2 signed-out accessibility contract automation', () => {
     // Advisories never masquerade as blockers, and the draw stays reachable.
     await expect(blockers).not.toContainText('OPEN squares remain');
     await expect(blockers).not.toContainText('still need follow-up');
-    const island = await openIsland(page);
-    await expect(island.getByRole('button', { name: 'Draw numbers' })).toBeEnabled();
+    await expect(page.getByRole('button', { name: 'Draw numbers' })).toBeEnabled();
   });
 
   test('organizer Draw open-square confirmation has accessible warning semantics and safe focus path', async ({ page }) => {
     await installOrganizerBoard(page, { board: organizerUndrawnBoard });
     await page.goto(`/boards/${ownerId}`);
-    const island = await openIsland(page);
-    await island.getByRole('button', { name: 'Draw numbers' }).click();
+    await page.getByRole('button', { name: 'Draw numbers' }).click();
 
     const confirmation = page.getByRole('group', { name: /99 squares are open\. Draw anyway\?/i });
     await expect(confirmation).toBeVisible();
@@ -480,8 +463,7 @@ test.describe('Slice 2 signed-out accessibility contract automation', () => {
   test('organizer publish confirmation summarizes the board and opens on a safe cancel', async ({ page }) => {
     await installOrganizerBoard(page, { board: organizerReadyBoard });
     await page.goto(`/boards/${ownerId}`);
-    const island = await openIsland(page);
-    await island.getByRole('button', { name: 'Preview', exact: true }).click();
+    await page.getByRole('button', { name: 'Preview', exact: true }).click();
 
     const preview = page.getByRole('dialog', { name: 'Private preview — sharing is off' });
     await expect(preview).toBeVisible();
@@ -515,8 +497,7 @@ test.describe('Slice 2 signed-out accessibility contract automation', () => {
   test('the share sheet paints above the private preview and Escape closes only the share sheet', async ({ page }) => {
     await installOrganizerBoard(page, { board: organizerReadyBoard, activated: true });
     await page.goto(`/boards/${ownerId}`);
-    const island = await openIsland(page);
-    await island.getByRole('button', { name: 'Preview', exact: true }).click();
+    await page.getByRole('button', { name: 'Preview', exact: true }).click();
 
     const preview = page.getByRole('dialog', { name: 'Private preview — sharing is off' });
     await expect(preview).toBeVisible();
@@ -595,8 +576,7 @@ test.describe('Slice 2 signed-out accessibility contract automation', () => {
     await expect(page.getByRole('region', { name: 'Before you can publish' }))
       .toContainText('This board changed in another session. Reload the latest version.');
 
-    const island = await openIsland(page);
-    await island.getByRole('button', { name: 'Preview', exact: true }).click();
+    await page.getByRole('button', { name: 'Preview', exact: true }).click();
     const preview = page.getByRole('dialog', { name: 'Private preview — sharing is off' });
     await expect(preview).toBeVisible();
     await expect(preview.getByRole('button', { name: 'Review and publish' })).toBeDisabled();

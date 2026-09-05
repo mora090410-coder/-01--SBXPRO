@@ -114,3 +114,10 @@ functions/api/stripe/webhook.ts
 - No UI logic in API handlers. No SDK side effects outside `services/`. Pure calculations in `*Model.ts` or `utils/`, with unit tests.
 - Every new network call declares its retry policy and its non-retry conditions.
 - Typed interfaces, not ad hoc object shapes.
+
+
+## Pre-game sharing (September 4)
+
+`026_pregame_sharing.sql` adds explicit `contests.shared_at`, guarded owner sharing via service-only `gridone_share_board`, seasonal allowance reservation, and safe public allocation projection. First share reserves activation; `published_at` continues to represent final number locking. All scoring entry points must require finalization as well as activation. The existing final snapshot lookup takes precedence over a strict sales projection at the same share code.
+
+`POST /api/pools/:id/share` requires verified organizer identity and current revision. `functions/_lib/pregameBoard.ts` validates exactly 100 buyer cells/public allocation labels and constructs the narrow selling payload. It never projects private metadata, draft numbers, scoring or contact information. `BoardData.allocationLabels` is explicit public data independent of private entry metadata. `usePoolData` tracks sharing separately and retains visible data during background refresh. `SalesBoardViewer` owns selling presentation; `ViewerShell` retains finalized game-day behavior.

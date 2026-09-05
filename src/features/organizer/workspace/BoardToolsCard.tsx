@@ -51,7 +51,7 @@ export default function BoardToolsCard({
       <Eyebrow>Board tools</Eyebrow>
       <div className="flex flex-col gap-2">
         <CapsuleButton variant="quiet" size="md" disabled={exporting} onClick={() => onExport('owners')}>
-          Send board
+          Share board image
         </CapsuleButton>
         {hasSellers && (
           <CapsuleButton variant="quiet" size="md" disabled={exporting} onClick={() => onExport('sellers')}>

@@ -18,6 +18,7 @@ export interface RangeAssignBarProps {
   busy: boolean;
   onApply: (input: RangeAssignInput) => void;
   onClear: () => void;
+  onAllocate?: (family: string) => void;
   /** Escape inside the bar leaves select mode, same as Escape on a square. */
   onExitSelectMode?: () => void;
 }
@@ -54,8 +55,11 @@ export default function RangeAssignBar({
   busy,
   onApply,
   onClear,
+  onAllocate,
   onExitSelectMode,
 }: RangeAssignBarProps) {
+  const [allocating, setAllocating] = useState(false);
+  const [family, setFamily] = useState('');
   const [name, setName] = useState('');
   const [seller, setSeller] = useState('');
   const [paid, setPaid] = useState<Paid>('unknown');
@@ -64,7 +68,7 @@ export default function RangeAssignBar({
   const [autoFocusName] = useState(() => !focusIsKeyboard());
   const radioRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
-  const canApply = name.trim().length > 0 && !busy;
+  const canApply = name.trim().length > 0 && name.trim().length <= 80 && !busy;
 
   const onPaymentKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>, position: number) => {
     const back = event.key === 'ArrowLeft' || event.key === 'ArrowUp';
@@ -91,8 +95,21 @@ export default function RangeAssignBar({
       <div aria-live="polite">
         <Eyebrow>{count} selected</Eyebrow>
       </div>
+      {onAllocate && !isPublished && <div className="flex flex-wrap gap-2">
+        <CapsuleButton variant={allocating ? 'quiet' : 'primary'} onClick={() => setAllocating(false)}>Record buyer</CapsuleButton>
+        <CapsuleButton variant={allocating ? 'primary' : 'quiet'} onClick={() => setAllocating(true)}>Allocate to family</CapsuleButton>
+      </div>}
+      {allocating ? <>
+        <CapsuleInput maxLength={80} label="Assigned family" value={family} onChange={(event) => setFamily(event.target.value)} autoFocus />
+        <p className="font-ui text-[14px] text-fg-2">Visible to everyone with the board link. Allocation does not mark a square sold or replace its buyer. Select any squares, including diagonals.</p>
+        <div className="flex flex-wrap gap-2">
+          <CapsuleButton disabled={!family.trim() || family.trim().length > 80 || busy} onClick={() => onAllocate?.(family.trim())}>Allocate {count} squares</CapsuleButton>
+          <CapsuleButton variant="quiet" onClick={onClear}>Clear selection</CapsuleButton>
+        </div>
+      </> : <>
       <CapsuleInput
         label="Name for these squares"
+        maxLength={80}
         autoFocus={autoFocusName}
         value={name}
         onChange={(event) => setName(event.target.value)}
@@ -139,6 +156,7 @@ export default function RangeAssignBar({
         </CapsuleButton>
         <CapsuleButton variant="quiet" onClick={onClear}>Clear selection</CapsuleButton>
       </div>
+      </>}
     </Glass>
   );
 }

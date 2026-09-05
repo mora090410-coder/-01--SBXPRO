@@ -74,15 +74,18 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
   const now = Date.now();
   const { data: contests, error: contestsError } = await admin
     .from('contests')
-    .select('id, game_external_id, game_starts_at, side_team_abbr, top_team_abbr, board_activations!inner(id), contest_score_state(scoring_mode, milestones_finalized_at)')
+    .select('id, published_at, status, game_external_id, game_starts_at, side_team_abbr, top_team_abbr, board_activations!inner(id), contest_score_state(scoring_mode, milestones_finalized_at)')
     .not('game_external_id', 'is', null)
+    .not('published_at', 'is', null)
+    .in('status', ['published', 'live', 'final'])
     .gte('game_starts_at', new Date(now - WINDOW_AFTER_KICKOFF_MS).toISOString())
     .lte('game_starts_at', new Date(now + WINDOW_BEFORE_KICKOFF_MS).toISOString());
   if (contestsError) return json({ error: 'Unable to load active boards.' }, 503);
 
   const active = (contests || []).filter((contest: any) => {
     const state = embeddedScoreState(contest);
-    return state?.scoring_mode !== 'manual' && !state?.milestones_finalized_at;
+    return Boolean(contest.published_at) && ['published', 'live', 'final'].includes(contest.status)
+      && state?.scoring_mode !== 'manual' && !state?.milestones_finalized_at;
   });
   if (active.length === 0) {
     return json({ active: 0, refreshed: 0, pollSeconds });

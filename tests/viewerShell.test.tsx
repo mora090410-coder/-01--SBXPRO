@@ -153,3 +153,8 @@ describe('ViewerShell', () => {
     expect(container.querySelector('[data-feature-flag]')).toBeNull();
   });
 });
+
+it('keeps the organizer return route available on the finalized public viewer', () => {
+  renderShell({ organizerHref: '/boards/owner-board' });
+  expect(screen.getByRole('link', { name: 'Manage board' })).toHaveAttribute('href', '/boards/owner-board');
+});

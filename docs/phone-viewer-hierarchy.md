@@ -151,3 +151,10 @@ Data arrives from `hooks/usePoolData`, `hooks/useContestEntries`, and `hooks/use
 - **Dialog:** focus starts in `Name used on board`, is contained, and returns to the trigger on close.
 - **320 and 390 widths:** no page-level horizontal overflow outside the board viewport.
 - **Reduced motion:** all content and state remain reachable.
+
+
+## Selling-stage viewer (September 4)
+
+An explicitly shared, unfinalized board renders `sales/SalesBoardViewer` before the game-day composition described above. Its phone hierarchy is board identity, pending draw explanation, sold/unsold progress and last update, Family filter and Highlight unsold, permanent 1–100 grid, selected-square full detail, and expandable matching-square details. The entire team can view all public family allocations; filters highlight without concealing the full grid. Allocation does not count as a buyer. One grid cell participates in the tab order; arrow keys move among cells. On phones the full 10×10 numbered overview fits the viewport; a checkmark and text legend distinguish sold squares. Full selected-square and matching-family details precede the grid, with a bounded list when many match. Desktop cells include buyer and family names.
+
+No game axes, scores, scenarios or winner signup appear before finalization. The board refreshes every 30 seconds while visible, on window focus, and via Refresh board. A failed refresh retains the last-known board with error context. A successful refresh clears prior errors. Final publication changes the composition at the same share URL. Authenticated owners receive a Manage board route; viewers cannot edit.

@@ -1,3 +1,4 @@
+import { validateAllocationLabels } from '../../../_lib/pregameBoard';
 import { createClient } from '@supabase/supabase-js';
 import { isValidAxis } from '../../../../utils/boardValidation';
 import { nextUpgradeTier, type PricingTier } from '../../../_lib/pricingTiers';
@@ -37,6 +38,9 @@ export const onRequestPost: PagesFunction = async ({ request, env, params }) => 
   if (error) return Response.json({ error: error.message }, { status: 500 });
   if (!contest) return Response.json({ error: 'Board not found.' }, { status: 404 });
   const board = contest.board_data || {};
+  if (board.isDynamic === true) return Response.json({ error: 'Legacy dynamic boards require a preservation plan before finalizing.' }, { status: 409 });
+  const allocationError = validateAllocationLabels(board.allocationLabels);
+  if (allocationError) return Response.json({ error: allocationError }, { status: 409 });
   const sideAxis = isValidAxis(board.leftAxis) ? board.leftAxis : contest.side_axis;
   const topAxis = isValidAxis(board.topAxis) ? board.topAxis : contest.top_axis;
   if (!isValidAxis(sideAxis) || !isValidAxis(topAxis)) {
@@ -66,6 +70,7 @@ export const onRequestPost: PagesFunction = async ({ request, env, params }) => 
     leftAxis: sideAxis,
     topAxis: topAxis,
     squares: normalizedNames,
+    ...(board.allocationLabels ? { allocationLabels: board.allocationLabels } : {}),
     isDynamic: false,
     allowOpenSquares: effectiveOpenSquareOptIn,
   };

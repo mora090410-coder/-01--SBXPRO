@@ -107,21 +107,6 @@ const installCreatedBoard = async (page: Page, boardId: string, title: string) =
   await installOrganizerSupport(page);
 };
 
-/**
- * The island opens on hover on pointer devices, so a plain click can toggle it
- * shut again. Keyboard activation is the deterministic path.
- */
-const openIsland = async (page: Page) => {
-  const island = page.getByRole('region', { name: 'Organizer status' });
-  const toggle = island.getByRole('button', { name: /Organizer status/ });
-  if ((await toggle.getAttribute('aria-expanded')) !== 'true') {
-    await toggle.focus();
-    await page.keyboard.press('Enter');
-  }
-  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
-  return island;
-};
-
 const quarterScores = {
   Q1: { left: 3, top: 7 },
   Q2: { left: 7, top: 7 },
@@ -280,7 +265,7 @@ test('invalid public links show an explicit unavailable state', async ({ page })
   }));
 
   await page.goto('/b/BADLINK2');
-  await expect(page.getByRole('alert')).toContainText('This link does not open a published GridOne board.');
+  await expect(page.getByRole('alert')).toContainText('This GridOne board is unavailable.');
 });
 
 test('draft organizer preview opens the private viewer without sharing the board', async ({ page }) => {
@@ -351,8 +336,7 @@ test('draft organizer preview opens the private viewer without sharing the board
   await page.keyboard.press('PageDown');
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(beforePageDown);
 
-  const island = await openIsland(page);
-  await island.getByRole('button', { name: 'Preview', exact: true }).click();
+  await page.getByRole('button', { name: 'Preview', exact: true }).click();
 
   const preview = page.getByRole('dialog', { name: 'Private preview — sharing is off' });
   await expect(preview).toBeVisible();
@@ -453,8 +437,7 @@ test('organizer flushes the latest draft before publishing the viewer link', asy
   await page.getByLabel('Board name').fill('Latest title');
   await page.getByLabel('Board name').press('Enter');
 
-  const island = await openIsland(page);
-  await island.getByRole('button', { name: 'Preview', exact: true }).click();
+  await page.getByRole('button', { name: 'Preview', exact: true }).click();
   await page.getByRole('button', { name: 'Review and publish' }).click();
   const publishDialog = page.getByRole('dialog', { name: 'Publish viewer link' });
   await expect(publishDialog).toBeVisible();

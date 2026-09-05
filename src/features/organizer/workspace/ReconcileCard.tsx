@@ -52,7 +52,13 @@ export default function ReconcileCard({ model, unpaidCount, highlightOpen, onTog
             ))}
           </ul>
         ) : (
-          <p>Nothing blocking publish.</p>
+          <p>{model.canPublish
+            ? 'Nothing blocking publish.'
+            : model.assignedCount === 0
+              ? 'Record buyers as squares sell. Draw game numbers when sales are finished.'
+              : model.canEnterDraw
+                ? 'When sales are finished, draw game numbers, then review and finalize the board.'
+                : 'Continue setting up the board before finalizing.'}</p>
         )}
       </div>
       <div role="region" aria-label="Private follow-up" className="border border-hairline rounded-control p-4">

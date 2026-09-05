@@ -51,6 +51,10 @@ interface PoolDataState {
     isPaid: boolean;
     isLocked: boolean;
     isPublished: boolean;
+    isShared: boolean;
+    updatedAt: string | null;
+    refreshing: boolean;
+    refreshError: string | null;
     winnerHistory: WinnerResolution[];
     pendingMilestones: PendingMilestone[];
     notificationDeliveryIssues: NotificationDeliveryIssue[];
@@ -60,7 +64,8 @@ interface UsePoolDataReturn extends PoolDataState {
     setGame: React.Dispatch<React.SetStateAction<GameState>>;
     setBoard: React.Dispatch<React.SetStateAction<BoardData>>;
     setActivePoolId: React.Dispatch<React.SetStateAction<string | null>>;
-    loadPoolData: (poolId: string) => Promise<void>;
+    loadPoolData: (poolId: string, options?: { background?: boolean }) => Promise<void>;
+    shareBoard: (poolId: string) => Promise<void>;
     publishPool: (currentData?: { game: GameState; board: BoardData }) => Promise<string | void>;
     updatePool: (poolId: string, data: { game: GameState; board: BoardData }) => Promise<boolean>;
     updatePayoutDescriptions: (poolId: string, descriptions: PayoutDescriptions) => Promise<PayoutDescriptions>;
@@ -84,6 +89,11 @@ export function usePoolData(): UsePoolDataReturn {
     const [isActivated, setIsActivated] = useState(false);
     const [isLocked, setIsLocked] = useState(false);
     const [isPublished, setIsPublished] = useState(false);
+    const [isShared, setIsShared] = useState(false);
+    const [updatedAt, setUpdatedAt] = useState<string | null>(null);
+    const [refreshing, setRefreshing] = useState(false);
+    const [refreshError, setRefreshError] = useState<string | null>(null);
+    const loadSequence = useRef(0);
     const [winnerHistory, setWinnerHistory] = useState<WinnerResolution[]>([]);
     const [pendingMilestones, setPendingMilestones] = useState<PendingMilestone[]>([]);
     const [notificationDeliveryIssues, setNotificationDeliveryIssues] = useState<NotificationDeliveryIssue[]>([]);
@@ -94,9 +104,12 @@ export function usePoolData(): UsePoolDataReturn {
 
 
     // Load pool data through the API so unpaid boards can be masked for non-owners.
-    const loadPoolData = useCallback(async (poolId: string) => {
-        setLoadingPool(true);
-        setError(null);
+    const loadPoolData = useCallback(async (poolId: string, options?: { background?: boolean }) => {
+        const sequence = ++loadSequence.current;
+        const background = options?.background === true;
+        if (background) setRefreshing(true);
+        else { setLoadingPool(true); setError(null); }
+        setRefreshError(null);
 
         try {
             const { data: sessionData } = await supabase.auth.getSession();
@@ -106,7 +119,9 @@ export function usePoolData(): UsePoolDataReturn {
             });
             const data = await response.json();
 
-            if (!response.ok) throw new Error(data.error || 'Pool not found');
+            if (sequence !== loadSequence.current) return;
+            if (!response.ok) throw Object.assign(new Error(data.error || 'Board not found'), { status: response.status });
+            setError(null);
 
             setActivePoolId(data.id || poolId);
             setShareCode(data.share_code || (poolId.length === 8 ? poolId : null));
@@ -116,6 +131,8 @@ export function usePoolData(): UsePoolDataReturn {
             setIsActivated(Boolean(data.is_activated));
             setIsLocked(Boolean(data.locked));
             setIsPublished(Boolean(data.published_at));
+            setIsShared(Boolean(data.shared_at || data.published_at));
+            setUpdatedAt(data.updated_at || data.shared_at || null);
             setWinnerHistory(Array.isArray(data.winner_history) ? data.winner_history : []);
             setPendingMilestones(Array.isArray(data.pending_milestones) ? data.pending_milestones : []);
             setNotificationDeliveryIssues(
@@ -139,15 +156,51 @@ export function usePoolData(): UsePoolDataReturn {
             delete (nextGame as any).activated_at;
 
             setGame(nextGame);
-            setBoard(data.board ? { ...data.board, isDynamic: false } : EMPTY_BOARD);
+            setBoard(data.board ? { ...data.board } : EMPTY_BOARD);
             setDataReady(true);
         } catch (err: any) {
             console.error("Load Pool Error:", err);
-            setError(err.message);
+            if (sequence !== loadSequence.current) return;
+            if (background && err.status !== 404 && err.status !== 403) setRefreshError(err.message);
+            else setError(err.message);
             setDataReady(true);
         } finally {
-            setLoadingPool(false);
+            if (sequence === loadSequence.current) { setLoadingPool(false); setRefreshing(false); }
         }
+    }, []);
+
+    // Shares only an explicitly saved board. Queue with writes so the revision is current.
+    const shareBoard = useCallback((poolId: string): Promise<void> => {
+        const run = async () => {
+            const currentRevision = revisionRef.current;
+            if (!currentRevision) throw new Error('Reload this board before sharing.');
+            const { data } = await supabase.auth.getSession();
+            const token = data.session?.access_token;
+            if (!token) throw new Error('Sign in before sharing.');
+            const response = await fetch(`/api/pools/${poolId}/share`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify({ revision: currentRevision }),
+            });
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                throw Object.assign(new Error(result.error || 'The board could not be shared. Try again.'), {
+                    code: result.code, upgradeTo: result.upgradeTo,
+                });
+            }
+            if (!result.shared || !result.shareCode || !Number.isInteger(result.revision)) {
+                throw new Error('Sharing could not be confirmed. Reload the board before trying again.');
+            }
+            revisionRef.current = result.revision;
+            setRevision(result.revision);
+            setShareCode(result.shareCode);
+            setIsShared(true);
+            setIsActivated(true);
+            setUpdatedAt(result.sharedAt || null);
+        };
+        const queued = updateQueueRef.current.then(run, run);
+        updateQueueRef.current = queued.then(() => undefined, () => undefined);
+        return queued;
     }, []);
 
     // Create a board through the authenticated API.
@@ -370,6 +423,11 @@ export function usePoolData(): UsePoolDataReturn {
         isPaid: isActivated,
         isLocked,
         isPublished,
+        isShared,
+        updatedAt,
+        refreshing,
+        refreshError,
+        shareBoard,
         winnerHistory,
         pendingMilestones,
         notificationDeliveryIssues,

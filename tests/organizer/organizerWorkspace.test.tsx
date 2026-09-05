@@ -421,7 +421,7 @@ describe('OrganizerWorkspace publish', () => {
     expect(onReload).not.toHaveBeenCalled();
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Enter game-day controls' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Manage board' }));
     });
 
     expect(onReload).toHaveBeenCalled();
@@ -925,4 +925,91 @@ describe('SquareSheet payment states', () => {
 
     expect(saveEntryMeta).toHaveBeenCalledWith('pool-1', expect.objectContaining({ cell_index: 0, paid_status: 'unknown' }));
   });
+});
+
+
+describe('pregame selling', () => {
+  it('shares before the draw with a public visibility confirmation and keeps management available', async () => {
+    const onShareBoard = vi.fn(async () => undefined);
+    renderWorkspace({ onShareBoard });
+    expect(screen.getByRole('link', { name: 'My boards' })).toHaveAttribute('href', '/dashboard');
+    fireEvent.click(screen.getByRole('button', { name: 'Share board' }));
+    expect(screen.getByText(/Everyone with the link can see buyer names and assigned families/)).toBeInTheDocument();
+    expect(onShareBoard).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Enable shared board' }));
+    await waitFor(() => expect(onShareBoard).toHaveBeenCalledOnce());
+  });
+  it('allocates diagonal squares without creating buyers or replacing existing buyers', async () => {
+    const { onApply } = renderWorkspace({ board: boardWithAssignments(1) });
+    fireEvent.click(screen.getByRole('button', { name: 'Select squares' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Square 1, assigned to Ann R.' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Square 12, unassigned' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Allocate to family' }));
+    fireEvent.change(screen.getByRole('textbox', { name: 'Assigned family' }), { target: { value: 'Mora family' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Allocate 2 squares' }));
+    await waitFor(() => {
+      const saved = onApply.mock.calls.at(-1)?.[1];
+      expect(saved?.allocationLabels?.[0]).toBe('Mora family');
+      expect(saved?.allocationLabels?.[11]).toBe('Mora family');
+      expect(saved?.squares[0]).toEqual(['Ann R.']);
+      expect(saved?.squares[11]).toEqual([]);
+    });
+  });
+});
+
+
+it('blocks sharing while a failed draft save needs recovery', async () => {
+  const onShareBoard = vi.fn(async () => undefined);
+  renderWorkspace({ onShareBoard, onPublish: vi.fn(async () => { throw new Error('offline'); }) });
+  const title = screen.getByRole('textbox', { name: 'Board name' });
+  fireEvent.change(title, { target: { value: 'New name' } });
+  fireEvent.blur(title);
+  expect(screen.getByRole('button', { name: 'Share board' })).toBeDisabled();
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument());
+  expect(screen.getByRole('button', { name: 'Share board' })).toBeDisabled();
+  expect(onShareBoard).not.toHaveBeenCalled();
+});
+
+it('shows sharing errors in the dialog and allows retry without leaving the workspace', async () => {
+  const onShareBoard = vi.fn().mockRejectedValueOnce(new Error('Connection lost. Try again.')).mockResolvedValueOnce(undefined);
+  renderWorkspace({ onShareBoard });
+  fireEvent.click(screen.getByRole('button', { name: 'Share board' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Enable shared board' }));
+  await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Connection lost. Try again.'));
+  fireEvent.click(screen.getByRole('button', { name: 'Enable shared board' }));
+  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  expect(screen.getByRole('link', {name: 'My boards'})).toBeInTheDocument();
+});
+
+it('clears buyers while retaining family allocations', async () => {
+  const allocations = Array.from({length: 100}, (_, index) => index === 11 ? 'Mora family' : null);
+  const {onApply} = renderWorkspace({board: {...boardWithAssignments(12), allocationLabels: allocations}});
+  fireEvent.click(screen.getByRole('button', {name: 'Clear all names'}));
+  fireEvent.click(screen.getByRole('button', {name: 'Confirm clear'}));
+  await waitFor(() => {
+    expect(lastBoard(onApply).squares.every(names => names.length === 0)).toBe(true);
+    expect(lastBoard(onApply).allocationLabels).toEqual(allocations);
+  });
+});
+
+it('focuses Cancel before enabling public sharing and cancels without sharing', () => {
+  const onShareBoard = vi.fn(async () => undefined);
+  renderWorkspace({onShareBoard});
+  fireEvent.click(screen.getByRole('button', {name: 'Share board'}));
+  const cancel = screen.getByRole('button', {name: 'Cancel'});
+  expect(cancel).toHaveFocus();
+  fireEvent.click(cancel);
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  expect(onShareBoard).not.toHaveBeenCalled();
+});
+
+it('can reload after an uncertain share response even when the draft is clean', async () => {
+  const onReload = vi.fn(async () => undefined);
+  renderWorkspace({ onReload, onShareBoard: vi.fn(async () => {throw new Error('Response lost');}) });
+  fireEvent.click(screen.getByRole('button', {name: 'Share board'}));
+  fireEvent.click(screen.getByRole('button', {name: 'Enable shared board'}));
+  await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Response lost'));
+  fireEvent.click(screen.getByRole('button', {name: 'Reload board'}));
+  await waitFor(() => expect(onReload).toHaveBeenCalledOnce());
+  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
 });

@@ -68,6 +68,8 @@ export interface BoardData {
   leftAxis: (number | null)[];   // Standard board (backward compatible)
   topAxis: (number | null)[];     // Standard board (backward compatible)
   squares: string[][];
+  /** Explicit public family allocations, one label per permanent square 1–100. */
+  allocationLabels?: (string | null)[];
   /** Explicit organizer opt-in recorded with a number draw that includes open squares. */
   allowOpenSquares?: boolean;
 

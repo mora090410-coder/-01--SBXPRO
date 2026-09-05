@@ -44,7 +44,7 @@ export default function PublishedSheet({ open, shareUrl, onClose, onOpenViewer, 
         )}
         <div className="flex w-full flex-col-reverse gap-3 sm:flex-row sm:justify-end">
           <CapsuleButton type="button" variant="quiet" onClick={onOpenViewer}>Open public board</CapsuleButton>
-          <CapsuleButton type="button" onClick={onEnterGameDay}>Enter game-day controls</CapsuleButton>
+          <CapsuleButton type="button" onClick={onEnterGameDay}>Manage board</CapsuleButton>
         </div>
       </div>
     </Sheet>

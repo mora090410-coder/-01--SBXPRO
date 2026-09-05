@@ -94,6 +94,7 @@ export default function WorkspaceHeader({
 
   return (
     <header className="flex flex-col gap-3">
+      <a href="/dashboard" className="inline-flex min-h-11 w-fit items-center rounded-control font-ui text-[14px] text-fg-2 focus-visible:ring-2 focus-visible:ring-action">My boards</a>
       <div className="flex min-w-0 flex-wrap items-start justify-between gap-4 [&>*:first-child]:min-w-0 [&>*:first-child]:flex-1">
         <div className="flex-1 min-w-0">
           <Eyebrow>{isPublished ? 'Published board' : 'Organizer'}</Eyebrow>

@@ -23,11 +23,14 @@ const authenticatedOwner = async (request: Request, env: any, contestId: string)
   });
   const { data: contest } = await admin
     .from('contests')
-    .select('id, status, game_external_id')
+    .select('id, status, published_at, game_external_id')
     .eq('id', contestId)
     .eq('owner_id', authData.user.id)
     .maybeSingle();
   if (!contest) return { error: json({ error: 'Board not found.' }, 404) };
+  if (!contest.published_at || !['published', 'live', 'final'].includes(contest.status)) {
+    return { error: json({ error: 'Draw and lock the board numbers before managing scores.' }, 409) };
+  }
   return { admin, user: authData.user, contest };
 };
 

@@ -54,6 +54,7 @@ const visibleAdmin = (
       operations.push({ method: 'is', args });
       return chain;
     }),
+    not: vi.fn(() => chain),
     in: vi.fn((...args: unknown[]) => {
       operations.push({ method: 'in', args });
       return chain;
@@ -168,7 +169,7 @@ describe('shared public board visibility', () => {
       JSON.stringify(PUBLIC_BOARD_NOT_FOUND),
       JSON.stringify(PUBLIC_BOARD_NOT_FOUND),
     ]);
-    expect(boardAdmin.tables).toEqual(['public_board_snapshots']);
+    expect(boardAdmin.tables).toEqual(['public_board_snapshots', 'contests', 'public_board_snapshots']);
     expect(scoreAdmin.tables).toEqual(['public_board_snapshots']);
     expect(subscribeAdmin.tables).toEqual(['public_board_snapshots']);
   });

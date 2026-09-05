@@ -15,6 +15,7 @@ interface Contest {
     settings: GameState;
     board_data?: BoardData | null;
     published_at?: string | null;
+    shared_at?: string | null;
     board_activations?: { id: string } | Array<{ id: string }> | null;
 }
 
@@ -158,7 +159,7 @@ const Dashboard: React.FC = () => {
         try {
             const { data, error } = await supabase
                 .from('contests')
-                .select('id, title, created_at, settings, board_data, published_at, board_activations(id)')
+                .select('id, title, created_at, settings, board_data, published_at, shared_at, board_activations(id)')
                 .eq('owner_id', user.id)
                 .order('created_at', { ascending: false });
 
@@ -334,11 +335,12 @@ const Dashboard: React.FC = () => {
                                                     {contest.settings?.leftAbbr || 'TBD'} at {contest.settings?.topAbbr || 'TBD'}
                                                 </span>
                                                 <CapsuleTag tone={published ? 'gold' : 'neutral'}>
-                                                    {published ? 'Published' : 'Draft'}
+                                                    {contest.shared_at && !contest.published_at ? 'Selling squares' : published ? 'Published' : 'Draft'}
                                                 </CapsuleTag>
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-5">
+                                        <div className="flex flex-wrap items-center gap-5">
+                                            <Link to={`/boards/${contest.id}`} className={CAPSULE_LINK} aria-label={`Manage ${boardName}`}>Manage board</Link>
                                             <IslandRings
                                                 rings={[
                                                     {
@@ -356,13 +358,13 @@ const Dashboard: React.FC = () => {
                                                     },
                                                 ]}
                                             />
-                                            <CapsuleButton
+                                            {!contest.shared_at && <CapsuleButton
                                                 variant="quiet"
                                                 onClick={(e) => void handleDelete(e, contest.id)}
                                                 aria-label={confirming ? `Confirm deletion of ${boardName}` : `Delete ${boardName}`}
                                             >
                                                 {confirming ? 'Confirm?' : 'Delete'}
-                                            </CapsuleButton>
+                                            </CapsuleButton>}
                                         </div>
                                     </Glass>
                                 </li>

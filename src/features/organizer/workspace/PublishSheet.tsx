@@ -4,6 +4,7 @@ import type { BoardData, GameState } from '../../../../types';
 
 export interface PublishSheetProps {
   open: boolean;
+  isShared?: boolean;
   onClose: () => void;
   game: GameState;
   board: BoardData;
@@ -31,12 +32,12 @@ const formatKickoff = (game: GameState): string => {
 };
 
 /** Confirmation summary shown before a board's viewer link goes live. */
-export default function PublishSheet({ open, onClose, game, board, allowance, pending, error, disabled, onPublish }: PublishSheetProps) {
+export default function PublishSheet({ open, isShared = false, onClose, game, board, allowance, pending, error, disabled, onPublish }: PublishSheetProps) {
   const assigned = board.squares.filter((s) => s.length).length;
   const open_ = 100 - assigned;
 
   return (
-    <Sheet open={open} onClose={onClose} title="Publish viewer link">
+    <Sheet open={open} onClose={onClose} title={isShared ? 'Lock game numbers' : 'Publish viewer link'}>
       <div className="flex flex-col gap-5">
         <CapsuleButton type="button" variant="quiet" disabled={pending} onClick={onClose} className="self-start">
           Cancel
@@ -63,13 +64,14 @@ export default function PublishSheet({ open, onClose, game, board, allowance, pe
 
         <div className="flex flex-col gap-1">
           <h3 className="font-ui text-[14px] font-medium text-fg">What becomes public</h3>
-          <p className="font-ui text-[14px] text-fg-2">Board name, matchup, axis digits, square labels, OPEN squares, payout/rules descriptions, and correction history.</p>
+          <p className="font-ui text-[14px] text-fg-2">Board name, matchup, axis digits, buyer names, public family allocations, OPEN squares, payout/rules descriptions, and correction history.</p>
         </div>
         <div className="flex flex-col gap-1">
           <h3 className="font-ui text-[14px] font-medium text-fg">What remains private</h3>
           <p className="font-ui text-[14px] text-fg-2">Payment status, seller attribution, contact details, and organizer notes.</p>
         </div>
 
+        {isShared && <p className="font-ui text-[14px] text-fg-2">Your existing link will show the final numbers. Numbers and family allocations lock; later buyer corrections are recorded publicly. This uses no additional board from your season allowance.</p>}
         {allowance && (
           <CapsuleTag>{allowance.used} of {allowance.allowance} published this season · {tierLabel(allowance.tier)}</CapsuleTag>
         )}
@@ -80,7 +82,7 @@ export default function PublishSheet({ open, onClose, game, board, allowance, pe
 
         <div className="flex justify-end">
           <CapsuleButton type="button" disabled={disabled || pending} aria-busy={pending} onClick={onPublish}>
-            {pending ? 'Publishing…' : 'Publish viewer link'}
+            {pending ? (isShared ? 'Locking…' : 'Publishing…') : (isShared ? 'Lock game numbers' : 'Publish viewer link')}
           </CapsuleButton>
         </div>
       </div>

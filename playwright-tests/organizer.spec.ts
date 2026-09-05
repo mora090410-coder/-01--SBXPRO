@@ -119,21 +119,6 @@ const installOrganizerBoard = async (page: Page) => {
   }));
 };
 
-/**
- * The island opens on hover on pointer devices, so a plain click can toggle it
- * shut again. Keyboard activation is the deterministic path.
- */
-const openIsland = async (page: Page) => {
-  const island = page.getByRole('region', { name: 'Organizer status' });
-  const toggle = island.getByRole('button', { name: /Organizer status/ });
-  if ((await toggle.getAttribute('aria-expanded')) !== 'true') {
-    await toggle.focus();
-    await page.keyboard.press('Enter');
-  }
-  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
-  return island;
-};
-
 test.describe('organizer workspace contract', () => {
   test('create route redirects an unauthenticated visitor into the login flow', async ({ page }) => {
     await page.goto('/create');
@@ -166,7 +151,7 @@ test.describe('organizer workspace contract', () => {
     await expect(main.getByText('0 of 1 published · Free')).toBeVisible();
     await expect(main.getByRole('link', { name: 'New board' }).first()).toBeVisible();
 
-    await main.getByRole('link', { name: 'Parkside browser board' }).click();
+    await main.getByRole('link', { name: 'Parkside browser board', exact: true }).click();
     await expect(page).toHaveURL(new RegExp(`/boards/${boardId}$`));
     await expect(page.getByRole('main', { name: 'Parkside browser board workspace' })).toBeVisible();
   });
@@ -183,8 +168,9 @@ test.describe('organizer workspace contract', () => {
     await expect(page.getByRole('button', { name: 'Square 1, assigned to Ava' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Square 2, unassigned' })).toBeVisible();
 
-    const island = await openIsland(page);
-    await expect(island.getByRole('button', { name: 'Draw numbers' })).toBeVisible();
+    await expect(page.getByRole('region', { name: 'Organizer status' })).toBeVisible();
+    // The next step is available without expanding organizer status.
+    await expect(page.getByRole('button', { name: 'Draw numbers' })).toBeVisible();
 
     const overflow = await page.evaluate(() => {
       const width = document.documentElement.clientWidth;

@@ -280,7 +280,7 @@ describe('PublishedSheet', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Open public board' }));
     expect(onOpenViewer).toHaveBeenCalled();
-    fireEvent.click(screen.getByRole('button', { name: 'Enter game-day controls' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Manage board' }));
     expect(onEnterGameDay).toHaveBeenCalled();
   });
 
@@ -298,4 +298,11 @@ describe('PublishedSheet', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Copy link' }));
     expect(await screen.findByRole('alert')).toBeInTheDocument();
   });
+});
+
+it('describes finalizing an already shared board without claiming sharing is off', () => {
+  render(<PreviewSheet open isShared onClose={vi.fn()} canPublish onReviewPublish={vi.fn()}>Board</PreviewSheet>);
+  expect(screen.getByRole('dialog', {name: 'Preview final board'})).toBeInTheDocument();
+  expect(screen.getByRole('button', {name: 'Review and lock numbers'})).toBeInTheDocument();
+  expect(screen.queryByText(/sharing is off/)).not.toBeInTheDocument();
 });

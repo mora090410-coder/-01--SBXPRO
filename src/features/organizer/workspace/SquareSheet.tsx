@@ -7,10 +7,11 @@ export interface SquareSheetProps {
   open: boolean;
   index: number | null;
   name: string;
+  allocationLabel?: string | null;
   meta?: EntryMeta;
   isPublished: boolean;
   hasNextOpen: boolean;
-  onSave: (index: number, name: string, meta: EntryMeta, advance: boolean) => void;
+  onSave: (index: number, name: string, meta: EntryMeta, advance: boolean, allocationLabel?: string | null) => void;
   onClose: () => void;
 }
 
@@ -25,7 +26,8 @@ const PAID_OPTIONS: { value: PaidStatus; label: string; tone: 'neutral' | 'cardi
 const PUBLISHED_HELPER = 'This board is published. Renaming a square is recorded in the board history and updates the shared link right away.';
 
 /** Bottom sheet for assigning a name, seller, and paid status to one square. */
-export default function SquareSheet({ open, index, name, meta, isPublished, hasNextOpen, onSave, onClose }: SquareSheetProps) {
+export default function SquareSheet({ open, index, name, allocationLabel, meta, isPublished, hasNextOpen, onSave, onClose }: SquareSheetProps) {
+  const [familyValue, setFamilyValue] = useState(allocationLabel ?? '');
   const [nameValue, setNameValue] = useState(name);
   const [sellerValue, setSellerValue] = useState(meta?.seller_label ?? '');
   const [paidStatus, setPaidStatus] = useState<PaidStatus>(meta?.paid_status ?? 'unknown');
@@ -34,6 +36,7 @@ export default function SquareSheet({ open, index, name, meta, isPublished, hasN
   useEffect(() => {
     if (!open) return;
     setNameValue(name);
+    setFamilyValue(allocationLabel ?? '');
     setSellerValue(meta?.seller_label ?? '');
     setPaidStatus(meta?.paid_status ?? 'unknown');
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -53,8 +56,9 @@ export default function SquareSheet({ open, index, name, meta, isPublished, hasN
   const showSaveAndNext = hasNextOpen && !isPublished;
 
   const save = (advance: boolean) => {
-    if (index === null) return;
-    onSave(index, nameValue, buildMeta(), advance);
+    if (index === null || familyValue.trim().length > 80 || nameValue.trim().length > 80) return;
+    if (allocationLabel !== undefined || familyValue) onSave(index, nameValue, buildMeta(), advance, isPublished ? allocationLabel : familyValue.trim() || null);
+    else onSave(index, nameValue, buildMeta(), advance);
   };
 
   const onNameKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -79,11 +83,20 @@ export default function SquareSheet({ open, index, name, meta, isPublished, hasN
         {isPublished && <p className="font-ui text-[14px] text-fg-2">{PUBLISHED_HELPER}</p>}
         <CapsuleInput
           label="Name on the board"
+          maxLength={80}
           value={nameValue}
           onChange={(event) => setNameValue(event.target.value)}
           onKeyDown={onNameKeyDown}
           autoFocus
         />
+        <CapsuleInput
+          label="Assigned family (public)"
+          maxLength={80}
+          value={familyValue}
+          readOnly={isPublished}
+          onChange={(event) => setFamilyValue(event.target.value)}
+        />
+        <p className="font-ui text-[14px] text-fg-2">Visible to everyone with the board link. Leave the buyer name empty until this square is sold.{isPublished ? ' Family allocations are locked.' : ''}</p>
         <CapsuleInput
           label="Sold by (optional)"
           value={sellerValue}
@@ -109,8 +122,8 @@ export default function SquareSheet({ open, index, name, meta, isPublished, hasN
           </div>
         </div>
         <div className="flex gap-2 pt-2">
-          <CapsuleButton variant="quiet" onClick={() => save(false)}>Save</CapsuleButton>
-          {showSaveAndNext && <CapsuleButton onClick={() => save(true)}>Save and next</CapsuleButton>}
+          <CapsuleButton variant="quiet" disabled={nameValue.trim().length > 80 || familyValue.trim().length > 80} onClick={() => save(false)}>Save</CapsuleButton>
+          {showSaveAndNext && <CapsuleButton disabled={nameValue.trim().length > 80 || familyValue.trim().length > 80} onClick={() => save(true)}>Save and next</CapsuleButton>}
         </div>
       </div>
     </Sheet>

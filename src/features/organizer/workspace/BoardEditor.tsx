@@ -274,7 +274,9 @@ export default function BoardEditor({
                     const paid = entryMeta[index]?.paid_status === 'paid';
                     const disabled = isCellDisabled(isOpen);
                     const selected = selectMode && selection.has(index);
-                    const label = isOpen ? `Square ${index + 1}, unassigned` : `Square ${index + 1}, assigned to ${name}`;
+                    const family = board.allocationLabels?.[index];
+                    const baseLabel = isOpen ? `Square ${index + 1}, unassigned` : `Square ${index + 1}, assigned to ${name}`;
+                    const label = family ? `${baseLabel}, allocated to ${family}${isOpen ? ', unsold' : ''}` : baseLabel;
                     const openClasses = 'bg-transparent border border-dashed border-hairline text-fg-3';
                     const assignedClasses = 'bg-panel text-fg';
                     const highlightClasses = highlightOpen && isOpen ? 'ring-2 ring-tone-cardinal' : '';
@@ -295,6 +297,9 @@ export default function BoardEditor({
                         onKeyDown={(event) => onCellKeyDown(index, event)}
                         className={`flex min-h-11 flex-col items-center justify-center gap-0.5 rounded-cell px-1 py-1 font-ui text-[12px] transition-[background-color] duration-[var(--g-dur-state)] ease-[var(--g-ease-state)] disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action ${selectMode ? 'touch-pan-x' : ''} ${isOpen ? openClasses : assignedClasses} ${highlightClasses} ${selectedClasses}`.trim()}
                       >
+                        <span className="font-mono text-[10px] text-fg-3">#{index + 1}</span>
+                        {family && <span className="line-clamp-2 text-center text-[10px] text-fg-2">{family}</span>}
+                        {isOpen && <span className="text-[10px]">Unsold</span>}
                         {!isOpen && <span className="line-clamp-2 text-center leading-tight">{name}</span>}
                         {paid && <span className="font-mono text-[10px] text-fg-2">paid</span>}
                       </button>

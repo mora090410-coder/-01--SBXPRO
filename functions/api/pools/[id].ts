@@ -1,3 +1,4 @@
+import { findVisibleSalesBoard, validateAllocationLabels, validateSalesBoard } from '../../_lib/pregameBoard';
 import { createClient } from '@supabase/supabase-js';
 import {
   fetchScheduledGameById,
@@ -166,7 +167,7 @@ export const onRequestGet: PagesFunction = async ({ request, env, params }) => {
     if (uuidPattern.test(id) && auth.userId) {
       const { data, error } = await admin
         .from('contests')
-        .select('id, share_code, owner_id, title, status, revision, score_test_mode, settings, board_data, payout_descriptions, published_at, game_external_id, game_starts_at, side_team_name, side_team_abbr, top_team_name, top_team_abbr, board_activations(id)')
+        .select('id, share_code, owner_id, title, status, revision, updated_at, score_test_mode, settings, board_data, payout_descriptions, shared_at, published_at, game_external_id, game_starts_at, side_team_name, side_team_abbr, top_team_name, top_team_abbr, board_activations(id)')
         .eq('id', id)
         .eq('owner_id', auth.userId)
         .maybeSingle();
@@ -227,6 +228,9 @@ export const onRequestGet: PagesFunction = async ({ request, env, params }) => {
       }
       const useManualScores = scoreState?.scoring_mode === 'manual';
       return json(request, {
+        // Saved display settings can contain old transport fields. The canonical
+        // contest columns below must always win, especially its save revision.
+        ...(data.settings || {}),
         id: data.id,
         share_code: data.share_code,
         owner_id: data.owner_id,
@@ -234,7 +238,7 @@ export const onRequestGet: PagesFunction = async ({ request, env, params }) => {
         organizationDisplayName: publicSnapshot?.organization_display_name || undefined,
         status: data.status,
         revision: data.revision,
-        ...(data.settings || {}),
+        updated_at: data.updated_at,
         scoreTestMode: data.score_test_mode === true,
         payoutDescriptions: data.payout_descriptions || {},
         gameExternalId: data.game_external_id || data.settings?.gameExternalId || null,
@@ -251,6 +255,7 @@ export const onRequestGet: PagesFunction = async ({ request, env, params }) => {
         is_activated: hasBoardActivation(data.board_activations),
         locked: Boolean(data.published_at),
         published_at: data.published_at,
+        shared_at: data.shared_at,
         winner_history: publicSnapshot?.winner_history || [],
         pending_milestones: publicSnapshot?.pending_milestones || [],
         notification_delivery_issues: (terminalDeliveries || []).map((delivery: any) => ({
@@ -278,18 +283,25 @@ export const onRequestGet: PagesFunction = async ({ request, env, params }) => {
       return publicBoardNotFoundResponse(responseHeaders(request, env.PUBLIC_SITE_URL));
     }
 
-    const visibleBoard = await findVisiblePublicBoard(admin, id, {
+    const publicProjection = {
       snapshot: 'share_code, revision, board_title, organization_display_name, matchup, board, score, winner_history, pending_milestones, payout_descriptions, score_test_mode, published_at, updated_at',
       contest: 'id, status',
-    });
+    };
+    let visibleBoard = await findVisiblePublicBoard(admin, id, publicProjection);
     if (!visibleBoard) {
-      return publicBoardNotFoundResponse(responseHeaders(request, env.PUBLIC_SITE_URL));
+      const salesBoard = await findVisibleSalesBoard(admin, id);
+      if (salesBoard) return json(request, salesBoard, 200, env.PUBLIC_SITE_URL);
+      // Finalization can commit between these reads. Resolve the same link again
+      // before declaring it unavailable, without exposing unshared drafts.
+      visibleBoard = await findVisiblePublicBoard(admin, id, publicProjection);
+      if (!visibleBoard) return publicBoardNotFoundResponse(responseHeaders(request, env.PUBLIC_SITE_URL));
     }
     const data = visibleBoard.snapshot;
 
     const matchup = data.matchup || {};
     return json(request, {
       share_code: data.share_code,
+      stage: 'finalized',
       title: data.board_title,
       organizationDisplayName: data.organization_display_name || undefined,
       revision: data.revision,
@@ -420,12 +432,18 @@ export const onRequestPut: PagesFunction = async ({ request, env, params }) => {
     });
     const { data: currentContest, error: currentError } = await client
       .from('contests')
-      .select('published_at, status, revision, title, payout_labels, board_data, settings, game_external_id, game_starts_at, season_year, side_team_name, side_team_abbr, top_team_name, top_team_abbr')
+      .select('shared_at, published_at, status, revision, title, payout_labels, board_data, settings, game_external_id, game_starts_at, season_year, side_team_name, side_team_abbr, top_team_name, top_team_abbr')
       .eq('id', id)
       .eq('owner_id', auth.userId)
       .maybeSingle();
     if (currentError) throw currentError;
     if (!currentContest) return json(request, { error: 'Board not found.' }, 404, env.PUBLIC_SITE_URL);
+    if (body.board) {
+      const validationError = currentContest.shared_at && !currentContest.published_at
+        ? validateSalesBoard(body.board)
+        : validateAllocationLabels(body.board.allocationLabels);
+      if (validationError) return json(request, { error: validationError }, 400, env.PUBLIC_SITE_URL);
+    }
     if (currentContest.published_at && body.board && JSON.stringify(body.board) !== JSON.stringify(currentContest.board_data)) {
       return json(request, {
         error: 'Published assignments and number axes are locked.',

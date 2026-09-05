@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Base } from '../../../design/primitives';
+import { Base, Glass, Eyebrow, CapsuleButton, Sheet } from '../../../design/primitives';
 import type {
   BoardData,
   EntryMeta,
@@ -70,6 +70,8 @@ export interface OrganizerWorkspaceProps {
   onLogout: () => void;
   isActivated: boolean;
   isPublished: boolean;
+  isShared?: boolean;
+  onShareBoard?: () => Promise<void>;
   shareCode: string | null;
   renderPreview?: () => React.ReactNode;
   /** Server revision from usePoolData; drives the autosave conflict check. */
@@ -186,6 +188,8 @@ export default function OrganizerWorkspace({
   onLogout,
   isActivated,
   isPublished,
+  isShared = false,
+  onShareBoard,
   shareCode,
   renderPreview,
 }: OrganizerWorkspaceProps) {
@@ -199,6 +203,9 @@ export default function OrganizerWorkspace({
     onReload,
   });
 
+  const [shareOpen, setShareOpen] = useState(false);
+  const [sharePending, setSharePending] = useState(false);
+  const [shareError, setShareError] = useState<string | null>(null);
   const [drawRequested, setDrawRequested] = useState(false);
   const [drawPreview, setDrawPreview] = useState<{ top: number[]; left: number[] } | null>(null);
   const [selectedSquare, setSelectedSquare] = useState<number | null>(null);
@@ -345,14 +352,15 @@ export default function OrganizerWorkspace({
     return null;
   };
 
-  const saveSquare = async (index: number, name: string, meta: EntryMeta, advance: boolean) => {
+  const saveSquare = async (index: number, name: string, meta: EntryMeta, advance: boolean, allocationLabel?: string | null) => {
     const trimmed = name.trim();
+    if (trimmed.length > 80) { setAlert('Buyer names must be 80 characters or fewer.'); return; }
     let nextSquares: string[][] = board.squares;
     setBoard((current) => {
       const squares = [...current.squares];
       squares[index] = trimmed ? [trimmed] : [];
       nextSquares = squares;
-      return { ...current, squares };
+      return { ...current, squares, ...(allocationLabel !== undefined ? { allocationLabels: Array.from({ length: 100 }, (_, cell) => cell === index ? allocationLabel : current.allocationLabels?.[cell] ?? null) } : {}) };
     });
     setSelectedSquare(advance ? nextOpenAfter(nextSquares, index) : null);
 
@@ -377,6 +385,28 @@ export default function OrganizerWorkspace({
   };
 
   const clearSelection = () => setSelection(new Set<number>());
+  const allocateRange = (family: string) => {
+    if (isPublished || conflicted || !family.trim() || family.trim().length > 80) return;
+    setBoard((current) => ({ ...current, allocationLabels: Array.from({ length: 100 }, (_, index) => selection.has(index) ? family.trim() : current.allocationLabels?.[index] ?? null) }));
+    setNote(`Allocated ${selection.size} squares to ${family.trim()}. Buyer names are unchanged.`);
+    clearSelection();
+  };
+  const enableSharing = async () => {
+    if (!onShareBoard || sharePending || saveState.status !== 'clean') return;
+    setSharePending(true);
+    setShareError(null);
+    try {
+      const saved = await flush();
+      if (saved.status !== 'clean') throw new Error('Save your latest changes before sharing. Use Retry or Reload latest board above.');
+      await onShareBoard();
+      setShareOpen(false);
+      setNote('Your shared board is ready. Keep recording buyers here; everyone sees updates at the same link.');
+    } catch (error) {
+      const upgradeTo = (error as { upgradeTo?: 'gameday' | 'org' })?.upgradeTo;
+      if (upgradeTo) { setShareOpen(false); setUpgradeTier(upgradeTo); }
+      setShareError(error instanceof Error ? error.message : 'Sharing failed. Try again.');
+    } finally { setSharePending(false); }
+  };
 
   // How many selected squares an apply would overwrite. The bar warns first.
   const selectedNamedCount = useMemo(() => {
@@ -403,6 +433,7 @@ export default function OrganizerWorkspace({
     if (!ok.length) return;
 
     const name = input.name.trim();
+    if (!name || name.length > 80) { setAlert('Enter a buyer name of 1–80 characters.'); return; }
     const previousSquares = board.squares;
     const okSet = new Set(ok);
     const nextSquares = board.squares.map((names, index) => (okSet.has(index) ? [name] : names));
@@ -604,7 +635,8 @@ export default function OrganizerWorkspace({
   const copyShareLink = async () => {
     setPublishedOpen(true);
     try {
-      await navigator.clipboard?.writeText(shareUrl);
+      if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable');
+      await navigator.clipboard.writeText(shareUrl);
     } catch {
       // The published sheet shows the link and its own copy control.
     }
@@ -670,6 +702,7 @@ export default function OrganizerWorkspace({
   };
 
   const savePublishedSquare = async (index: number, name: string, meta: EntryMeta) => {
+    if (name.trim().length > 80) { setAlert('Buyer names must be 80 characters or fewer.'); return; }
     const previous = board.squares[index]?.[0]?.trim() ?? '';
     const next = name.trim();
     setSelectedSquare(null);
@@ -779,7 +812,8 @@ export default function OrganizerWorkspace({
 
   const copyViewerLink = async () => {
     try {
-      await navigator.clipboard?.writeText(shareUrl);
+      if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable');
+      await navigator.clipboard.writeText(shareUrl);
       setAlert(null);
       setNote('Viewer link copied.');
     } catch {
@@ -834,20 +868,38 @@ export default function OrganizerWorkspace({
   // `isPublished` under our feet, and the success sheet has to survive it.
   const sheets = (
     <>
+      <Sheet open={shareOpen} onClose={() => { if (!sharePending) setShareOpen(false); }} title="Share while selling">
+        <div className="flex flex-col gap-4">
+          <CapsuleButton variant="quiet" className="self-start" disabled={sharePending} onClick={() => setShareOpen(false)}>Cancel</CapsuleButton>
+          <p className="font-ui text-[15px] text-fg-2">Everyone with the link can see buyer names and assigned families. Only you can edit. Private payment and contact notes stay private.</p>
+          <p className="font-ui text-[15px] text-fg-2">Share now and keep selling. Game numbers appear only after you finalize the board. Sharing uses one board from your season allowance; finalizing this same board uses no additional board.</p>
+          {shareError && <>
+            <p role="alert" className="text-tone-cardinal">{shareError}</p>
+            {onReload && <CapsuleButton variant="quiet" disabled={sharePending} onClick={() => {
+              setShareOpen(false);
+              void Promise.resolve(onReload()).catch(() => setAlert('The board could not be reloaded. Try again.'));
+            }}>Reload board</CapsuleButton>}
+          </>}
+          {saveState.status !== 'clean' && <p role="status">Save your latest changes first. Use Retry or Reload latest board above if needed.</p>}
+          <CapsuleButton disabled={sharePending || saveState.status !== 'clean'} onClick={() => void enableSharing()}>{sharePending ? 'Sharing…' : 'Enable shared board'}</CapsuleButton>
+        </div>
+      </Sheet>
       <SquareSheet
         open={selectedSquare !== null}
         index={selectedSquare}
         name={selectedSquare === null ? '' : board.squares[selectedSquare]?.[0] ?? ''}
+        allocationLabel={selectedSquare === null ? undefined : board.allocationLabels?.[selectedSquare]}
         meta={selectedSquare === null ? undefined : entryMeta[selectedSquare]}
         isPublished={isPublished}
         hasNextOpen={openCount > 0}
-        onSave={(index, name, meta, advance) => void (isPublished
+        onSave={(index, name, meta, advance, allocationLabel) => void (isPublished
           ? savePublishedSquare(index, name, meta)
-          : saveSquare(index, name, meta, advance))}
+          : saveSquare(index, name, meta, advance, allocationLabel))}
         onClose={() => setSelectedSquare(null)}
       />
 
       <PreviewSheet
+        isShared={isShared}
         open={previewOpen}
         onClose={() => setPreviewOpen(false)}
         canPublish={axesCommitted && !conflicted}
@@ -856,10 +908,11 @@ export default function OrganizerWorkspace({
           setPublishOpen(true);
         }}
       >
-        {renderPreview ? renderPreview() : <p className="font-ui text-[15px] text-fg-2">Private preview — sharing is off</p>}
+        {renderPreview ? renderPreview() : <p className="font-ui text-[15px] text-fg-2">{isShared ? 'Preview final board' : 'Private preview — sharing is off'}</p>}
       </PreviewSheet>
 
       <PublishSheet
+        isShared={isShared}
         open={publishOpen}
         onClose={() => setPublishOpen(false)}
         game={game}
@@ -992,12 +1045,24 @@ export default function OrganizerWorkspace({
         paid={paidCount}
         drawn={axesCommitted}
         phase={model.phase}
-        primary={primary}
+        primary={null}
         secondary={secondary}
         note={islandNote}
       />
       <main aria-label={mainLabel} className="mx-auto max-w-7xl px-4 pt-6 pb-24 lg:pt-8">
         {header}
+        <Glass className="mt-6 flex flex-col gap-4" padding="lg">
+          <Eyebrow>{isShared ? 'Selling · Shared board' : 'Selling · Set up your board'}</Eyebrow>
+          <p className="font-ui text-[15px] text-fg-2">{assignedCount} sold · {openCount} unsold. Allocate squares to families, then record buyers as they sell. Draw game numbers when sales are finished.</p>
+          <div className="flex flex-wrap gap-2">
+            {isShared && shareUrl ? <>
+              <CapsuleButton onClick={() => void copyViewerLink()}>Copy link</CapsuleButton>
+              <a className="inline-flex min-h-11 items-center rounded-capsule px-5 font-ui text-action focus-visible:ring-2 focus-visible:ring-action" href={shareUrl} target="_blank" rel="noreferrer">Open shared board</a>
+            </> : onShareBoard && <CapsuleButton disabled={sharePending || saveState.status !== 'clean'} onClick={() => setShareOpen(true)}>Share board</CapsuleButton>}
+            <CapsuleButton variant="quiet" onClick={primary.onClick} disabled={'disabled' in primary ? primary.disabled : false}>{primary.label}</CapsuleButton>
+          </div>
+          {onShareBoard && !isShared && saveState.status !== 'clean' && <p className="font-ui text-[14px] text-fg-2">Sharing is available after your latest changes save. Use Retry or Reload latest board above if needed.</p>}
+        </Glass>
         {alertRegion}
         {/* The island prefers a blocker over its note, and saving is dirty the
             instant a range lands, so the confirmation lives here in the flow. */}
@@ -1045,6 +1110,7 @@ export default function OrganizerWorkspace({
                 isPublished={false}
                 busy={rangeBusy}
                 onApply={(input) => void applyRange(input)}
+                onAllocate={allocateRange}
                 onClear={clearSelection}
                 onExitSelectMode={toggleSelectMode}
               />

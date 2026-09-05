@@ -87,10 +87,22 @@ describe('ReconcileCard', () => {
     expect(screen.getByRole('button', { name: '42 filled · 58 open · 3 unpaid' })).toHaveAttribute('aria-pressed', 'true');
   });
 
-  it('shows the empty states when there are no blockers or advisories', () => {
-    render(<ReconcileCard model={model()} unpaidCount={0} highlightOpen={false} onToggleHighlightOpen={vi.fn()} />);
+  it('shows ready copy only when the model permits publishing', () => {
+    render(<ReconcileCard model={model({ canPublish: true })} unpaidCount={0} highlightOpen={false} onToggleHighlightOpen={vi.fn()} />);
     expect(screen.getByText('Nothing blocking publish.')).toBeInTheDocument();
     expect(screen.getByText('No private follow-up.')).toBeInTheDocument();
+  });
+
+  it('shows the next selling step instead of claiming an empty board is ready', () => {
+    render(<ReconcileCard model={model({ assignedCount: 0, openCount: 100, phase: 'Fill' })} unpaidCount={0} highlightOpen={false} onToggleHighlightOpen={vi.fn()} />);
+    expect(screen.queryByText('Nothing blocking publish.')).not.toBeInTheDocument();
+    expect(screen.getByText('Record buyers as squares sell. Draw game numbers when sales are finished.')).toBeInTheDocument();
+  });
+
+  it('explains the missing draw when there are no other blockers', () => {
+    render(<ReconcileCard model={model({ phase: 'Draw', canEnterDraw: true })} unpaidCount={0} highlightOpen={false} onToggleHighlightOpen={vi.fn()} />);
+    expect(screen.queryByText('Nothing blocking publish.')).not.toBeInTheDocument();
+    expect(screen.getByText('When sales are finished, draw game numbers, then review and finalize the board.')).toBeInTheDocument();
   });
 
   it('lists hard blockers and advisories using their copy maps', () => {
@@ -113,11 +125,11 @@ describe('ReconcileCard', () => {
 });
 
 describe('BoardToolsCard', () => {
-  it('shows Send board always, and Send seller sheet only when hasSellers', () => {
+  it('shows Share board image always, and Send seller sheet only when hasSellers', () => {
     const { rerender } = render(
       <BoardToolsCard isPublished exporting={false} onExport={vi.fn()} hasSellers={false} />,
     );
-    expect(screen.getByText('Send board')).toBeInTheDocument();
+    expect(screen.getByText('Share board image')).toBeInTheDocument();
     expect(screen.queryByText('Send seller sheet')).not.toBeInTheDocument();
 
     rerender(<BoardToolsCard isPublished exporting={false} onExport={vi.fn()} hasSellers />);
@@ -127,7 +139,7 @@ describe('BoardToolsCard', () => {
   it('calls onExport with the right mode for each button', () => {
     const onExport = vi.fn();
     render(<BoardToolsCard isPublished exporting={false} onExport={onExport} hasSellers />);
-    fireEvent.click(screen.getByText('Send board'));
+    fireEvent.click(screen.getByText('Share board image'));
     expect(onExport).toHaveBeenCalledWith('owners');
     fireEvent.click(screen.getByText('Send seller sheet'));
     expect(onExport).toHaveBeenCalledWith('sellers');

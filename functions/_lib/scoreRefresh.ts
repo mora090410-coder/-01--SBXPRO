@@ -220,6 +220,7 @@ export const applyProviderScore = async (
 export type RefreshOutcome =
   | { status: 'refreshed'; promoted: boolean }
   | { status: 'lease_busy' }
+  | { status: 'unpublished' }
   | { status: 'manual' }
   | { status: 'error'; error: string };
 
@@ -233,6 +234,7 @@ export const refreshContestScore = async (
   contest: any,
   provider: ProviderScoreResult,
 ): Promise<RefreshOutcome> => {
+  if (!contest?.published_at || !['published', 'live', 'final'].includes(contest.status)) return { status: 'unpublished' };
   const leaseToken = crypto.randomUUID();
   const { data: acquiredRows, error: leaseError } = await admin.rpc('gridone_acquire_score_refresh_lease_v2', {
     p_contest_id: contest.id,

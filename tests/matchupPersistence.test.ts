@@ -600,6 +600,65 @@ describe('scheduled-game persistence', () => {
     expect(result).not.toHaveProperty('payout_labels');
   });
 
+  it('keeps authoritative identity and latest revision ahead of stale saved settings on owner reload', async () => {
+    const contest = {
+      id: '11111111-1111-4111-8111-111111111111',
+      share_code: 'ABCDEFGH',
+      owner_id: '22222222-2222-4222-8222-222222222222',
+      title: 'Current team board',
+      status: 'ready',
+      revision: 12,
+      shared_at: '2026-09-04T18:00:00.000Z',
+      updated_at: '2026-09-04T19:00:00.000Z',
+      published_at: null,
+      board_data: { squares: Array.from({ length: 100 }, () => []) },
+      board_activations: [{ id: 'activation' }],
+      settings: {
+        id: 'stale-board-id',
+        share_code: 'ZZZZZZZZ',
+        owner_id: 'stale-owner-id',
+        title: 'Old title',
+        status: 'draft',
+        revision: 3,
+        updated_at: '2026-09-01T00:00:00.000Z',
+        shared_at: null,
+        organizationDisplayName: 'Stale organization',
+        leftName: 'Saved team name',
+      },
+    };
+    const from = vi.fn((table: string) => ({
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockResolvedValue({ data: [], error: null }),
+      maybeSingle: vi.fn().mockResolvedValue({ data: table === 'contests' ? contest : null, error: null }),
+    }));
+    createClientMock.mockReturnValue(authClient({ from }));
+
+    const response = await onRequestGet({
+      request: new Request(`https://getgridone.com/api/pools/${contest.id}`, {
+        headers: { Authorization: 'Bearer token' },
+      }),
+      env,
+      params: { id: contest.id },
+    });
+
+    expect(response.status).toBe(200);
+    const result = await response.json();
+    expect(result).toMatchObject({
+      id: contest.id,
+      share_code: contest.share_code,
+      owner_id: contest.owner_id,
+      title: contest.title,
+      status: contest.status,
+      revision: contest.revision,
+      shared_at: contest.shared_at,
+      updated_at: contest.updated_at,
+      leftName: 'Saved team name',
+    });
+    expect(result.organizationDisplayName).toBeUndefined();
+  });
+
   it('restores authoritative manual scoring mode and current snapshot for the owner', async () => {
     const rowsByTable: Record<string, unknown> = {
       contests: {

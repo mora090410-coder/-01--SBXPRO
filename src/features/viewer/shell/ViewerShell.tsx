@@ -29,12 +29,13 @@ export interface ViewerShellProps {
   shareCode?: string | null;
   servicesEnabled?: boolean;
   organizerPreview?: boolean;
+  organizerHref?: string;
   onShare?: () => void;
 }
 
 const ViewerShell: React.FC<ViewerShellProps> = ({
   game, board, live, liveStatus, isSynced, highlights, winnerHistory, pendingMilestones, selectedPlayer,
-  onClearPlayer, onFindSquares, highlightedCoords, onScenarioFocus, locked = false, shareCode, servicesEnabled = true, organizerPreview = false, onShare,
+  onClearPlayer, onFindSquares, highlightedCoords, onScenarioFocus, locked = false, shareCode, servicesEnabled = true, organizerPreview = false, organizerHref, onShare,
 }) => {
   const [boardFocus, setBoardFocus] = useState(highlightedCoords);
   const selectedParticipant = useMemo(() => {
@@ -65,6 +66,7 @@ const ViewerShell: React.FC<ViewerShellProps> = ({
         aria-label={`${game.title || 'GridOne board'} viewer`}
       >
         <div data-testid="viewer-first-viewport" className="flex min-w-0 flex-col gap-8">
+          {organizerHref && <a href={organizerHref} className="inline-flex min-h-11 items-center self-start rounded-control px-3 font-ui text-sm text-fg underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action">Manage board</a>}
           <ScoreInstrument game={game} board={board} live={live} liveStatus={liveStatus} isSynced={isSynced} headingLevel={organizerPreview ? 'h2' : 'h1'} />
           <FindSquaresEntry selectedPlayer={selectedPlayer} onFindSquares={onFindSquares} onClearPlayer={onClearPlayer} />
           <YourSquaresSummary board={board} game={game} live={live} selectedPlayer={selectedPlayer} onViewSquare={setFocus} />

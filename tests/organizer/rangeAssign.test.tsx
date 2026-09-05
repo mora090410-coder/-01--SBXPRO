@@ -262,3 +262,14 @@ describe('RangeAssignBar', () => {
     expect(screen.getByRole('button', { name: 'Done selecting' })).toHaveFocus();
   });
 });
+
+it('keeps oversized range buyer names from being applied', () => {
+  const onApply = vi.fn();
+  render(<RangeAssignBar count={2} isPublished={false} busy={false} onApply={onApply} onClear={vi.fn()} />);
+  const name = screen.getByRole('textbox', {name: 'Name for these squares'});
+  expect(name).toHaveAttribute('maxlength', '80');
+  fireEvent.change(name, {target: {value: 'a'.repeat(81)}});
+  expect(screen.getByRole('button', {name: 'Apply to 2'})).toBeDisabled();
+  fireEvent.click(screen.getByRole('button', {name: 'Apply to 2'}));
+  expect(onApply).not.toHaveBeenCalled();
+});

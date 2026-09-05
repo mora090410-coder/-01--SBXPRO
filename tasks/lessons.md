@@ -8,3 +8,5 @@
 - Do not assume a nested PostgREST relationship is always an array. A foreign key backed by a unique constraint is represented as a to-one object; normalize and test both `{ id }` and `[{ id }]` before using relationship shape as an authorization or lifecycle gate.
 - When resuming another assistant's work, inspect all relevant branches before concluding the implementation is missing. A plan on main can have completed implementation commits on a separate branch.
 - Landing-page draw copy must allow open squares. Use the owner-approved “Add your names. Then draw the numbers.” instead of claiming the board must be full.
+
+- Pre-game boards are shared while families sell fixed squares 1–100, often allocated diagonally. Everyone may see explicit public family allocation, buyer names, and unsold squares; only the organizer records buyers. Keep seller allocation distinct from purchase and private seller/payment/contact notes. Separate first sharing from final number locking, and preserve the same team link and organizer return route through both stages.

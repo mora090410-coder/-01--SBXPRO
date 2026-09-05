@@ -91,3 +91,34 @@ describe('SquareSheet', () => {
     expect(paid).toHaveFocus();
   });
 });
+
+it('keeps public family allocation separate from private seller and permits an unsold square', () => {
+  const onSave = vi.fn();
+  render(<SquareSheet open index={11} name="" allocationLabel="Mora family" meta={{cell_index: 11, paid_status: 'unknown', notify_opt_in: false, contact_type: null, contact_value: null, seller_label: 'Private seller'}} isPublished={false} hasNextOpen={false} onSave={onSave} onClose={vi.fn()} />);
+  expect(screen.getByRole('textbox', { name: 'Assigned family (public)' })).toHaveValue('Mora family');
+  fireEvent.change(screen.getByRole('textbox', { name: 'Assigned family (public)' }), {target: {value: 'Lee family'}});
+  fireEvent.click(screen.getByRole('button', {name: 'Save'}));
+  expect(onSave).toHaveBeenCalledWith(11, '', expect.objectContaining({seller_label: 'Private seller'}), false, 'Lee family');
+});
+
+it('clears a public allocation without clearing the buyer and limits labels to 80 characters', () => {
+  const onSave = vi.fn();
+  render(<SquareSheet open index={11} name="Jane Smith" allocationLabel="Mora family" isPublished={false} hasNextOpen={false} onSave={onSave} onClose={vi.fn()} />);
+  const family = screen.getByRole('textbox', { name: 'Assigned family (public)' });
+  expect(family).toHaveAttribute('maxlength', '80');
+  fireEvent.change(family, {target: {value: ''}});
+  fireEvent.click(screen.getByRole('button', {name: 'Save'}));
+  expect(onSave).toHaveBeenCalledWith(11, 'Jane Smith', expect.any(Object), false, null);
+});
+
+it('prevents saving a buyer longer than the server limit', () => {
+  const onSave = vi.fn();
+  render(<SquareSheet open index={0} name="" isPublished={false} hasNextOpen onSave={onSave} onClose={vi.fn()} />);
+  const name = screen.getByRole('textbox', {name: 'Name on the board'});
+  expect(name).toHaveAttribute('maxlength', '80');
+  fireEvent.change(name, {target: {value: 'a'.repeat(81)}});
+  expect(screen.getByRole('button', {name: 'Save'})).toBeDisabled();
+  expect(screen.getByRole('button', {name: 'Save and next'})).toBeDisabled();
+  fireEvent.keyDown(name, {key: 'Enter'});
+  expect(onSave).not.toHaveBeenCalled();
+});

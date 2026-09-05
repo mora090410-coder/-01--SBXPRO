@@ -120,7 +120,7 @@ describe('organizer dashboard', () => {
     await screen.findByRole('link', { name: 'Chiefs Fundraiser' });
     const query = mocks.from.mock.results[0].value;
     expect(query.select).toHaveBeenCalledWith(
-      'id, title, created_at, settings, board_data, published_at, board_activations(id)',
+      'id, title, created_at, settings, board_data, published_at, shared_at, board_activations(id)',
     );
   });
 
@@ -178,4 +178,21 @@ describe('organizer dashboard', () => {
 
     expect(await screen.findByText('2 of 5 published · Game Day')).toBeInTheDocument();
   });
+});
+
+
+it('distinguishes a shared selling board from finalized numbers and offers Manage board', async () => {
+  useContests([{ ...rows[0], shared_at: '2026-09-04T12:00:00Z' }]);
+  renderDashboard();
+  expect(await screen.findByText('Selling squares')).toBeInTheDocument();
+  expect(screen.queryByText('Published')).not.toBeInTheDocument();
+  expect(screen.getByRole('link', { name: 'Manage Chiefs Fundraiser' })).toHaveAttribute('href', '/boards/board-1');
+});
+
+
+it('does not offer deletion of a shared board whose link and allowance must survive', async () => {
+  useContests([{ ...rows[0], shared_at: '2026-09-04T12:00:00Z' }]);
+  renderDashboard();
+  await screen.findByText('Selling squares');
+  expect(screen.queryByRole('button', { name: 'Delete Chiefs Fundraiser' })).not.toBeInTheDocument();
 });

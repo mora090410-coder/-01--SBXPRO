@@ -153,7 +153,7 @@ export const onRequestGet: PagesFunction = async (context) => {
   if (!isPublicRef) {
     let contestQuery = admin
       .from('contests')
-      .select('id, owner_id, status, game_external_id, game_starts_at, side_team_name, side_team_abbr, top_team_name, top_team_abbr, board_activations(id)');
+      .select('id, owner_id, status, published_at, game_external_id, game_starts_at, side_team_name, side_team_abbr, top_team_name, top_team_abbr, board_activations(id)');
     if (ownerId) contestQuery = contestQuery.eq('owner_id', ownerId);
     const { data, error } = await contestQuery.eq('id', ref).maybeSingle();
     if (error) {
@@ -180,6 +180,10 @@ export const onRequestGet: PagesFunction = async (context) => {
   }
   if (!hasActivatedBoardServices(contest)) {
     return json({ error: 'Publish this board to use automatic live scoring and updates.' }, 402);
+  }
+
+  if (!isPublicRef && (!contest.published_at || !['published', 'live', 'final'].includes(contest.status))) {
+    return json({ error: 'Draw and lock the board numbers before managing scores.' }, 409);
   }
 
   const { data: state } = await admin
