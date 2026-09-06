@@ -28,7 +28,9 @@ describe('Homepage', () => {
     renderPage();
     expect(screen.getByRole('region', { name: 'Live score' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Where are my squares?' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Who wins right now?' }));
     expect(screen.getByRole('heading', { name: 'Who wins right now?' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'What score wins next?' }));
     expect(screen.getByRole('heading', { name: 'What score wins next?' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'One screen. No wizard.' })).toBeInTheDocument();
   });
@@ -431,7 +433,7 @@ describe('The board fills as you scroll', () => {
     const section = screen.getByTestId('board-fill-section');
     expect(section.className).toContain('relative');
     expect(section.className).toContain('overflow-x-clip');
-    expect(section.querySelector('[class*="max-w-[1200px]"]')).not.toBeNull();
+    expect(section.querySelector('[class*="max-w-[1320px]"]')).not.toBeNull();
 
     // A phone must not fight a pinned element: the sticky is `md:` only.
     const pinned = within(section).getByRole('img').parentElement!;

@@ -1,0 +1,84 @@
+/* The hero is three independent physical planes. Copy stays on the page. */
+.studio-hero-shell {
+  max-width: 1440px;
+  padding: 32px 48px 64px;
+}
+.studio-hero-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 44fr) minmax(0, 56fr);
+  align-items: center;
+  gap: 16px;
+  margin-top: 48px;
+}
+.studio-hero-copy { position: relative; z-index: 3; }
+.studio-hero-title {
+  margin-top: 28px;
+  font-size: clamp(64px, 6.55vw, 94px);
+  line-height: .98;
+  letter-spacing: -.025em;
+}
+.studio-hero-description {
+  max-width: 420px;
+  margin-top: 28px;
+  font-size: 17px;
+  line-height: 1.55;
+}
+.studio-hero-actions { margin-top: 28px; }
+.studio-hero-boundary { margin-top: 24px; font-size: 14px; line-height: 1.65; }
+.studio-hero-stage { position: relative; height: 650px; min-width: 0; }
+.studio-hero-atmosphere { position: absolute; inset: 0; pointer-events: none; }
+.studio-hero-board-plane { position: absolute; width: 88%; max-width: 520px; top: 20px; right: 14%; rotate: -7deg; }
+.studio-hero-board {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding: 22px;
+  border: 1px solid var(--g-hairline);
+  border-radius: var(--g-radius-card);
+  background: var(--g-ground);
+  color: var(--g-text);
+  box-shadow: 0 32px 64px -24px var(--g-ink);
+}
+.studio-hero-board-header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.studio-hero-board-header > :first-child { font-size: 26px; }
+.studio-hero-board-header > :last-child { font-size: 10px; color: var(--g-text-3); }
+.studio-hero-board-team { margin: 22px 0 12px; text-align: center; font-size: 11px; color: var(--g-text-3); }
+.studio-hero-grid { display: grid; grid-template-columns: 22px repeat(10, minmax(0, 1fr)); gap: 2px; }
+.studio-hero-axis { display: flex; justify-content: center; align-items: center; min-height: 22px; font: 11px var(--g-font-mono); color: var(--g-text-3); }
+.studio-hero-cell { display: flex; justify-content: center; align-items: center; aspect-ratio: 1; padding: 2px; text-align: center; border: 1px solid var(--g-hairline); border-radius: var(--g-radius-cell); font: 8px/1.2 var(--g-font-ui); overflow-wrap: anywhere; }
+.studio-hero-cell-open { background: var(--g-panel); }
+.studio-hero-board-footer { margin-top: 18px; font-size: 10px; color: var(--g-text-3); }
+.studio-hero-phone-plane { position: absolute; top: 174px; right: -10px; z-index: 2; width: 300px; rotate: 3deg; scale: .76; transform-origin: top right; }
+.studio-hero-caption { position: absolute; bottom: -12px; right: 0; font-size: 12px; }
+@media (min-width: 1440px) {
+  .studio-hero-layout { margin-top: 64px; }
+  .studio-hero-board-plane { max-width: 560px; }
+  .studio-hero-stage { height: 700px; }
+  .studio-hero-phone-plane { top: 204px; scale: .8; }
+}
+@media (max-width: 1100px) and (min-width: 768px) {
+  .studio-hero-shell { padding-inline: 32px; }
+  .studio-hero-title { font-size: 64px; }
+  .studio-hero-stage { height: 590px; }
+  .studio-hero-board-plane { width: 100%; right: -1%; top: 56px; }
+  .studio-hero-board { padding: 14px; }
+  .studio-hero-phone-plane { top: 212px; right: -10px; scale: .57; }
+  .studio-hero-board-header > :first-child { font-size: 22px; }
+}
+@media (max-width: 767px) {
+  .studio-hero-shell { padding: 24px 24px 32px; }
+  .studio-hero-layout { display: flex; flex-direction: column; gap: 32px; margin-top: 36px; }
+  .studio-hero-copy { width: 100%; }
+  .studio-hero-title { margin-top: 20px; font-size: clamp(44px, 12.3vw, 64px); line-height: 1; }
+  .studio-hero-description { margin-top: 20px; font-size: 16px; line-height: 1.5; }
+  .studio-hero-actions { margin-top: 20px; }
+  .studio-hero-boundary { margin-top: 18px; line-height: 1.55; }
+  .studio-hero-stage { width: 100%; height: 590px; max-width: 420px; }
+  .studio-hero-board-plane { display: none; }
+  .studio-hero-phone-plane { top: 6px; right: 50%; margin-right: -150px; rotate: -3deg; scale: .88; transform-origin: top center; }
+  .studio-hero-caption { bottom: 0; left: 0; right: 0; text-align: center; font-size: 11px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .studio-hero-board-plane { rotate: -4deg; }
+  .studio-hero-phone-plane { rotate: 1deg; }
+}

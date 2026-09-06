@@ -185,6 +185,16 @@ describe('ScoreMoment', () => {
     expect(screen.getByRole('img', { name: 'Philadelphia 14' }).textContent).toBe('14');
   });
 
+  it('never invents intermediate scores when the score presentation enters view', () => {
+    setReducedMotion(false);
+    const observer = stubObserver();
+    stubRaf();
+    render(<ScoreMoment />);
+    act(() => observer.fire(true));
+    expect(screen.getByRole('img', { name: 'Kansas City 17' }).textContent).toBe('17');
+    expect(screen.getByRole('img', { name: 'Philadelphia 14' }).textContent).toBe('14');
+  });
+
   it('lands on the true final scores after the observer fires', () => {
     setReducedMotion(false);
     const observer = stubObserver();

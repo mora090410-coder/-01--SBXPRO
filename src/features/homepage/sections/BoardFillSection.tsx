@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { Eyebrow, Reveal } from '../../../design/primitives';
+import { Reveal } from '../../../design/primitives';
 import { BoardFill } from '../artifacts/BoardFill';
 import { useFillDriven, useScrollProgress } from '../atmosphere/useScrollProgress';
 import { demoGame } from '../demoData';
@@ -51,19 +51,20 @@ export function BoardFillSection() {
 
   return (
     <section
+      data-sc-act="flow"
       ref={sectionRef}
       data-testid="board-fill-section"
-      className="relative overflow-x-clip"
+      className="studio-assembly relative overflow-x-clip"
     >
       {/* Full-bleed section, content capped at 1200px, exactly like its
           neighbours. No SectionTone of its own: it sits between the hero's
           cardinal and the score section's live, and a third tone in that gap
           would turn a journey into a swatch board. */}
-      <div className="relative z-10 mx-auto w-full max-w-[1200px] px-6 py-16 md:px-12 md:py-24">
-        <div className="grid gap-8 md:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] md:items-start md:gap-x-16 md:gap-y-8">
+      <div className="relative z-10 mx-auto w-full max-w-[1320px] px-6 py-16 md:px-12 md:py-24">
+        <div className="grid gap-8 md:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] md:items-start md:gap-x-20 md:gap-y-8">
           <Reveal className="flex max-w-[520px] flex-col gap-3 md:col-start-2 md:row-start-1">
-            <Eyebrow>How a board fills</Eyebrow>
-            <h2 className="font-display text-[34px] leading-[1.05] text-fg md:text-[44px]">
+            <p className="font-ui text-[15px] text-fg-3">Made for your group.</p>
+            <h2 className="font-ui font-medium tracking-[-0.05em] text-[34px] leading-[1.05] text-fg md:text-[60px]">
               Add your names. Then draw the numbers.
             </h2>
           </Reveal>
@@ -77,9 +78,9 @@ export function BoardFillSection() {
             <BoardFill
               ref={boardRef}
               progress={driven ? 0 : undefined}
-              className="mx-auto w-full max-w-[440px]"
+              className="mx-auto w-full max-w-[520px]"
             />
-            <figcaption className="mx-auto mt-3 w-full max-w-[440px] font-mono text-[12px] uppercase leading-none tracking-[0.12em] text-fg-3">
+            <figcaption className="mx-auto mt-3 w-full max-w-[520px] font-mono text-[12px] uppercase leading-none tracking-[0.12em] text-fg-3">
               Example board · {EXAMPLE_MATCHUP}
             </figcaption>
           </figure>
@@ -93,7 +94,7 @@ export function BoardFillSection() {
                   delay={i * 60}
                   className={`flex items-start ${driven ? 'md:min-h-[46vh] md:items-center' : ''}`.trim()}
                 >
-                  <p className="flex max-w-[420px] items-start gap-3 font-ui text-[17px] leading-[1.5] text-fg-2">
+                  <p className="flex max-w-[420px] items-start gap-3 font-ui text-[21px] leading-[1.4] text-fg-2">
                     {/* The tick: a short hairline rule, not a bullet glyph. */}
                     <span aria-hidden="true" className="mt-[6px] h-[14px] w-px shrink-0 bg-fg-3" />
                     <span>{fact}</span>

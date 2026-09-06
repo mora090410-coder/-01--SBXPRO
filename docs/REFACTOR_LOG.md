@@ -457,3 +457,24 @@ Rendered 1440x1000 desktop, 390x844 phone, and reduced-motion desktop; verified 
 ## 2026-09-05 — Approved main integration
 
 - Anthony explicitly authorized commit and push to `main`. Remote main matched the implementation base `f01002d`; no merge resolution was needed. Re-ran the full unit suite before committing. Pushing from the isolated worktree preserves the original checkout and its unrelated local changes. Production migration is not part of this authorization; deployed behavior remains unverified.
+
+## 2026-09-05 — Scroll-craft Studio landing, local review
+
+- Large serif hero with an independent complete board, overlapping real viewer, and restrained depth.
+- Larger board assembly chapter preserves names-before-axis sequence and the approved OPEN-compatible heading.
+- True scores connect to current digits and the matching name. Removed count-through-zero score animation.
+- Three keyboard-operated viewer questions replace three repetitive long rows.
+- Wide organizer surface, complete tablet and phone composition.
+- Interface typography provides chapter hierarchy; FAQ precedes the final held action.
+
+
+Verification: true-score entry RED0≠17, GREEN13; viewer buttons RED2/GREEN2; focused80; full unit102 files/737 passed with maxWorkers2 after concurrent-capture timeouts; tsc/build passed; design lint0 errors/5 existing warnings; Chromium74+6 passed; WebKit17 passed; built-package6 passed. Desktop/phone/reduced sheets inspected. Tablet cropping found by review, repaired and proved at390/768/1024/1101/1440. No physical-phone or database integration run.
+
+Full brief/evidence: scrollcraft/builds/gridone-studio/{BRIEF,REPORT}.md. Built local URL: http://127.0.0.1:5181/. No commit, push or deployment. Existing unrelated edits preserved.
+
+
+## Approved production release candidate
+
+Anthony approved commit, push and deployment after reviewing the local preview. Integrated the landing slice onto production main `8941c53` in an isolated worktree, preserving unrelated original-checkout changes.
+
+The newer organizer square labels exposed a fixed-height preview crop (Chromium: 79 passed, 3 failed). Replaced the landing-only fixed frame with natural content sizing and responsive CSS zoom. Final verification: 782 unit tests passed; TypeScript and production build passed; design lint passed with 5 existing warnings; all 82 Chromium tests passed; all 6 focused WebKit tests passed. All 100 organizer squares fit at 390, 768, 1024, 1101 and 1440 pixels in both engines; final phone, tablet and desktop renders inspected. No database integration run for this homepage-only change. Production publication and live verification follow this candidate commit.

@@ -2,67 +2,85 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Eyebrow, Reveal, SectionTone, Spotlight } from '../../../design/primitives';
 import { useParallax } from '../atmosphere/useParallax';
-import { DEMO_LABEL } from '../demoData';
+import { DEMO_LABEL, demoBoard, demoGame } from '../demoData';
 import { MONEY_BOUNDARY } from '../pricing';
 import { HeroViewer } from '../renders/HeroViewer';
 import { SiteHeader } from '../../site/SiteHeader';
 import { primaryLink, quietLink } from './cta';
+import './hero-studio.css';
+
+/** Finished demo board, a far-plane picture rather than a second interactive board. */
+function HeroBoard() {
+  return (
+    <div className="studio-hero-board device-rim" role="img" aria-label="Sample complete board, Chiefs at Eagles, with 100 squares and drawn axis digits">
+      <div aria-hidden="true">
+        <div className="studio-hero-board-header">
+          <span className="font-display">Lincoln Softball</span>
+          <span className="font-mono">Chiefs at Eagles</span>
+        </div>
+        <div className="studio-hero-board-team font-mono">{demoGame.topName}</div>
+        <div className="studio-hero-grid">
+          <span className="studio-hero-axis">KC</span>
+          {demoBoard.topAxis.map((digit) => <span className="studio-hero-axis" key={`top-${digit}`}>{digit}</span>)}
+          {demoBoard.leftAxis.map((digit, row) => (
+            <React.Fragment key={digit}>
+              <span className="studio-hero-axis">{digit}</span>
+              {demoBoard.squares.slice(row * 10, row * 10 + 10).map((names, col) => (
+                <span key={col} className={`studio-hero-cell${names[0] === 'OPEN' ? ' studio-hero-cell-open' : ''}`}>
+                  {names[0]}
+                </span>
+              ))}
+            </React.Fragment>
+          ))}
+        </div>
+        <div className="studio-hero-board-footer font-mono">One board. One link. Everyone in the game.</div>
+      </div>
+    </div>
+  );
+}
 
 export function Hero() {
-  // Vertical travel plus a rotation easing 3deg -> 1deg on desktop. The hook drives
-  // the independent `translate` and `rotate` properties, so `rotate` REPLACES the
-  // `md:rotate-[3deg]` class rather than composing with it (an inline `transform`
-  // would have added to it and rested the artifact at 6deg). The class value is the
-  // same 3deg the hook writes at scrollY 0, so there is nothing to snap between.
-  // Inert under reduced motion and below md; never writes a horizontal translate.
-  // The hook also sets and clears `will-change` itself, so the element carries no
-  // such class — a phone would otherwise hold a compositor layer for a hero board
-  // that never moves.
-  const artifact = useParallax<HTMLDivElement>({ maxPx: 40, rotateFromDeg: 3, rotateToDeg: 1 });
+  const board = useParallax<HTMLDivElement>({ maxPx: 24, rotateFromDeg: -7, rotateToDeg: -4 });
+  const phone = useParallax<HTMLDivElement>({ maxPx: 40, rotateFromDeg: 3, rotateToDeg: 1 });
+  const atmosphere = useParallax<HTMLDivElement>({ maxPx: 10 });
 
   return (
-    <section data-testid="homepage-first-viewport" className="relative overflow-x-clip">
-      {/* Ambient ground tone. Content below carries `relative z-10` so the tint stays behind it. */}
+    <section data-sc-act="flow" data-testid="homepage-first-viewport" className="studio-hero relative overflow-x-clip">
       <SectionTone tone="cardinal" side="right" />
-
-      {/* Full-bleed section, capped content: the tone clips off-screen, not at a
-          1200px column edge. The padding lives inside the cap, exactly as it did
-          when the cap was a page-level wrapper, so the column is unchanged. */}
-      <div className="relative z-10 mx-auto w-full max-w-[1200px] px-6 pt-6 pb-16 md:px-12 md:pt-8 md:pb-24">
+      <div className="studio-hero-shell relative z-10 mx-auto w-full">
         <SiteHeader />
-
-        <div className="mt-10 grid gap-12 md:mt-16 md:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] md:items-center">
-          <div className="flex flex-col gap-6 max-w-[560px]">
+        <div className="studio-hero-layout">
+          <div className="studio-hero-copy">
             <Reveal><Eyebrow>Football squares fundraiser boards</Eyebrow></Reveal>
             <Reveal delay={60}>
-              <h1 className="font-display text-[44px] leading-[1] tracking-[-0.01em] text-fg md:text-[64px]">Build it once. <span className="block">Share one link.</span></h1>
+              <h1 className="studio-hero-title font-display text-fg">Build it once. <span className="block">Share one link.</span></h1>
             </Reveal>
             <Reveal delay={120}>
-              <p className="font-ui text-[17px] leading-[1.5] text-fg-2">
+              <p className="studio-hero-description font-ui text-fg-2">
                 Let the board run game day. For youth-sports teams, booster clubs, schools, and community organizers who would rather watch the game than the paper.
               </p>
             </Reveal>
             <Reveal delay={180}>
-              <div className="flex flex-wrap items-center gap-3">
+              <div className="studio-hero-actions flex flex-wrap items-center gap-3">
                 <Link to="/create" className={primaryLink}>Create your free board</Link>
                 <Link to="/demo" className={quietLink}>See a live board</Link>
               </div>
             </Reveal>
             <Reveal delay={240}>
-              <ul className="flex flex-col gap-1 font-ui text-[14px] text-fg-3">
+              <ul className="studio-hero-boundary font-ui text-fg-3">
                 <li>First published board free</li>
                 <li>Viewers open the link without creating an account</li>
                 <li>{MONEY_BOUNDARY}</li>
               </ul>
             </Reveal>
           </div>
-
-          <div className="relative flex flex-col items-center gap-3 md:items-end">
-            <Spotlight className="left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" breathe />
-            <div ref={artifact} className="relative z-10 w-fit max-w-full rotate-[-3deg] md:rotate-[3deg]">
-              <HeroViewer />
+          <div className="studio-hero-stage">
+            <div ref={atmosphere} className="studio-hero-atmosphere">
+              <Spotlight className="left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" breathe />
             </div>
-            <p className="relative z-10 font-mono text-[12px] text-fg-3">{DEMO_LABEL}</p>
+            <div ref={board} className="studio-hero-board-plane"><HeroBoard /></div>
+            <div ref={phone} className="studio-hero-phone-plane"><HeroViewer /></div>
+            <p className="studio-hero-caption font-mono text-fg-3">{DEMO_LABEL}</p>
           </div>
         </div>
       </div>

@@ -1,4 +1,5 @@
 import React from 'react';
+import './studio.css';
 import { Base, Grain } from '../../design/primitives';
 import { BoardFillSection } from './sections/BoardFillSection';
 import { Footer } from './sections/Footer';

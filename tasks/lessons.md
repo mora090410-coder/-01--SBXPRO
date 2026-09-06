@@ -10,3 +10,5 @@
 - Landing-page draw copy must allow open squares. Use the owner-approved “Add your names. Then draw the numbers.” instead of claiming the board must be full.
 
 - Pre-game boards are shared while families sell fixed squares 1–100, often allocated diagonally. Everyone may see explicit public family allocation, buyer names, and unsold squares; only the organizer records buyers. Keep seller allocation distinct from purchase and private seller/payment/contact notes. Separate first sharing from final number locking, and preserve the same team link and organizer return route through both stages.
+
+- When Anthony asks whether a design skill can produce a better Mac Studio-style landing page, treat the request as a complete product-story redesign for local review, not a minor motion pass or another generic direction questionnaire. Preserve product contracts while making a visibly different composition.

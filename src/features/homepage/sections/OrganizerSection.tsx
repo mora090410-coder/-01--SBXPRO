@@ -1,31 +1,34 @@
-import React from 'react';
-import { Eyebrow, Reveal, SectionTone } from '../../../design/primitives';
+import React, { useLayoutEffect, useRef } from 'react';
+import { Reveal, SectionTone } from '../../../design/primitives';
 import { OrganizerPreview } from '../renders/OrganizerPreview';
+import './studioChapters.css';
 
 export function OrganizerSection() {
+  const previewRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const preview = previewRef.current;
+    if (!preview || typeof ResizeObserver === 'undefined') return;
+    const sync = () => preview.style.setProperty('--g-studio-organizer-scale', String((preview.clientWidth - 2) / 800));
+    sync();
+    const observer = new ResizeObserver(sync);
+    observer.observe(preview);
+    return () => observer.disconnect();
+  }, []);
   return (
-    <section className="relative overflow-x-clip">
+    <section data-sc-act="flow" className="studio-organizer relative overflow-x-clip" aria-labelledby="studio-organizer-heading">
       <SectionTone tone="gold" side="right" />
-      {/* Full-bleed section, capped content: the tone clips off-screen, not at
-          a 1200px column edge. Padding lives inside the cap, so the column is
-          unchanged from when the cap was a page-level wrapper. */}
-      <div className="relative z-10 mx-auto w-full max-w-[1200px] px-6 py-16 md:px-12 md:py-24 grid gap-10 md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] md:items-center">
-      {/* The organizer workroom, late in the evening: warm gold on the right edge.
-          The section clips and the two columns below carry `relative z-10`, so the
-          edge-anchored tint sits behind the copy and can never widen the document. */}
-
-      <Reveal className="relative z-10 flex flex-col gap-3 max-w-[460px]">
-        <Eyebrow>For the organizer</Eyebrow>
-        <h2 className="font-display text-[34px] leading-[1.05] text-fg md:text-[44px]">One screen. No wizard.</h2>
-        <p className="font-ui text-[17px] leading-[1.5] text-fg-2">
-          Name the board, pick the game, tap squares to add names. Draw the numbers, preview the exact link your group will open, go live. Everything stays editable in place until kickoff, and only you can change it.
-        </p>
-        <p className="font-ui text-[15px] text-fg-3">OPEN squares stay visible so nobody argues about who had what.</p>
-      </Reveal>
-
-      <Reveal delay={120} className="relative z-10">
-        <OrganizerPreview />
-      </Reveal>
+      <div className="studio-chapter relative z-10">
+        <Reveal className="studio-organizer-intro studio-chapter-intro">
+          <h2 id="studio-organizer-heading">One screen. No wizard.</h2>
+          <div>
+            <p>Name the board. Add your names. Draw the numbers, preview your group’s link, then publish.</p>
+            <p className="studio-organizer-detail">You control the board. Payment and seller details stay private. OPEN squares stay visible.</p>
+          </div>
+        </Reveal>
+        <Reveal className="studio-organizer-artifact" delay={120}>
+          <div className="studio-organizer-caption"><span>YOUR ORGANIZER WORKSPACE</span><span>Sample board</span></div>
+          <div ref={previewRef}><OrganizerPreview className="studio-organizer-preview" /></div>
+        </Reveal>
       </div>
     </section>
   );
