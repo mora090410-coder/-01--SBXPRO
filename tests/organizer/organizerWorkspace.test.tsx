@@ -1002,3 +1002,91 @@ it('allocates a block and preserves its original responsibility when display nam
   expect(lastBoard(onApply).allocationLabels?.[0]).toBe('Mora family');
   expect(lastBoard(onApply).squares[1]).toEqual(['Mora family']);
 });
+
+
+describe('payout persistence ownership', () => {
+  it('saves payout rules through their endpoint without starting a second draft save', async () => {
+    vi.useFakeTimers();
+    try {
+      const { onPublish, props } = renderWorkspace();
+      fireEvent.change(screen.getByLabelText('Q1'), { target: { value: '$100' } });
+      await act(async () => { await vi.advanceTimersByTimeAsync(900); });
+      expect(onPublish).not.toHaveBeenCalled();
+      await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Save payout rules' })); });
+      expect(props.onSavePayoutDescriptions).toHaveBeenCalledWith({ Q1: '$100' });
+      await act(async () => { await vi.advanceTimersByTimeAsync(900); });
+      expect(onPublish).not.toHaveBeenCalled();
+    } finally { vi.useRealTimers(); }
+  });
+});
+
+
+it('queues board edits made during payout saving behind that revision update', async () => {
+  vi.useFakeTimers();
+  try {
+    let finish!: (value: any) => void;
+    const patch = vi.fn(() => new Promise<any>((resolve) => { finish = resolve; }));
+    const { onPublish } = renderWorkspace({ onSavePayoutDescriptions: patch });
+    fireEvent.change(screen.getByLabelText('Q1'), { target: { value: '$100' } });
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Save payout rules' })); });
+    fireEvent.change(screen.getByLabelText('Board name'), { target: { value: 'New title' } });
+    fireEvent.blur(screen.getByLabelText('Board name'));
+    await act(async () => { await vi.advanceTimersByTimeAsync(900); });
+    expect(onPublish).not.toHaveBeenCalled();
+    await act(async () => { finish({ Q1: '$100' }); });
+    await act(async () => { await vi.advanceTimersByTimeAsync(900); });
+    expect(onPublish).toHaveBeenCalledTimes(1);
+    expect((onPublish.mock.calls as any)[0]?.[0]).toMatchObject({ game: { title: 'New title', payoutDescriptions: { Q1: '$100' } } });
+  } finally { vi.useRealTimers(); }
+});
+
+
+it('retains payout input after an endpoint failure and retries without a draft PUT', async () => {
+  const patch = vi.fn().mockRejectedValueOnce(new Error('offline')).mockResolvedValue({ Q1: '$100' });
+  const { onPublish } = renderWorkspace({ onSavePayoutDescriptions: patch });
+  fireEvent.change(screen.getByLabelText('Q1'), { target: { value: '$100' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Save payout rules' }));
+  await screen.findByText('Save failed. Try again.');
+  expect(screen.getByLabelText('Q1')).toHaveValue('$100');
+  fireEvent.click(screen.getByRole('button', { name: 'Save payout rules' }));
+  await waitFor(() => expect(patch).toHaveBeenCalledTimes(2));
+  await waitFor(() => expect(screen.queryByText('Save failed. Try again.')).not.toBeInTheDocument());
+  expect(onPublish).not.toHaveBeenCalled();
+});
+
+it('keeps published payout edits on the canonical payout endpoint', async () => {
+  const patch = vi.fn(async () => ({ Q1: '$100' }));
+  const { onPublish } = renderWorkspace({ isPublished: true, board: drawnBoard(100), onSavePayoutDescriptions: patch });
+  fireEvent.change(screen.getByLabelText('Q1'), { target: { value: '$100' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Save payout rules' }));
+  await waitFor(() => expect(patch).toHaveBeenCalledWith({ Q1: '$100' }));
+  await waitFor(() => expect(screen.getByLabelText('Q1')).toBeEnabled());
+  expect(onPublish).not.toHaveBeenCalled();
+  expect(screen.getByLabelText('Q1')).toHaveValue('$100');
+});
+
+it('saves unsaved payout rules before preview and blocks preview when that save fails', async () => {
+  const patch = vi.fn().mockRejectedValueOnce(new Error('offline')).mockResolvedValue({ Q1: '$100' });
+  renderWorkspace({ board: drawnBoard(100), onSavePayoutDescriptions: patch });
+  fireEvent.change(screen.getByLabelText('Q1'), { target: { value: '$100' } });
+  expect(screen.getByText('Unsaved payout rules')).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Preview' }));
+  await screen.findByText('Save failed. Try again.');
+  expect(screen.queryByRole('dialog', { name: 'Private preview — sharing is off' })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Preview' }));
+  await screen.findByRole('dialog', { name: 'Private preview — sharing is off' });
+  expect(patch).toHaveBeenCalledTimes(2);
+});
+
+
+it('warns before leaving unsaved payout input and clears the warning after save', async () => {
+  renderWorkspace();
+  fireEvent.change(screen.getByLabelText('Q1'), { target: { value: '$100' } });
+  const unsaved = new Event('beforeunload', { cancelable: true });
+  window.dispatchEvent(unsaved);
+  expect(unsaved.defaultPrevented).toBe(true);
+  await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Save payout rules' })); });
+  const saved = new Event('beforeunload', { cancelable: true });
+  window.dispatchEvent(saved);
+  expect(saved.defaultPrevented).toBe(false);
+});

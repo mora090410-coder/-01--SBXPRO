@@ -160,3 +160,40 @@ describe('useWorkspaceDraft', () => {
     expect(settled.status).toBe('save_failed');
   });
 });
+
+it('accepts its payout revision while preserving edits made during the endpoint request', async () => {
+  vi.useFakeTimers();
+  try {
+    const onSave = vi.fn(async () => undefined);
+    let resolve!: (fields: Partial<GameState>) => void;
+    const { result, rerender } = renderHook(({ revision }) => useWorkspaceDraft({ game, board, revision, isPublished: false, onSave }), { initialProps: { revision: 2 } });
+    let pending!: Promise<void>;
+    await act(async () => { pending = result.current.saveExternalGame(() => new Promise((done) => { resolve = done; })); });
+    act(() => result.current.setGame((current) => ({ ...current, title: 'New title' })));
+    rerender({ revision: 3 });
+    await act(async () => { resolve({ payoutDescriptions: { Q1: '$100' } }); await pending; });
+    expect(result.current.saveState.status).toBe('dirty');
+    expect(result.current.saveState.revision).toBe(3);
+    expect(result.current.game.title).toBe('New title');
+    await act(async () => { await vi.advanceTimersByTimeAsync(900); });
+    expect(onSave).toHaveBeenCalledTimes(1);
+    expect(result.current.saveState.status).toBe('clean');
+    expect(result.current.game.payoutDescriptions).toEqual({ Q1: '$100' });
+  } finally { vi.useRealTimers(); }
+});
+
+it('keeps an external revision conflict blocked before the new revision prop renders', async () => {
+  const onSave = vi.fn(async () => undefined);
+  const { result, rerender } = renderHook(({ revision }) => useWorkspaceDraft({ game, board, revision, isPublished: false, onSave }), { initialProps: { revision: 2 } });
+  await act(async () => {
+    await expect(result.current.saveExternalGame(async () => {
+      throw Object.assign(new Error('Changed in another session'), { code: 'REVISION_CONFLICT', currentRevision: 3 });
+    })).rejects.toThrow('Changed in another session');
+  });
+  expect(result.current.saveState.status).toBe('conflicted');
+  rerender({ revision: 3 });
+  expect(result.current.saveState.status).toBe('conflicted');
+  const retryPatch = vi.fn(async () => ({}));
+  await act(async () => { await expect(result.current.saveExternalGame(retryPatch)).rejects.toThrow(); });
+  expect(retryPatch).not.toHaveBeenCalled();
+});

@@ -193,7 +193,7 @@ export default function OrganizerWorkspace({
   shareCode,
   renderPreview,
 }: OrganizerWorkspaceProps) {
-  const { game, board, setGame, setBoard, saveState, flush, retry, reloadLatest } = useWorkspaceDraft({
+  const { game, board, setGame, setBoard, saveState, flush, retry, saveExternalGame, reloadLatest } = useWorkspaceDraft({
     game: gameProp,
     board: boardProp,
     revision,
@@ -226,6 +226,16 @@ export default function OrganizerWorkspace({
   const [published, setPublished] = useState<PublishedBoard | null>(null);
   const [publishedOpen, setPublishedOpen] = useState(false);
   const [payoutStatus, setPayoutStatus] = useState<PayoutRulesStatus>('idle');
+  const [payoutDraft, setPayoutDraft] = useState<PayoutDescriptions | null>(null);
+  useEffect(() => {
+    if (payoutDraft === null) return;
+    const guard = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', guard);
+    return () => window.removeEventListener('beforeunload', guard);
+  }, [payoutDraft]);
   const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
   const [note, setNote] = useState<string | null>(null);
@@ -389,6 +399,7 @@ export default function OrganizerWorkspace({
   const clearSelection = () => setSelection(new Set<number>());
   const enableSharing = async () => {
     if (!onShareBoard || sharePending || saveState.status !== 'clean') return;
+    if (payoutDraft !== null && !await savePayoutDescriptions()) return;
     setSharePending(true);
     setShareError(null);
     try {
@@ -556,26 +567,32 @@ export default function OrganizerWorkspace({
   };
 
   const updatePayoutDescription = (field: keyof PayoutDescriptions, value: string) => {
-    setPayoutStatus('idle');
-    setGame((current) => ({ ...current, payoutDescriptions: { ...current.payoutDescriptions, [field]: value } }));
+    setPayoutStatus('dirty');
+    setPayoutDraft((current) => ({ ...(current ?? game.payoutDescriptions), [field]: value }));
   };
 
-  const savePayoutDescriptions = async () => {
-    if (!activePoolId) return;
+  const savePayoutDescriptions = async (): Promise<boolean> => {
+    if (!activePoolId || payoutStatus === 'saving') return false;
     setPayoutStatus('saving');
     try {
-      const saved = await onSavePayoutDescriptions(game.payoutDescriptions || {});
-      setGame((current) => ({ ...current, payoutDescriptions: saved }));
+      // Canonical payouts use PATCH, serialized with the draft revision.
+      await saveExternalGame(async () => ({
+        payoutDescriptions: await onSavePayoutDescriptions(payoutDraft ?? game.payoutDescriptions ?? {}),
+      }));
+      setPayoutDraft(null);
       setPayoutStatus('saved');
       setNote(null);
       setAlert(null);
+      return true;
     } catch {
       setPayoutStatus('error');
       setAlert(PAYOUT_FAILED);
+      return false;
     }
   };
 
   const openPreview = async () => {
+    if (payoutDraft !== null && !await savePayoutDescriptions()) return;
     setPublishError(null);
     setAlert(null);
     await flush();
@@ -584,6 +601,7 @@ export default function OrganizerWorkspace({
 
   const publish = async () => {
     if (!activePoolId) return;
+    if (payoutDraft !== null && !await savePayoutDescriptions()) return;
     setPublishError(null);
     setPublishPending(true);
     try {
@@ -996,9 +1014,9 @@ export default function OrganizerWorkspace({
             </section>
             <aside className="flex flex-col gap-6">
               <PayoutRulesCard
-                descriptions={game.payoutDescriptions || {}}
+                descriptions={payoutDraft ?? game.payoutDescriptions ?? {}}
                 status={payoutStatus}
-                disabled={!activePoolId}
+                disabled={!activePoolId || payoutStatus === 'saving'}
                 onChange={updatePayoutDescription}
                 onSavePayoutDescriptions={() => void savePayoutDescriptions()}
               />
@@ -1110,9 +1128,9 @@ export default function OrganizerWorkspace({
               onToggleHighlightOpen={() => setHighlightOpen((current) => !current)}
             />
             <PayoutRulesCard
-              descriptions={game.payoutDescriptions || {}}
+              descriptions={payoutDraft ?? game.payoutDescriptions ?? {}}
               status={payoutStatus}
-              disabled={!activePoolId}
+              disabled={!activePoolId || payoutStatus === 'saving'}
               onChange={updatePayoutDescription}
               onSavePayoutDescriptions={() => void savePayoutDescriptions()}
             />

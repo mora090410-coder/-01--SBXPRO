@@ -21,6 +21,7 @@ export interface UseWorkspaceDraft {
   saveState: DraftSaveState;
   /** Resolves with the save state left behind by the flush, so callers can gate on it. */
   flush: () => Promise<DraftSaveState>;
+  saveExternalGame: (save: () => Promise<Partial<GameState>>) => Promise<void>;
   retry: () => Promise<void>;
   reloadLatest: () => Promise<void>;
 }
@@ -202,6 +203,49 @@ export function useWorkspaceDraft({
     return saveStateRef.current;
   }, [clearTimer, runSave]);
 
+  // Serialize revision-changing field endpoints with draft autosave. Edits
+  // made during the request stay local and drain against the new revision.
+  const saveExternalGame = useCallback(async (save: () => Promise<Partial<GameState>>) => {
+    const drained = await flush();
+    if (drained.status !== 'clean') throw new Error('Save or reload the board before saving these changes.');
+    clearTimer();
+    const baseline = drained.revision;
+    editedDuringSaveRef.current = false;
+    updateSaveState((current) => startDraftSave(markDraftDirty(current), { expectedRevision: baseline }));
+    const operation = (async () => {
+      try {
+        const fields = await save();
+        const nextGame = { ...latestData.current.game, ...fields };
+        latestData.current = { ...latestData.current, game: nextGame };
+        setLocalGame(nextGame);
+        onApply?.(nextGame, latestData.current.board);
+        // The contests update trigger increments revision exactly once. A
+        // larger revision belongs to another write and must stay a conflict.
+        updateSaveState(() => revisionRef.current > baseline + 1
+          ? { status: 'conflicted', revision: revisionRef.current, error: 'revision_mismatch', canPublish: false }
+          : clean(baseline + 1));
+      } catch (error) {
+        // A failed field endpoint never saved the payout form. Keep its error
+        // with that form; do not pretend retrying a draft PUT can save it.
+        const conflict = error as { code?: string; currentRevision?: number };
+        updateSaveState(() => conflict?.code === 'REVISION_CONFLICT' || revisionRef.current > baseline
+          ? { status: 'conflicted', revision: Number.isInteger(conflict?.currentRevision) ? conflict.currentRevision! : revisionRef.current, error: 'revision_mismatch', canPublish: false }
+          : clean(baseline));
+        throw error;
+      } finally {
+        inFlightRef.current = null;
+        if (editedDuringSaveRef.current && !isPublished) {
+          editedDuringSaveRef.current = false;
+          updateSaveState((current) => current.status === 'clean' ? markDraftDirty(current) : current);
+          scheduleSave();
+        }
+      }
+    })();
+    // flush() waits for completion while callers of this method retain errors.
+    inFlightRef.current = operation.catch(() => undefined);
+    await operation;
+  }, [flush, clearTimer, updateSaveState, onApply, isPublished, scheduleSave]);
+
   const retry = useCallback(async () => {
     if (saveStateRef.current.status !== 'save_failed') return;
     const current = saveStateRef.current;
@@ -242,6 +286,7 @@ export function useWorkspaceDraft({
     saveState,
     flush,
     retry,
+    saveExternalGame,
     reloadLatest,
   };
 }

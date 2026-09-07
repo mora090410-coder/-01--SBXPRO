@@ -2,7 +2,7 @@ import React from 'react';
 import { Eyebrow, CapsuleButton, CapsuleInput, Glass } from '../../../design/primitives';
 import type { PayoutDescriptions } from '../../../../types';
 
-export type PayoutRulesStatus = 'idle' | 'saving' | 'saved' | 'error';
+export type PayoutRulesStatus = 'idle' | 'dirty' | 'saving' | 'saved' | 'error';
 
 export interface PayoutRulesCardProps {
   descriptions: PayoutDescriptions;
@@ -21,6 +21,8 @@ const FIELDS: Array<{ key: keyof PayoutDescriptions; label: string }> = [
 
 function StatusLine({ status }: { status: PayoutRulesStatus }) {
   switch (status) {
+    case 'dirty':
+      return <p role="status" className="font-mono text-[12px] text-fg-3">Unsaved payout rules</p>;
     case 'saved':
       return <p className="font-mono text-[12px] text-fg-3">Saved</p>;
     case 'error':

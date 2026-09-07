@@ -59,7 +59,9 @@ Owner-approved design: one allocation flow (select squares, name, payment, apply
 - [x] Integrate legacy-axis preservation and reconcile prior local changes.
 - [x] Run type, unit, build, design, browser and available integration gates.
 - [x] Inspect desktop/phone keyboard, saved/reopened state, and public/private boundaries.
-- [ ] Commit/reconcile main and release verified changes.
+- [x] Commit/reconcile main and release verified changes.
+- [x] Finish payout-saving regression found during live setup and verify (796 unit tests, browser payout save/reload, build, TypeScript, design).
+- [ ] Deploy payout repair and verify canonical payout save/reload on live demo.
 - [ ] Set up and verify clearly labeled dummy first-game board with $100 at all four milestones; verify published viewer.
 
 Review: 788 unit tests passed; 66 integration passed / 1 existing skip; TypeScript, production-configured build, design lint passed (5 existing token warnings); all 84 Chromium tests passed. WebKit organizer/accessibility/picker coverage passed across runs (29 passed / 1 platform skip, then all 7 picker tests passed after correcting native keyboard assumptions). Desktop and phone images inspected. Failed payment-note saves retain names and responsibility. Live release and dummy-board verification pending; signed-in account already uses its one free publication. No production schema changes needed or authorized.
@@ -112,3 +114,5 @@ Verification:
 
 Local preview: http://127.0.0.1:5194/ (landing/demo preview with dummy auth configuration).
 Original checkout remains on main with its three original modified files. No commits, merge, push, deployment, or production data changes.
+
+Live verification follow-up: first release ed4910e deployed successfully to Cloudflare Pages grid-one and getgridone.com. Signed-in Safari verified compact creation, 100 dummy allocations, 100 paid demo statuses, fixed number draw, and an individual display-name change retaining Demo Family responsibility. Payout Save exposed a genuine overlap with draft autosave; addressing before final release. Existing Test1 consumes the free account publication allowance; no paid upgrade or allowance override performed.

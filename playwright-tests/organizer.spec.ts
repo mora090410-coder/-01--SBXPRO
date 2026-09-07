@@ -43,7 +43,14 @@ const installOrganizerSession = async (page: Page) => {
  * never needs the functions server: the board row, its score, publishing, the
  * organizer-only plan summary, owner entry metadata, and the NFL schedule.
  */
-const installOrganizerBoard = async (page: Page) => {
+const installOrganizerBoard = async (page: Page, persistEdits = false) => {
+  const saved = {
+    revision: 1,
+    game: {} as Record<string, unknown>,
+    payouts: {} as Record<string, string>,
+    writes: [] as Array<{ method: string; revision: number }>,
+    conflicts: 0,
+  };
   await installOrganizerSession(page);
 
   const squares = Array.from({ length: 100 }, (_, index) => (index === 0 ? ['Ava'] : ([] as string[])));
@@ -67,7 +74,23 @@ const installOrganizerBoard = async (page: Page) => {
     body: JSON.stringify({ published: true, shareCode: 'SHARE123', viewerUrl: '/b/SHARE123', revision: 2, tier: 'free', used: 1, allowance: 1 }),
   }));
   await page.route(`**/api/pools/${boardId}`, (route) => {
-    if (route.request().method() === 'PUT') {
+    const method = route.request().method();
+    if (persistEdits && (method === 'PUT' || method === 'PATCH')) {
+      const body = route.request().postDataJSON();
+      saved.writes.push({ method, revision: body.revision });
+      if (body.revision !== saved.revision) {
+        saved.conflicts += 1;
+        return route.fulfill({ status: 409, json: {
+          error: 'This board changed in another session. Reload before saving again.',
+          code: 'REVISION_CONFLICT', currentRevision: saved.revision,
+        } });
+      }
+      if (method === 'PUT') saved.game = body.game;
+      else saved.payouts = body.payoutDescriptions;
+      saved.revision += 1;
+      return route.fulfill({ json: { ok: true, revision: saved.revision, payoutDescriptions: saved.payouts } });
+    }
+    if (method === 'PUT') {
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -99,6 +122,7 @@ const installOrganizerBoard = async (page: Page) => {
         winner_history: [],
         pending_milestones: [],
         notification_delivery_issues: [],
+        ...(persistEdits ? { ...saved.game, revision: saved.revision, payoutDescriptions: saved.payouts } : {}),
       }),
     });
   });
@@ -117,6 +141,7 @@ const installOrganizerBoard = async (page: Page) => {
     contentType: 'application/json',
     body: '[]',
   }));
+  return saved;
 };
 
 test.describe('organizer workspace contract', () => {
@@ -223,4 +248,32 @@ test.describe('organizer workspace contract', () => {
     await expect(sheet).toBeHidden();
     await expect(page.getByText(/PHI at NYG/)).toBeVisible();
   });
+});
+
+
+test('payout rules save beside a pending board edit and survive reload without revision conflict', async ({ page }) => {
+  const saved = await installOrganizerBoard(page, true);
+  await page.goto(`/boards/${boardId}`);
+  await expect(page.getByRole('main', { name: 'Parkside browser board workspace' })).toBeVisible();
+  for (const label of ['Q1', 'Halftime', 'Q3', 'Final']) {
+    await page.getByRole('textbox', { name: label, exact: true }).fill('$100');
+  }
+  const notes = 'Test board. Each quarter pays $100; organizer handles payment.';
+  await page.getByRole('textbox', { name: 'Board rules', exact: true }).fill(notes);
+  await expect(page.getByRole('status').filter({ hasText: 'Unsaved payout rules' })).toBeVisible();
+  await page.getByRole('textbox', { name: 'Board name', exact: true }).fill('Payout persistence test');
+  await page.getByRole('textbox', { name: 'Board name', exact: true }).press('Tab');
+  await expect(page.getByRole('main', { name: 'Payout persistence test workspace' })).toBeVisible();
+  await page.getByRole('button', { name: 'Save payout rules', exact: true }).click();
+  await expect.poll(() => saved.payouts).toEqual({ Q1: '$100', HALF: '$100', Q3: '$100', FINAL: '$100', notes });
+  await expect(page.getByRole('status').filter({ hasText: 'Unsaved payout rules' })).toHaveCount(0);
+  expect(saved.conflicts).toBe(0);
+  expect(saved.writes).toEqual([{ method: 'PUT', revision: 1 }, { method: 'PATCH', revision: 2 }]);
+  await page.reload();
+  await expect(page.getByRole('textbox', { name: 'Board name', exact: true })).toHaveValue('Payout persistence test');
+  for (const label of ['Q1', 'Halftime', 'Q3', 'Final']) {
+    await expect(page.getByRole('textbox', { name: label, exact: true })).toHaveValue('$100');
+  }
+  await expect(page.getByRole('textbox', { name: 'Board rules', exact: true })).toHaveValue(notes);
+  expect(saved.conflicts).toBe(0);
 });

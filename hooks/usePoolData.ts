@@ -314,7 +314,10 @@ export function usePoolData(): UsePoolDataReturn {
                     revisionRef.current = result.currentRevision;
                     setRevision(result.currentRevision);
                 }
-                throw new Error(result.error || 'Unable to save payout descriptions.');
+                throw Object.assign(new Error(result.error || 'Unable to save payout descriptions.'), {
+                    code: result.code,
+                    currentRevision: result.currentRevision,
+                });
             }
             revisionRef.current = result.revision;
             setRevision(result.revision);
