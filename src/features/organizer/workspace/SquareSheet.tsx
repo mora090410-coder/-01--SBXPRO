@@ -25,19 +25,15 @@ const PAID_OPTIONS: { value: PaidStatus; label: string; tone: 'neutral' | 'cardi
 
 const PUBLISHED_HELPER = 'This board is published. Renaming a square is recorded in the board history and updates the shared link right away.';
 
-/** Bottom sheet for assigning a name, seller, and paid status to one square. */
+/** Bottom sheet for editing a display name and payment while retaining responsibility to one square. */
 export default function SquareSheet({ open, index, name, allocationLabel, meta, isPublished, hasNextOpen, onSave, onClose }: SquareSheetProps) {
-  const [familyValue, setFamilyValue] = useState(allocationLabel ?? '');
   const [nameValue, setNameValue] = useState(name);
-  const [sellerValue, setSellerValue] = useState(meta?.seller_label ?? '');
   const [paidStatus, setPaidStatus] = useState<PaidStatus>(meta?.paid_status ?? 'unknown');
   const radioRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   useEffect(() => {
     if (!open) return;
     setNameValue(name);
-    setFamilyValue(allocationLabel ?? '');
-    setSellerValue(meta?.seller_label ?? '');
     setPaidStatus(meta?.paid_status ?? 'unknown');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, index]);
@@ -50,14 +46,14 @@ export default function SquareSheet({ open, index, name, allocationLabel, meta, 
     notify_opt_in: meta?.notify_opt_in ?? false,
     contact_type: meta?.contact_type ?? null,
     contact_value: meta?.contact_value ?? null,
-    seller_label: sellerValue.trim() || null,
+    seller_label: meta?.seller_label ?? null,
   });
 
   const showSaveAndNext = hasNextOpen && !isPublished;
 
   const save = (advance: boolean) => {
-    if (index === null || familyValue.trim().length > 80 || nameValue.trim().length > 80) return;
-    if (allocationLabel !== undefined || familyValue) onSave(index, nameValue, buildMeta(), advance, isPublished ? allocationLabel : familyValue.trim() || null);
+    if (index === null || nameValue.trim().length > 80) return;
+    if (allocationLabel !== undefined) onSave(index, nameValue, buildMeta(), advance, allocationLabel || (isPublished ? null : nameValue.trim() || null));
     else onSave(index, nameValue, buildMeta(), advance);
   };
 
@@ -89,19 +85,12 @@ export default function SquareSheet({ open, index, name, allocationLabel, meta, 
           onKeyDown={onNameKeyDown}
           autoFocus
         />
-        <CapsuleInput
-          label="Assigned family (public)"
-          maxLength={80}
-          value={familyValue}
-          readOnly={isPublished}
-          onChange={(event) => setFamilyValue(event.target.value)}
-        />
-        <p className="font-ui text-[14px] text-fg-2">Visible to everyone with the board link. Leave the buyer name empty until this square is sold.{isPublished ? ' Family allocations are locked.' : ''}</p>
-        <CapsuleInput
-          label="Sold by (optional)"
-          value={sellerValue}
-          onChange={(event) => setSellerValue(event.target.value)}
-        />
+        {allocationLabel && (
+          <div className="font-ui text-[14px] text-fg-2">
+            <p>Responsible person or family: <span className="text-fg">{allocationLabel}</span></p>
+            <p>Changing the name on the board keeps this responsibility unchanged.</p>
+          </div>
+        )}
         <div className="flex flex-col gap-2">
           <span className="font-ui text-[14px] text-fg-2">Payment</span>
           <div role="radiogroup" aria-label="Payment" className="flex flex-wrap gap-2">
@@ -122,8 +111,8 @@ export default function SquareSheet({ open, index, name, allocationLabel, meta, 
           </div>
         </div>
         <div className="flex gap-2 pt-2">
-          <CapsuleButton variant="quiet" disabled={nameValue.trim().length > 80 || familyValue.trim().length > 80} onClick={() => save(false)}>Save</CapsuleButton>
-          {showSaveAndNext && <CapsuleButton disabled={nameValue.trim().length > 80 || familyValue.trim().length > 80} onClick={() => save(true)}>Save and next</CapsuleButton>}
+          <CapsuleButton variant="quiet" disabled={nameValue.trim().length > 80} onClick={() => save(false)}>Save</CapsuleButton>
+          {showSaveAndNext && <CapsuleButton disabled={nameValue.trim().length > 80} onClick={() => save(true)}>Save and next</CapsuleButton>}
         </div>
       </div>
     </Sheet>

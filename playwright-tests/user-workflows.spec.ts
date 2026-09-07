@@ -160,7 +160,7 @@ test('organizer creates a board from one scheduled NFL event', async ({ page }) 
 
   await page.goto('/create');
   await page.getByLabel('Board name').fill('Week 1 fundraiser');
-  await page.getByRole('radio', { name: /DAL.*at.*WAS/i }).check();
+  await page.getByRole('radio', { name: /DAL.*at.*WAS/i }).click();
   await page.getByRole('button', { name: 'Create board' }).click();
 
   // Creation lands straight in the workspace: there is no interstitial.

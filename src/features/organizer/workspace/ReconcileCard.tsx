@@ -13,7 +13,6 @@ export interface ReconcileCardProps {
 const advisoryText: Record<string, string> = {
   open_squares_remaining: 'OPEN squares remain. You can publish if you are okay leaving them OPEN.',
   unpaid_or_unknown_payment_status: 'Some private payment notes still need follow-up.',
-  seller_attribution_gaps: 'Some seller notes still need follow-up.',
 };
 const blockerText: Record<string, string> = {
   missing_owner: 'The board owner could not be verified. Reload and try again.',
@@ -55,7 +54,7 @@ export default function ReconcileCard({ model, unpaidCount, highlightOpen, onTog
           <p>{model.canPublish
             ? 'Nothing blocking publish.'
             : model.assignedCount === 0
-              ? 'Record buyers as squares sell. Draw game numbers when sales are finished.'
+              ? 'Allocate squares to a person or family, then draw game numbers when ready.'
               : model.canEnterDraw
                 ? 'When sales are finished, draw game numbers, then review and finalize the board.'
                 : 'Continue setting up the board before finalizing.'}</p>
@@ -63,9 +62,9 @@ export default function ReconcileCard({ model, unpaidCount, highlightOpen, onTog
       </div>
       <div role="region" aria-label="Private follow-up" className="border border-hairline rounded-control p-4">
         <h3 className="font-semibold">Private follow-up</h3>
-        {model.advisories.length ? (
+        {model.advisories.filter((advisory) => advisory !== 'seller_attribution_gaps').length ? (
           <ul>
-            {model.advisories.map((advisory) => (
+            {model.advisories.filter((advisory) => advisory !== 'seller_attribution_gaps').map((advisory) => (
               <li key={advisory}>{advisoryText[advisory] || 'Review this private note.'}</li>
             ))}
           </ul>

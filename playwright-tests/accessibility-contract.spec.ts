@@ -387,7 +387,13 @@ test.describe('Slice 2 signed-out accessibility contract automation', () => {
     await expect(doneSelecting).toHaveAttribute('aria-pressed', 'true');
 
     // Two single picks, then a shift-click that fills the block up to square 4.
-    await page.getByRole('button', { name: 'Square 2, unassigned' }).click();
+    const firstPick = page.getByRole('button', { name: 'Square 2, unassigned' });
+    await firstPick.scrollIntoViewIfNeeded();
+    const beforePick = await page.evaluate(() => window.scrollY);
+    await firstPick.click();
+    await expect(firstPick).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByLabel('Name for these squares')).not.toBeFocused();
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(beforePick);
     await page.getByRole('button', { name: 'Square 3, unassigned' }).click();
     await page.getByRole('button', { name: 'Square 4, unassigned' }).click({ modifiers: ['Shift'] });
 
@@ -399,7 +405,10 @@ test.describe('Slice 2 signed-out accessibility contract automation', () => {
     const bar = page.getByRole('group', { name: 'Assign selected squares' });
     await expect(bar).toBeVisible();
     await expect(bar).toContainText('3 selected');
-    await expect(bar.getByLabel('Sold by (optional)')).toBeVisible();
+    await expect(bar.getByLabel('Sold by (optional)')).toHaveCount(0);
+    await expect(page.getByRole('textbox', { name: 'Paste names' })).toHaveCount(0);
+    await page.getByRole('button', { name: 'Name 3 selected squares' }).click();
+    await expect(bar.getByLabel('Name for these squares')).toBeFocused();
     await expect(bar.getByRole('radiogroup', { name: 'Payment' })).toBeVisible();
     await expect(bar.getByRole('radio', { name: 'Not asked yet' })).toHaveAttribute('aria-checked', 'true');
 
@@ -431,7 +440,7 @@ test.describe('Slice 2 signed-out accessibility contract automation', () => {
     await expect(blockers).toContainText('Confirm that the remaining OPEN squares should stay OPEN.');
     await expect(advisories).toContainText('OPEN squares remain. You can publish if you are okay leaving them OPEN.');
     await expect(advisories).toContainText('Some private payment notes still need follow-up.');
-    await expect(advisories).toContainText('Some seller notes still need follow-up.');
+    await expect(advisories).not.toContainText('Some seller notes still need follow-up.');
 
     // Advisories never masquerade as blockers, and the draw stays reachable.
     await expect(blockers).not.toContainText('OPEN squares remain');
@@ -504,7 +513,8 @@ test.describe('Slice 2 signed-out accessibility contract automation', () => {
 
     const shareTrigger = preview.getByRole('button', { name: 'Share', exact: true });
     await expect(shareTrigger).toBeVisible();
-    await shareTrigger.click();
+    await shareTrigger.focus();
+    await page.keyboard.press('Enter');
 
     const share = page.getByRole('dialog', { name: 'Share link' });
     await expect(share).toBeVisible();

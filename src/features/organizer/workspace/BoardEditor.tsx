@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Glass, CapsuleTag, CapsuleButton } from '../../../design/primitives';
 import type { BoardData, EntryMeta, GameState } from '../../../../types';
 import { assignable, rangeBetween, toggle, type Selection } from './selection';
@@ -19,8 +19,6 @@ export interface BoardEditorProps {
   onSelectionChange: (next: Selection) => void;
   onToggleSelectMode: () => void;
   onSelectSquare: (index: number) => void;
-  /** Draft only: paste a newline-separated name list into the first open cells. */
-  onPasteNames?: (names: string[]) => void;
   /**
    * Bumped by the workspace after a range apply settles. Any change moves focus
    * back to the select-mode toggle so a failed apply does not strand focus.
@@ -30,13 +28,6 @@ export interface BoardEditorProps {
 
 const AXIS_CELL = 'flex items-center justify-center min-h-11 h-11 bg-chyron text-gold font-mono text-[13px] rounded-cell';
 const PREVIEW_ANIM = 'animate-[digit-roll_var(--g-dur-spring)_var(--g-ease-state)]';
-
-function splitNames(raw: string): string[] {
-  return raw
-    .split('\n')
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0);
-}
 
 /** Organizer board editor: 11x11 grid with square assignment and a draft draw preview. */
 export default function BoardEditor({
@@ -51,10 +42,8 @@ export default function BoardEditor({
   onSelectionChange,
   onToggleSelectMode,
   onSelectSquare,
-  onPasteNames,
   focusToggleSignal = 0,
 }: BoardEditorProps) {
-  const [pasteValue, setPasteValue] = useState('');
   // The corner a shift-click or a drag measures its block from.
   const anchorRef = useRef<number | null>(null);
   const dragRef = useRef<{ anchor: number; base: Selection; moved: boolean } | null>(null);
@@ -82,7 +71,7 @@ export default function BoardEditor({
   }, [selectMode]);
 
   const focusToggle = () => {
-    toolbarRef.current?.querySelector('button')?.focus();
+    toolbarRef.current?.querySelector('button')?.focus({ preventScroll: true });
   };
 
   // The bar unmounts when the selection empties. When that came from Apply,
@@ -103,15 +92,6 @@ export default function BoardEditor({
     if (focusToggleSignal === firstFocusSignal.current) return;
     focusToggle();
   }, [focusToggleSignal]);
-
-  const flushPasteValue = (value: string) => {
-    if (!onPasteNames) return;
-    const names = splitNames(value);
-    if (names.length) {
-      onPasteNames(names);
-      setPasteValue('');
-    }
-  };
 
   const isCellDisabled = (isOpen: boolean) => {
     if (!isPublished) return false;
@@ -222,20 +202,6 @@ export default function BoardEditor({
   return (
     <div className="flex flex-col gap-3">
       {drawPreview && <CapsuleTag tone="gold">Draft draw</CapsuleTag>}
-      {onPasteNames && (
-        <textarea
-          aria-label="Paste names"
-          value={pasteValue}
-          onChange={(event) => setPasteValue(event.target.value)}
-          onPaste={(event) => {
-            const el = event.currentTarget;
-            setTimeout(() => flushPasteValue(el.value), 0);
-          }}
-          onBlur={(event) => flushPasteValue(event.currentTarget.value)}
-          className="w-full min-h-[80px] rounded-card border border-hairline bg-panel p-3 font-ui text-[14px] text-fg placeholder:text-fg-3 outline-none focus-visible:border-action"
-          placeholder="Paste one name per line"
-        />
-      )}
       <div ref={toolbarRef} className="flex flex-wrap items-center gap-2">
         <CapsuleButton
           variant="quiet"
@@ -245,6 +211,7 @@ export default function BoardEditor({
         >
           {selectMode ? 'Done selecting' : 'Select squares'}
         </CapsuleButton>
+        {selectMode && selection.size > 0 && <CapsuleButton variant="quiet" onClick={() => document.getElementById('allocation-editor')?.querySelector('input')?.focus()}>Name {selection.size} selected squares</CapsuleButton>}
       </div>
       <div data-testid="contained-board-overflow" className="w-full min-w-0 max-w-full overflow-auto overscroll-contain rounded-card border border-hairline" style={{ contain: 'inline-size' }}>
         <div className="min-w-[640px]">
@@ -298,7 +265,7 @@ export default function BoardEditor({
                         className={`flex min-h-11 flex-col items-center justify-center gap-0.5 rounded-cell px-1 py-1 font-ui text-[12px] transition-[background-color] duration-[var(--g-dur-state)] ease-[var(--g-ease-state)] disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action ${selectMode ? 'touch-pan-x' : ''} ${isOpen ? openClasses : assignedClasses} ${highlightClasses} ${selectedClasses}`.trim()}
                       >
                         <span className="font-mono text-[10px] text-fg-3">#{index + 1}</span>
-                        {family && <span className="line-clamp-2 text-center text-[10px] text-fg-2">{family}</span>}
+                        {family && family !== name && <span className="line-clamp-2 text-center text-[10px] text-fg-2">{family}</span>}
                         {isOpen && <span className="text-[10px]">Unsold</span>}
                         {!isOpen && <span className="line-clamp-2 text-center leading-tight">{name}</span>}
                         {paid && <span className="font-mono text-[10px] text-fg-2">paid</span>}

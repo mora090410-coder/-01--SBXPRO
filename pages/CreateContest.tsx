@@ -212,6 +212,7 @@ const CreateContest: React.FC = () => {
                     )}
 
                     <ScheduledGamePicker
+                        compactSelection
                         value={game.gameExternalId || null}
                         onChange={handleGameChange}
                         scope={scoreTestMode ? 'completed' : 'upcoming'}

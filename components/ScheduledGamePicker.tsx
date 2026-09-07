@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState, useId } from 'react';
 import type { ScheduledGame } from '../types';
 import { CapsuleButton } from '../src/design/primitives';
 
@@ -9,6 +9,7 @@ export interface ScheduledGamePickerProps {
     limit?: number;
     accessToken?: string;
     disabled?: boolean;
+    compactSelection?: boolean;
     className?: string;
 }
 
@@ -54,12 +55,32 @@ export const ScheduledGamePicker: React.FC<ScheduledGamePickerProps> = ({
     limit,
     accessToken,
     disabled = false,
+    compactSelection = false,
     className = '',
 }) => {
     const [games, setGames] = useState<ScheduledGame[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [requestKey, setRequestKey] = useState(0);
+    const [browsing, setBrowsing] = useState(false);
+    const [week, setWeek] = useState<string | null>(null);
+    const pickerRef = useRef<HTMLDivElement>(null);
+    const focusAfterChoice = useRef(false);
+    const weekId = useId();
+    const selectedGame = games.find(game => game.id === value);
+    const weeks = useMemo(() => [...new Map(games.map(game => [
+        `${game.season}:${game.week}`, { key: `${game.season}:${game.week}`, label: `Week ${game.week}` },
+    ])).values()], [games]);
+    const preferredWeek = week ?? (selectedGame ? `${selectedGame.season}:${selectedGame.week}` : null);
+    const activeWeek = weeks.find(item => item.key === preferredWeek)?.key ?? weeks[0]?.key;
+
+    useEffect(() => {
+        if (selectedGame && !isLoading && focusAfterChoice.current) {
+            pickerRef.current?.querySelector<HTMLElement>(browsing ? 'input:checked' : 'button')?.focus();
+            focusAfterChoice.current = false;
+        }
+    }, [selectedGame, browsing, isLoading]);
+
     const retry = useCallback(() => setRequestKey(key => key + 1), []);
 
     useEffect(() => {
@@ -97,12 +118,12 @@ export const ScheduledGamePicker: React.FC<ScheduledGamePickerProps> = ({
 
     const groups = useMemo(() => {
         const result = new Map<string, ScheduledGame[]>();
-        games.forEach(game => {
+        games.filter(game => scope === 'completed' || `${game.season}:${game.week}` === activeWeek).forEach(game => {
             const label = `Week ${game.week} · ${formatDate(game.kickoffAt)}`;
             result.set(label, [...(result.get(label) || []), game]);
         });
         return [...result.entries()];
-    }, [games]);
+    }, [games, activeWeek, scope]);
 
     if (isLoading) {
         return (
@@ -140,8 +161,40 @@ export const ScheduledGamePicker: React.FC<ScheduledGamePickerProps> = ({
         );
     }
 
+    if (compactSelection && selectedGame && !browsing) {
+        return (
+            <div ref={pickerRef} className={`flex flex-wrap items-center justify-between gap-4 rounded-card border border-action bg-panel p-4 ${className}`}>
+                <div role="status" className="min-w-0 space-y-1">
+                    <p className="font-ui text-[14px] text-fg-2">Selected game · Week {selectedGame.week}</p>
+                    <p className="font-ui text-[16px] font-semibold text-fg">{selectedGame.awayTeam.name} at {selectedGame.homeTeam.name}</p>
+                    <p className="font-ui text-[14px] text-fg-2">{formatDate(selectedGame.kickoffAt)} · {formatKickoff(selectedGame.kickoffAt)}</p>
+                </div>
+                <CapsuleButton variant="quiet" disabled={disabled} onClick={() => {
+                    setWeek(`${selectedGame.season}:${selectedGame.week}`);
+                    focusAfterChoice.current = true;
+                    setBrowsing(true);
+                }}>Change game</CapsuleButton>
+            </div>
+        );
+    }
+
     return (
-        <div className={`space-y-6 ${className}`}>
+        <div ref={pickerRef} className={`space-y-6 ${className}`}>
+            {compactSelection && selectedGame && (
+                <CapsuleButton variant="quiet" disabled={disabled} onClick={() => {
+                    focusAfterChoice.current = true;
+                    setBrowsing(false);
+                }}>Keep selected game</CapsuleButton>
+            )}
+            {scope !== 'completed' && weeks.length > 1 && (
+                <div className="flex flex-col gap-2">
+                    <label htmlFor={weekId} className="font-ui text-[14px] text-fg-2">NFL week</label>
+                    <select id={weekId} value={activeWeek} disabled={disabled} onChange={event => setWeek(event.target.value)}
+                        className="h-12 w-full rounded-control border border-hairline bg-panel px-4 font-ui text-[16px] text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action">
+                        {weeks.map(item => <option key={item.key} value={item.key}>{item.label}</option>)}
+                    </select>
+                </div>
+            )}
             {groups.map(([label, groupGames]) => (
                 <fieldset key={label} className="space-y-2">
                     <legend className="font-mono uppercase text-[12px] leading-none tracking-[0.12em] text-fg-3 mb-3">{label}</legend>
@@ -162,7 +215,11 @@ export const ScheduledGamePicker: React.FC<ScheduledGamePickerProps> = ({
                                     value={game.id}
                                     checked={selected}
                                     disabled={disabled}
-                                    onChange={() => onChange(game)}
+                                    onChange={() => {
+                                        focusAfterChoice.current = compactSelection;
+                                        setBrowsing(false);
+                                        onChange(game);
+                                    }}
                                     className="h-5 w-5 accent-action"
                                 />
                                 <span className="min-w-0">

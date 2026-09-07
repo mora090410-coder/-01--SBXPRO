@@ -12,6 +12,7 @@ interface Contest {
     id: string;
     title: string;
     created_at: string;
+    status: string;
     settings: GameState;
     board_data?: BoardData | null;
     published_at?: string | null;
@@ -159,7 +160,7 @@ const Dashboard: React.FC = () => {
         try {
             const { data, error } = await supabase
                 .from('contests')
-                .select('id, title, created_at, settings, board_data, published_at, shared_at, board_activations(id)')
+                .select('id, title, created_at, settings, board_data, status, published_at, shared_at, board_activations(id)')
                 .eq('owner_id', user.id)
                 .order('created_at', { ascending: false });
 
@@ -210,12 +211,20 @@ const Dashboard: React.FC = () => {
         }
 
         try {
-            const { error } = await supabase
+            const { data, error } = await supabase
                 .from('contests')
                 .delete()
-                .eq('id', contestId);
+                .eq('id', contestId)
+                .select('id');
 
             if (error) throw error;
+            if (!data?.some(row => row.id === contestId)) {
+                setDashboardMessage('The board could not be deleted. Reload your boards and try again.');
+                setDeleteConfirmId(null);
+                return;
+            }
+            setDashboardMessage(null);
+            setDeleteConfirmId(null);
             setContests(current => current.filter(c => c.id !== contestId));
         } catch (err) {
             console.error('Error deleting contest:', err);
@@ -358,13 +367,13 @@ const Dashboard: React.FC = () => {
                                                     },
                                                 ]}
                                             />
-                                            {!contest.shared_at && <CapsuleButton
+                                            {!contest.shared_at && !contest.published_at && ['draft', 'reconciling', 'ready'].includes(contest.status) ? <CapsuleButton
                                                 variant="quiet"
                                                 onClick={(e) => void handleDelete(e, contest.id)}
                                                 aria-label={confirming ? `Confirm deletion of ${boardName}` : `Delete ${boardName}`}
                                             >
                                                 {confirming ? 'Confirm?' : 'Delete'}
-                                            </CapsuleButton>}
+                                            </CapsuleButton> : <p className="max-w-64 font-ui text-[13px] text-fg-3">Only private drafts can be deleted. Shared and published boards are kept to preserve their links and records.</p>}
                                         </div>
                                     </Glass>
                                 </li>

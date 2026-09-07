@@ -156,6 +156,8 @@ export function usePoolData(): UsePoolDataReturn {
             delete (nextGame as any).activated_at;
 
             setGame(nextGame);
+            // Preserve legacy per-quarter axes on load. Unsupported mutation
+            // paths must reject dynamic boards rather than flattening their data.
             setBoard(data.board ? { ...data.board } : EMPTY_BOARD);
             setDataReady(true);
         } catch (err: any) {

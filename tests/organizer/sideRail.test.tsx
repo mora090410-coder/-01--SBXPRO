@@ -96,7 +96,7 @@ describe('ReconcileCard', () => {
   it('shows the next selling step instead of claiming an empty board is ready', () => {
     render(<ReconcileCard model={model({ assignedCount: 0, openCount: 100, phase: 'Fill' })} unpaidCount={0} highlightOpen={false} onToggleHighlightOpen={vi.fn()} />);
     expect(screen.queryByText('Nothing blocking publish.')).not.toBeInTheDocument();
-    expect(screen.getByText('Record buyers as squares sell. Draw game numbers when sales are finished.')).toBeInTheDocument();
+    expect(screen.getByText('Allocate squares to a person or family, then draw game numbers when ready.')).toBeInTheDocument();
   });
 
   it('explains the missing draw when there are no other blockers', () => {

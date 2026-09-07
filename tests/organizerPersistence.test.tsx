@@ -106,6 +106,43 @@ describe('organizer save ordering', () => {
     expect(revisions).toEqual([1, 2]);
   });
 
+  it('preserves legacy per-quarter axes when loading a dynamic board', async () => {
+    const dynamicBoard = {
+      ...board,
+      isDynamic: true,
+      leftAxisByQuarter: {
+        Q1: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+        Q2: [1, 2, 3, 4, 5, 6, 7, 8, 9, 0],
+        Q3: [2, 3, 4, 5, 6, 7, 8, 9, 0, 1],
+        Q4: [3, 4, 5, 6, 7, 8, 9, 0, 1, 2],
+      },
+      topAxisByQuarter: {
+        Q1: [9, 8, 7, 6, 5, 4, 3, 2, 1, 0],
+        Q2: [8, 7, 6, 5, 4, 3, 2, 1, 0, 9],
+        Q3: [7, 6, 5, 4, 3, 2, 1, 0, 9, 8],
+        Q4: [6, 5, 4, 3, 2, 1, 0, 9, 8, 7],
+      },
+    };
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({
+      id: '11111111-1111-4111-8111-111111111111',
+      share_code: 'ABCDEFGH',
+      owner_id: '22222222-2222-4222-8222-222222222222',
+      revision: 1,
+      ...game,
+      board: dynamicBoard,
+      is_activated: true,
+      locked: false,
+      published_at: null,
+    }), { status: 200 })));
+
+    const { result } = renderHook(() => usePoolData());
+    await act(async () => {
+      await result.current.loadPoolData('11111111-1111-4111-8111-111111111111');
+    });
+
+    expect(result.current.board).toEqual(dynamicBoard);
+  });
+
   it('keeps the organizer open and refreshes the retry revision after a conflict', async () => {
     const revisions: number[] = [];
     let putCount = 0;

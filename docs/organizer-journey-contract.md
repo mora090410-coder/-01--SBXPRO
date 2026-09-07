@@ -54,11 +54,11 @@ Hard blockers: `missing_owner`, `missing_board_identity`, `missing_scheduled_gam
 
 Primary action while nothing is assigned: **Fill the board** — it scrolls to the board, it does not open a step.
 
-One square: activate `Square {n}, unassigned` (or `Square {n}, assigned to {name}`) to open the `Square {n}` dialog. Initial focus lands on `Name on the board`. Optional `Sold by (optional)`; a `Payment` radiogroup of `Not asked yet` / `Unpaid` / `Paid`, defaulting to `Not asked yet`. `Save` closes; `Save and next` commits and moves to the next square. Arrow keys move between squares from the dialog.
+One square: activate `Square {n}, unassigned` (or `Square {n}, assigned to {name}`) to open the `Square {n}` dialog. Initial focus lands on `Name on the board`. Existing responsibility is shown as read-only text; a `Payment` radiogroup of `Not asked yet` / `Unpaid` / `Paid`, defaulting to `Not asked yet`. `Save` closes; `Save and next` commits and moves to the next square. Arrow keys move between squares from the dialog.
 
-A block of squares: **`Select squares`** toggles selection mode and becomes **`Done selecting`**, with `aria-pressed` reflecting the state. Only in selection mode do the squares expose `aria-pressed`. Click, `Space`, or a drag across a block selects; `Shift` extends a rectangle from the last anchor. The `Assign selected squares` group announces `{n} selected` politely and carries `Name for these squares`, `Sold by (optional)`, the `Payment` radiogroup, `Apply to {n}`, and `Clear selection`. `Escape` on a square or in the bar leaves selection mode and returns focus to the toggle. On a published board only OPEN squares accept selection.
+A block of squares: **`Select squares`** toggles selection mode and becomes **`Done selecting`**, with `aria-pressed` reflecting the state. Only in selection mode do the squares expose `aria-pressed`. Click, `Space`, or a drag across a block selects; `Shift` extends a rectangle from the last anchor. The `Assign selected squares` group announces `{n} selected` politely and carries `Name for these squares`, the `Payment` radiogroup, `Apply to {n}`, and `Clear selection`. `Escape` on a square or in the bar leaves selection mode and returns focus to the toggle. On a published board only OPEN squares accept selection.
 
-`Paste names` accepts a pasted list. `Board tools` holds `Clear all names` behind a `Confirm clear`.
+The editor does not offer sequential paste-to-fill. Selecting a square keeps focus and scroll on the grid. The allocation editor sits beside the grid on desktop and follows it on phone; `Name {n} selected squares` explicitly moves to the editor. `Board tools` holds `Clear all names` behind a `Confirm clear`.
 
 ### 2. Reconcile
 
@@ -66,7 +66,7 @@ A block of squares: **`Select squares`** toggles selection mode and becomes **`D
 
 **`Before you can publish`** — hard blockers, each with its own sentence: `Add a board title before publishing.`, `Choose the scheduled game before publishing.`, `Draw one complete set of numbers before publishing.`, `Confirm that the remaining OPEN squares should stay OPEN.`, `Save the latest changes before publishing.`, `Wait for the board to finish saving.`, `The latest changes did not save. Reload or try again.`, `Review and save the recovered draft before publishing.`, `The board owner could not be verified. Reload and try again.` When there are none: `Nothing blocking publish.`
 
-**`Private follow-up`** — advisories, never blockers: `OPEN squares remain. You can publish if you are okay leaving them OPEN.`, `Some private payment notes still need follow-up.`, `Some seller notes still need follow-up.` When there are none: `No private follow-up.`
+**`Private follow-up`** — advisories, never blockers: `OPEN squares remain. You can publish if you are okay leaving them OPEN.`, `Some private payment notes still need follow-up.`. When there are none: `No private follow-up.`
 
 Off-platform payment status never gates progression.
 
@@ -166,7 +166,7 @@ Presentation components hold no business rules. Every rule above is testable wit
 
 ## Pre-game selling and public family allocation (September 4)
 
-Sharing and finalization are separate. The permanent IDs 1–100 identify positions before and after the 0–9 game axes are drawn. `Select squares` permits arbitrary selections including diagonals. `Allocate to family` opens `Assigned family`; `Allocate {n} squares` changes public allocation only. `Record buyer` retains buyer assignment behavior. Single-square `Assigned family (public)` is explicitly public. Private `Sold by (optional)` is never copied to public allocation. Clearing buyer names preserves family allocation.
+Sharing and finalization are separate. The permanent IDs 1–100 identify positions before and after the 0–9 game axes are drawn. `Select squares` permits arbitrary selections including diagonals. One `Allocate squares` editor supplies `Name for these squares`, payment status, and `Apply to {n}`. Initial allocation sets the public displayed name and responsible person or family. Later name edits preserve existing responsibility, including pre-existing allocation-only squares. The single-square editor shows responsibility without another buyer/family mode. Historical private seller metadata is retained and never copied into public allocation. Clearing displayed names preserves responsibility. Allocated names count as filled; payment status remains independent and never blocks publication.
 
 The visible selling summary contains `Share board` before sharing, or `Copy link` and `Open shared board` afterward. The next draw/preview action is visible without expanding Organizer status. `My boards` returns to `/dashboard` throughout. Dirty, failed, or conflicted saves block first sharing. `Share while selling` confirms public names and allocations, private payment/contact notes, and use of one seasonal allowance. `Enable shared board` calls the revision-checked owner endpoint. All 100 squares may be unsold when sharing; finalization still requires a buyer and explicit OPEN acknowledgment.
 

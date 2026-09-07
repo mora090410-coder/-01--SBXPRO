@@ -14,7 +14,8 @@ const mocks = vi.hoisted(() => {
     migrateGuestBoard: vi.fn(),
     getSession: vi.fn(async () => ({ data: { session: null as { access_token: string } | null } })),
     from: vi.fn(),
-    deleteEq: vi.fn(async () => ({ error: null })),
+    deleteEq: vi.fn(),
+    deleteResult: vi.fn(async () => ({ data: [{ id: 'board-1' }], error: null })),
   };
 });
 
@@ -50,6 +51,7 @@ const rows = [
     created_at: '2026-01-02T00:00:00.000Z',
     settings: { leftAbbr: 'KC', topAbbr: 'BUF' },
     board_data: boardWithSquares(['Ann', 'Ben', 'Cara']),
+    status: 'draft',
     published_at: null,
     board_activations: [{ id: 'activation-1' }],
   },
@@ -59,6 +61,7 @@ const rows = [
     created_at: '2026-01-01T00:00:00.000Z',
     settings: { leftAbbr: 'SF', topAbbr: 'PHI' },
     board_data: null,
+    status: 'draft',
     published_at: null,
     board_activations: [],
   },
@@ -93,7 +96,9 @@ beforeEach(() => {
   mocks.getSession.mockResolvedValue({ data: { session: null } });
   mocks.from.mockReset();
   mocks.deleteEq.mockReset();
-  mocks.deleteEq.mockResolvedValue({ error: null });
+  mocks.deleteEq.mockReturnValue({ select: mocks.deleteResult });
+  mocks.deleteResult.mockReset();
+  mocks.deleteResult.mockResolvedValue({ data: [{ id: 'board-1' }], error: null });
   vi.stubGlobal('fetch', vi.fn(async () => ({ ok: false, json: async () => ({}) })));
   useContests([]);
 });
@@ -120,7 +125,7 @@ describe('organizer dashboard', () => {
     await screen.findByRole('link', { name: 'Chiefs Fundraiser' });
     const query = mocks.from.mock.results[0].value;
     expect(query.select).toHaveBeenCalledWith(
-      'id, title, created_at, settings, board_data, published_at, shared_at, board_activations(id)',
+      'id, title, created_at, settings, board_data, status, published_at, shared_at, board_activations(id)',
     );
   });
 
@@ -155,6 +160,28 @@ describe('organizer dashboard', () => {
     fireEvent.click(confirm);
     await waitFor(() => expect(mocks.deleteEq).toHaveBeenCalledWith('id', 'board-1'));
     await waitFor(() => expect(screen.queryByRole('link', { name: 'Chiefs Fundraiser' })).not.toBeInTheDocument());
+  });
+
+  it('keeps a board visible when deletion affects no records', async () => {
+    mocks.deleteResult.mockResolvedValue({ data: [], error: null });
+    useContests(rows);
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Delete Chiefs Fundraiser' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm deletion of Chiefs Fundraiser' }));
+    expect(await screen.findByText('The board could not be deleted. Reload your boards and try again.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Chiefs Fundraiser' })).toBeInTheDocument();
+  });
+
+  it.each([
+    { published_at: '2026-09-04T12:00:00Z' },
+    { shared_at: '2026-09-04T12:00:00Z' },
+    { status: 'live' },
+  ])('retains protected boards with an explanation: %j', async (state) => {
+    useContests([{ ...rows[0], ...state }]);
+    renderDashboard();
+    await screen.findByRole('link', { name: 'Chiefs Fundraiser' });
+    expect(screen.queryByRole('button', { name: 'Delete Chiefs Fundraiser' })).not.toBeInTheDocument();
+    expect(screen.getByText('Only private drafts can be deleted. Shared and published boards are kept to preserve their links and records.')).toBeInTheDocument();
   });
 
   it('offers the empty state with a way to start a board', async () => {

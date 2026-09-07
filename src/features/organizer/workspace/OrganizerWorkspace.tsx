@@ -92,7 +92,7 @@ const RENAME_FAILED = 'The name could not be changed. The board still shows the 
 const UNTITLED_WORKSPACE = 'Untitled board workspace';
 const SQUARE_META_FAILED = 'Square details were not saved. The name is on the board; try saving the details again.';
 const RANGE_ASSIGN_FAILED = 'Could not assign those squares. Nothing changed.';
-const RANGE_META_FAILED = 'Squares assigned. Seller and payment notes were not saved.';
+const RANGE_META_FAILED = 'Squares assigned. Payment notes were not saved.';
 const CLEAR_META_FAILED = 'The private notes were not cleared. Try again.';
 const PAYOUT_FAILED = 'Prize notes were not saved. Try again.';
 
@@ -354,13 +354,15 @@ export default function OrganizerWorkspace({
 
   const saveSquare = async (index: number, name: string, meta: EntryMeta, advance: boolean, allocationLabel?: string | null) => {
     const trimmed = name.trim();
-    if (trimmed.length > 80) { setAlert('Buyer names must be 80 characters or fewer.'); return; }
+    if (trimmed.length > 80) { setAlert('Names must be 80 characters or fewer.'); return; }
     let nextSquares: string[][] = board.squares;
     setBoard((current) => {
       const squares = [...current.squares];
       squares[index] = trimmed ? [trimmed] : [];
       nextSquares = squares;
-      return { ...current, squares, ...(allocationLabel !== undefined ? { allocationLabels: Array.from({ length: 100 }, (_, cell) => cell === index ? allocationLabel : current.allocationLabels?.[cell] ?? null) } : {}) };
+      return { ...current, squares, allocationLabels: Array.from({ length: 100 }, (_, cell) => cell === index
+        ? current.allocationLabels?.[cell] || current.squares[cell]?.[0] || allocationLabel || trimmed || null
+        : current.allocationLabels?.[cell] ?? null) };
     });
     setSelectedSquare(advance ? nextOpenAfter(nextSquares, index) : null);
 
@@ -385,12 +387,6 @@ export default function OrganizerWorkspace({
   };
 
   const clearSelection = () => setSelection(new Set<number>());
-  const allocateRange = (family: string) => {
-    if (isPublished || conflicted || !family.trim() || family.trim().length > 80) return;
-    setBoard((current) => ({ ...current, allocationLabels: Array.from({ length: 100 }, (_, index) => selection.has(index) ? family.trim() : current.allocationLabels?.[index] ?? null) }));
-    setNote(`Allocated ${selection.size} squares to ${family.trim()}. Buyer names are unchanged.`);
-    clearSelection();
-  };
   const enableSharing = async () => {
     if (!onShareBoard || sharePending || saveState.status !== 'clean') return;
     setSharePending(true);
@@ -400,7 +396,7 @@ export default function OrganizerWorkspace({
       if (saved.status !== 'clean') throw new Error('Save your latest changes before sharing. Use Retry or Reload latest board above.');
       await onShareBoard();
       setShareOpen(false);
-      setNote('Your shared board is ready. Keep recording buyers here; everyone sees updates at the same link.');
+      setNote('Your shared board is ready. Keep allocating squares here; everyone sees updates at the same link.');
     } catch (error) {
       const upgradeTo = (error as { upgradeTo?: 'gameday' | 'org' })?.upgradeTo;
       if (upgradeTo) { setShareOpen(false); setUpgradeTier(upgradeTo); }
@@ -433,10 +429,13 @@ export default function OrganizerWorkspace({
     if (!ok.length) return;
 
     const name = input.name.trim();
-    if (!name || name.length > 80) { setAlert('Enter a buyer name of 1–80 characters.'); return; }
+    if (!name || name.length > 80) { setAlert('Enter a name of 1–80 characters.'); return; }
     const previousSquares = board.squares;
     const okSet = new Set(ok);
     const nextSquares = board.squares.map((names, index) => (okSet.has(index) ? [name] : names));
+    const nextAllocations = Array.from({ length: 100 }, (_, index) => okSet.has(index)
+      ? board.allocationLabels?.[index] || board.squares[index]?.[0] || name
+      : board.allocationLabels?.[index] ?? null);
     const metas: EntryMeta[] = ok.map((index) => {
       const existing = entryMeta[index];
       return {
@@ -476,7 +475,7 @@ export default function OrganizerWorkspace({
           }
         }
       } else {
-        setBoard((current) => ({ ...current, squares: nextSquares }));
+        setBoard((current) => ({ ...current, squares: nextSquares, allocationLabels: nextAllocations }));
         if (activePoolId) {
           await saveEntryMetaBatch(activePoolId, metas);
           metas.forEach((meta) => onEntryMetaChange(meta));
@@ -485,26 +484,13 @@ export default function OrganizerWorkspace({
       clearSelection();
       setNote(successNote);
     } catch {
-      if (!isPublished) setBoard((current) => ({ ...current, squares: previousSquares }));
-      setAlert(RANGE_ASSIGN_FAILED);
+      // Names may already be autosaved, and another square may have changed
+      // while the private-note request was pending. Never roll back the board.
+      setAlert(isPublished ? RANGE_ASSIGN_FAILED : RANGE_META_FAILED);
     } finally {
       setRangeBusy(false);
       setRangeFocusSignal((current) => current + 1);
     }
-  };
-
-  const pasteNames = (names: string[]) => {
-    setBoard((current) => {
-      const squares = [...current.squares];
-      let cursor = 0;
-      for (let index = 0; index < squares.length && cursor < names.length; index += 1) {
-        if (!squares[index]?.length) {
-          squares[index] = [names[cursor]];
-          cursor += 1;
-        }
-      }
-      return { ...current, squares };
-    });
   };
 
   const clearNames = async () => {
@@ -702,7 +688,7 @@ export default function OrganizerWorkspace({
   };
 
   const savePublishedSquare = async (index: number, name: string, meta: EntryMeta) => {
-    if (name.trim().length > 80) { setAlert('Buyer names must be 80 characters or fewer.'); return; }
+    if (name.trim().length > 80) { setAlert('Names must be 80 characters or fewer.'); return; }
     const previous = board.squares[index]?.[0]?.trim() ?? '';
     const next = name.trim();
     setSelectedSquare(null);
@@ -1053,7 +1039,7 @@ export default function OrganizerWorkspace({
         {header}
         <Glass className="mt-6 flex flex-col gap-4" padding="lg">
           <Eyebrow>{isShared ? 'Selling · Shared board' : 'Selling · Set up your board'}</Eyebrow>
-          <p className="font-ui text-[15px] text-fg-2">{assignedCount} sold · {openCount} unsold. Allocate squares to families, then record buyers as they sell. Draw game numbers when sales are finished.</p>
+          <p className="font-ui text-[15px] text-fg-2">{assignedCount} assigned · {openCount} available. Allocate squares to a person or family. Update display names as needed; the original person stays responsible. Draw game numbers when allocations are finished.</p>
           <div className="flex flex-wrap gap-2">
             {isShared && shareUrl ? <>
               <CapsuleButton onClick={() => void copyViewerLink()}>Copy link</CapsuleButton>
@@ -1100,9 +1086,11 @@ export default function OrganizerWorkspace({
               onSelectionChange={setSelection}
               onToggleSelectMode={toggleSelectMode}
               onSelectSquare={setSelectedSquare}
-              onPasteNames={pasteNames}
               focusToggleSignal={rangeFocusSignal}
             />
+          </section>
+          <aside className="flex flex-col gap-6">
+            <div className="lg:sticky lg:top-6">
             {selectMode && selection.size > 0 && (
               <RangeAssignBar
                 count={selection.size}
@@ -1110,13 +1098,11 @@ export default function OrganizerWorkspace({
                 isPublished={false}
                 busy={rangeBusy}
                 onApply={(input) => void applyRange(input)}
-                onAllocate={allocateRange}
                 onClear={clearSelection}
                 onExitSelectMode={toggleSelectMode}
               />
             )}
-          </section>
-          <aside className="flex flex-col gap-6">
+            </div>
             <ReconcileCard
               model={model}
               unpaidCount={unpaidCount}

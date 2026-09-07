@@ -285,7 +285,6 @@ describe('OrganizerWorkspace square assignment', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Square 1, unassigned' }));
     fireEvent.change(screen.getByLabelText('Name on the board'), { target: { value: 'Dana P.' } });
-    fireEvent.change(screen.getByLabelText('Sold by (optional)'), { target: { value: 'Coach Lee' } });
     fireEvent.click(screen.getByRole('radio', { name: 'Paid' }));
 
     await act(async () => {
@@ -296,7 +295,7 @@ describe('OrganizerWorkspace square assignment', () => {
     expect(saveEntryMeta).toHaveBeenCalledWith('pool-1', expect.objectContaining({
       cell_index: 0,
       paid_status: 'paid',
-      seller_label: 'Coach Lee',
+      seller_label: null,
     }));
     expect(onEntryMetaChange).toHaveBeenCalledWith(expect.objectContaining({ cell_index: 0 }));
   });
@@ -314,19 +313,7 @@ describe('OrganizerWorkspace square assignment', () => {
     expect(await screen.findByRole('heading', { name: 'Square 2' })).toBeInTheDocument();
   });
 
-  it('fills open cells in order from a pasted list', async () => {
-    const { onApply } = renderWorkspace({ board: boardWithAssignments(1) });
 
-    const textarea = screen.getByLabelText('Paste names');
-    await act(async () => {
-      fireEvent.blur(textarea, { target: { value: 'Dana P.\n\nEli M.\n' } });
-    });
-
-    const board = lastBoard(onApply);
-    expect(board.squares[0]).toEqual([NAMES[0]]);
-    expect(board.squares[1]).toEqual(['Dana P.']);
-    expect(board.squares[2]).toEqual(['Eli M.']);
-  });
 });
 
 describe('OrganizerWorkspace publish', () => {
@@ -534,7 +521,7 @@ describe('OrganizerWorkspace error alerts', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Save' }));
     });
 
-    expect(screen.getByRole('button', { name: 'Square 1, assigned to Dana P.' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Square 1, assigned to Dana P., allocated to Dana P.' })).toBeInTheDocument();
     expect(await screen.findByRole('alert')).toHaveTextContent('Square details were not saved');
   });
 });
@@ -741,7 +728,6 @@ describe('OrganizerWorkspace range assignment', () => {
     expect(screen.getByText('4 selected')).toBeInTheDocument();
 
     typeName('Dana P.');
-    fireEvent.change(screen.getByLabelText('Sold by (optional)'), { target: { value: 'Coach Lee' } });
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'Apply to 4' }));
     });
@@ -758,7 +744,7 @@ describe('OrganizerWorkspace range assignment', () => {
     expect(metas.map((meta: EntryMeta) => meta.cell_index)).toEqual([0, 1, 10, 11]);
     for (const meta of metas) {
       expect(meta.paid_status).toBe('unknown');
-      expect(meta.seller_label).toBe('Coach Lee');
+      expect(meta.seller_label).toBeNull();
     }
     expect(onEntryMetaChange).toHaveBeenCalledTimes(4);
     expect(screen.queryByRole('group', { name: 'Assign selected squares' })).not.toBeInTheDocument();
@@ -781,7 +767,7 @@ describe('OrganizerWorkspace range assignment', () => {
     expect(metas.map((meta: EntryMeta) => meta.paid_status)).toEqual(['unpaid', 'unpaid']);
   });
 
-  it('leaves the board and the selection alone when the batch write fails', async () => {
+  it('retains assigned names and responsibility when payment notes fail', async () => {
     (saveEntryMetaBatch as any).mockRejectedValueOnce(new Error('network down'));
     renderWorkspace();
 
@@ -792,8 +778,8 @@ describe('OrganizerWorkspace range assignment', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Apply to 1' }));
     });
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Could not assign those squares. Nothing changed.');
-    expect(screen.getByRole('button', { name: 'Square 1, unassigned' })).toBeInTheDocument();
+    expect(await screen.findByRole('alert')).toHaveTextContent('Squares assigned. Payment notes were not saved.');
+    expect(screen.getByRole('button', { name: 'Square 1, assigned to Dana P., allocated to Dana P.' })).toBeInTheDocument();
     expect(screen.getByRole('group', { name: 'Assign selected squares' })).toBeInTheDocument();
   });
 
@@ -843,7 +829,7 @@ describe('OrganizerWorkspace range assignment', () => {
     });
 
     expect(onAssignOpenSquares).toHaveBeenCalledTimes(1);
-    expect(await screen.findByRole('alert')).toHaveTextContent('Squares assigned. Seller and payment notes were not saved.');
+    expect(await screen.findByRole('alert')).toHaveTextContent('Squares assigned. Payment notes were not saved.');
     expect(screen.queryByRole('group', { name: 'Assign selected squares' })).not.toBeInTheDocument();
   });
 
@@ -939,22 +925,7 @@ describe('pregame selling', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Enable shared board' }));
     await waitFor(() => expect(onShareBoard).toHaveBeenCalledOnce());
   });
-  it('allocates diagonal squares without creating buyers or replacing existing buyers', async () => {
-    const { onApply } = renderWorkspace({ board: boardWithAssignments(1) });
-    fireEvent.click(screen.getByRole('button', { name: 'Select squares' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Square 1, assigned to Ann R.' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Square 12, unassigned' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Allocate to family' }));
-    fireEvent.change(screen.getByRole('textbox', { name: 'Assigned family' }), { target: { value: 'Mora family' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Allocate 2 squares' }));
-    await waitFor(() => {
-      const saved = onApply.mock.calls.at(-1)?.[1];
-      expect(saved?.allocationLabels?.[0]).toBe('Mora family');
-      expect(saved?.allocationLabels?.[11]).toBe('Mora family');
-      expect(saved?.squares[0]).toEqual(['Ann R.']);
-      expect(saved?.squares[11]).toEqual([]);
-    });
-  });
+
 });
 
 
@@ -1012,4 +983,22 @@ it('can reload after an uncertain share response even when the draft is clean', 
   fireEvent.click(screen.getByRole('button', {name: 'Reload board'}));
   await waitFor(() => expect(onReload).toHaveBeenCalledOnce());
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+});
+
+it('allocates a block and preserves its original responsibility when display names change', async () => {
+  const { onApply } = renderWorkspace();
+  expect(screen.queryByRole('textbox', { name: 'Paste names' })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', {name: 'Select squares'}));
+  fireEvent.click(screen.getByRole('button', {name: 'Square 1, unassigned'}));
+  fireEvent.click(screen.getByRole('button', {name: 'Square 2, unassigned'}));
+  fireEvent.change(screen.getByLabelText('Name for these squares'), {target: {value: 'Mora family'}});
+  await act(async () => { fireEvent.click(screen.getByRole('button', {name: 'Apply to 2'})); });
+  await waitFor(() => expect(lastBoard(onApply).allocationLabels?.[0]).toBe('Mora family'));
+  expect(lastBoard(onApply).squares[0]).toEqual(['Mora family']);
+  fireEvent.click(screen.getByRole('button', {name: 'Square 1, assigned to Mora family, allocated to Mora family'}));
+  fireEvent.change(screen.getByLabelText('Name for these squares'), {target: {value: 'Mike M'}});
+  await act(async () => { fireEvent.click(screen.getByRole('button', {name: 'Apply to 1'})); });
+  await waitFor(() => expect(lastBoard(onApply).squares[0]).toEqual(['Mike M']));
+  expect(lastBoard(onApply).allocationLabels?.[0]).toBe('Mora family');
+  expect(lastBoard(onApply).squares[1]).toEqual(['Mora family']);
 });

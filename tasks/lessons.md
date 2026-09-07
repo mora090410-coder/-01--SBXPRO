@@ -12,3 +12,10 @@
 - Pre-game boards are shared while families sell fixed squares 1–100, often allocated diagonally. Everyone may see explicit public family allocation, buyer names, and unsold squares; only the organizer records buyers. Keep seller allocation distinct from purchase and private seller/payment/contact notes. Separate first sharing from final number locking, and preserve the same team link and organizer return route through both stages.
 
 - When Anthony asks whether a design skill can produce a better Mac Studio-style landing page, treat the request as a complete product-story redesign for local review, not a minor motion pass or another generic direction questionnaire. Preserve product contracts while making a visibly different composition.
+
+- During an attended walkthrough, capture evidence quietly and let Anthony finish explaining before proposing changes.
+- Allocation identifies who stays responsible for squares. A later public display-name change must preserve that responsibility. Use one selection/name/payment flow, without buyer-versus-family modes or a seller field.
+- Verify local main against remote release before editing; consolidate already released local work rather than treating it as a separate unfinished feature.
+
+Historical discovery context (superseded by the September 7 allocation flow above):
+- Pre-game organizer discovery must include sharing the board while squares are being sold: families receive squares to sell and need to see their allocations before axis numbers are drawn a day or two before the game. Do not assume viewer access starts only after the draw. Distinguish seller allocation from buyer assignment, and resolve what allocation information is public before changing the existing privacy or publication contracts.

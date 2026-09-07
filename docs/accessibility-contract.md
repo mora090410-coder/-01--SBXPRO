@@ -80,7 +80,8 @@ The 10×10 viewer and organizer boards are composite interactive grids, not 100 
 - One toolbar button toggles the mode, reading `Select squares` / `Done selecting`, with `aria-pressed` reflecting the state.
 - Only in selection mode do the squares expose `aria-pressed`; outside it the attribute is absent, so a square is not mistaken for a toggle.
 - `Space` or click on a focused square toggles it; `Shift` with click or `Space` extends the rectangular block from the last anchor. A non-selected square in range keeps `aria-pressed="false"`.
-- The inline apply bar is a `group` named `Assign selected squares`. It announces `{n} selected` in a polite live region and carries labelled `Name for these squares` and `Sold by (optional)` inputs, a `Payment` radiogroup (`Not asked yet` checked by default / `Unpaid` / `Paid`), `Apply to {n}`, and `Clear selection`. Applying renames every selected square and hides the bar.
+- Selecting a square never steals focus or scrolls to the editor. An explicit `Name {n} selected squares` toolbar action moves focus there.
+- The inline apply bar is a `group` named `Assign selected squares`. It announces `{n} selected` in a polite live region and carries a labelled `Name for these squares` input, a `Payment` radiogroup (`Not asked yet` checked by default / `Unpaid` / `Paid`), `Apply to {n}`, and `Clear selection`. Applying renames every selected square and hides the bar.
 - `Escape` on a square or inside the bar leaves selection mode; whenever the selection empties, focus returns to the toggle rather than being stranded.
 
 The implementation may use a semantic table with managed roving focus or a valid ARIA grid. It must not duplicate conflicting table and grid roles.
@@ -133,7 +134,7 @@ Asserted: the viewer score region is `role="status"` and names its authority (`O
 
 ## Blockers versus advisories
 
-A blocker and an advisory must never look or sound alike. The organizer's `Before you can publish` region contains only hard blockers; `Private follow-up` contains only advisories. Asserted: OPEN-square and payment/seller follow-up text appears in the advisory region and **not** in the blocker region, and the island's `Draw numbers` stays enabled while only advisories remain.
+A blocker and an advisory must never look or sound alike. The organizer's `Before you can publish` region contains only hard blockers; `Private follow-up` contains only advisories. Asserted: OPEN-square and payment follow-up text appears in the advisory region and **not** in the blocker region, and the island's `Draw numbers` stays enabled while only advisories remain.
 
 ## Color and contrast
 

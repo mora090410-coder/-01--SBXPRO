@@ -35,7 +35,7 @@ A parent, supporter, friend, or community member who receives a shared link. The
 The organizer workspace at `/boards/:boardId` moves through eight phases, evaluated by `src/features/organizer/lifecycle/organizerLifecycle.ts`.
 
 1. **Create Draft:** Name the board and link the scheduled NFL game. Native blank-board creation is primary; photo import is a recovery path.
-2. **Fill and share:** Allocate any selected squares to a publicly named family independently of recording buyers. Explicitly share the board before drawing game numbers; every team member sees all allocations and unsold squares. Private seller and payment metadata remains separate.
+2. **Fill and share:** Allocate selected squares to a person or family with one name and payment status. The first assigned person remains responsible when the public displayed name changes. Explicitly share before drawing game numbers; every team member sees allocations and available squares. Payment and existing private seller metadata stay private; there is no separate buyer/family mode or seller input.
 3. **Reconcile:** Review what blocks publishing and what is only private follow-up. Advisories never block progression.
 4. **Draw:** Securely randomize and commit one fixed set of 0–9 digits per axis. Draft redraws are allowed before publication.
 5. **Preview:** Inspect the exact viewer experience and the public/private boundary before numbers are locked. If already shared, participants continue seeing the selling board without draft axis numbers.

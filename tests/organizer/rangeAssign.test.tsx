@@ -207,11 +207,10 @@ describe('RangeAssignBar', () => {
     const apply = screen.getByRole('button', { name: 'Apply to 2' });
     expect(apply).toBeDisabled();
     fireEvent.change(screen.getByLabelText('Name for these squares'), { target: { value: 'Ann R.' } });
-    fireEvent.change(screen.getByLabelText('Sold by (optional)'), { target: { value: 'Coach Lee' } });
     expect(apply).toBeEnabled();
 
     fireEvent.click(apply);
-    expect(onApply).toHaveBeenCalledWith({ name: 'Ann R.', seller: 'Coach Lee', paid: 'unknown' });
+    expect(onApply).toHaveBeenCalledWith({ name: 'Ann R.', seller: '', paid: 'unknown' });
   });
 
   it('defaults payment to Not asked yet and records the chosen state', () => {
@@ -272,4 +271,16 @@ it('keeps oversized range buyer names from being applied', () => {
   expect(screen.getByRole('button', {name: 'Apply to 2'})).toBeDisabled();
   fireEvent.click(screen.getByRole('button', {name: 'Apply to 2'}));
   expect(onApply).not.toHaveBeenCalled();
+});
+
+it('keeps focus on the selected square and offers only name and payment', () => {
+  render(<Harness />);
+  enterSelectMode();
+  const square = cell(1);
+  square.focus();
+  fireEvent.click(square);
+  expect(square).toHaveFocus();
+  expect(screen.queryByLabelText('Sold by (optional)')).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', {name: 'Record buyer'})).not.toBeInTheDocument();
+  expect(screen.getByLabelText('Name for these squares')).toBeInTheDocument();
 });

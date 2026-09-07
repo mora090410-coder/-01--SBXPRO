@@ -14,9 +14,17 @@ function sellingFixture() {
     updated_at: '2026-09-04T12:00:00Z', winner_history: [], pending_milestones: [], notification_delivery_issues: [], payoutDescriptions: {},
   };
   let publicReads = 0;
+  const privateEntries = new Map<number, Record<string, unknown>>();
   const install = async (page: Page, owner: boolean) => {
     if (owner) {
       await installOrganizerSession(page); await installOrganizerSupport(page);
+      await page.route('**/rest/v1/contest_entries*', async route => {
+        if (route.request().method() === 'POST') {
+          const payload = route.request().postDataJSON();
+          for (const entry of Array.isArray(payload) ? payload : [payload]) privateEntries.set(entry.cell_index, entry);
+        }
+        await route.fulfill({ json: [...privateEntries.values()] });
+      });
       await page.route('**/rest/v1/contests*', route => route.fulfill({ json: [{ id: boardId }] }));
     }
     await page.route('**/api/pools/*/score', route => route.fulfill({ json: { score: null, winnerHistory: [], pendingMilestones: [] } }));
@@ -45,11 +53,11 @@ function sellingFixture() {
       await route.fulfill({ json: { published: true, shareCode: row.share_code, viewerUrl: '/b/ABCDEFGH', revision: row.revision, tier: 'free', used: 1, allowance: 1 } });
     });
   };
-  return { row, install, publicReads: () => publicReads };
+  return { row, install, privateEntries, publicReads: () => publicReads };
 }
 
 for (const width of [390, 1440]) {
-  test(`selling board: allocate, share, record buyers, finalize on same link at ${width}px`, async ({ page, browser }, testInfo) => {
+  test(`selling board: allocate, share, rename, finalize on same link at ${width}px`, async ({ page, browser }, testInfo) => {
     test.setTimeout(90_000);
     page.setDefaultTimeout(12_000);
     await page.setViewportSize({ width, height: 900 });
@@ -57,13 +65,26 @@ for (const width of [390, 1440]) {
     await fixture.install(page, true);
     await page.goto(`/boards/${boardId}`);
     await page.getByRole('button', { name: 'Select squares', exact: true }).click();
-    for (const square of [1, 12, 23]) {
+    const firstPick = page.getByRole('button', { name: /^Square 1,/ });
+    await firstPick.scrollIntoViewIfNeeded();
+    const beforePick = await page.evaluate(() => window.scrollY);
+    await firstPick.click();
+    // Safari does not focus buttons on mouse click; selection must still never
+    // move focus into the form or scroll away from the selected square.
+    await expect(firstPick).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByRole('textbox', { name: 'Name for these squares' })).not.toBeFocused();
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(beforePick);
+    for (const square of [12, 23]) {
       await page.getByRole('button', { name: new RegExp(`^Square ${square},`) }).click();
     }
-    await page.getByRole('button', { name: 'Allocate to family', exact: true }).click();
-    await page.getByRole('textbox', { name: 'Assigned family', exact: true }).fill('Mora family');
-    await page.getByRole('button', { name: 'Allocate 3 squares', exact: true }).click();
+    await page.getByRole('button', { name: 'Name 3 selected squares', exact: true }).click();
+    const allocation = page.locator('#allocation-editor');
+    await expect(allocation.getByRole('textbox', { name: 'Name for these squares' })).toBeFocused();
+    await allocation.getByRole('textbox', { name: 'Name for these squares' }).fill('Mora family');
+    await allocation.getByRole('radio', { name: 'Paid', exact: true }).click();
+    await allocation.getByRole('button', { name: 'Apply to 3', exact: true }).click();
     await expect.poll(() => fixture.row.board.allocationLabels[22]).toBe('Mora family');
+    await expect.poll(() => fixture.privateEntries.get(22)?.paid_status).toBe('paid');
     await expect(page.getByRole('button', { name: 'Share board', exact: true })).toBeEnabled();
     await page.getByRole('button', { name: 'Share board', exact: true }).click();
     await page.getByRole('button', { name: 'Enable shared board', exact: true }).click();
@@ -79,7 +100,7 @@ for (const width of [390, 1440]) {
     await viewer.goto(new URL('/b/ABCDEFGH', page.url()).href);
     await expect(viewer.getByText('Selling squares', { exact: true })).toBeVisible();
     await expect(viewer.getByRole('gridcell')).toHaveCount(100);
-    await expect(viewer.getByRole('gridcell', { name: 'Square 12, Unsold, Mora family', exact: true })).toBeVisible();
+    await expect(viewer.getByRole('gridcell', { name: 'Square 12, Mora family, Mora family', exact: true })).toBeVisible();
     await expect(viewer.getByRole('link', { name: 'Manage board' })).toHaveCount(0);
     await viewer.getByLabel('Family', { exact: true }).selectOption('Mora family');
     await expect(viewer.getByRole('region', { name: 'Square details', exact: true }).getByRole('listitem')).toHaveCount(3);
@@ -101,7 +122,9 @@ for (const width of [390, 1440]) {
     await expect.poll(() => viewer.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     await testInfo.attach(`selling-board-${width}`, { body: await viewer.screenshot({ path: testInfo.outputPath(`selling-board-${width}.png`), fullPage: true }), contentType: 'image/png' });
 
-    // Owner records a buyer after sharing. The existing public link updates.
+    // Display-name edits preserve the responsible family on the existing public link.
+    await expect(viewer.getByRole('radiogroup', { name: 'Payment' })).toHaveCount(0);
+    await expect(viewer.getByText('Paid', { exact: true })).toHaveCount(0);
     const done = page.getByRole('button', { name: 'Done selecting', exact: true });
     if (await done.isVisible()) await done.click();
     await page.getByRole('button', { name: /^Square 1,/ }).click();
@@ -109,13 +132,15 @@ for (const width of [390, 1440]) {
     await squareSheet.getByRole('textbox', { name: 'Name on the board', exact: true }).fill('Alice Long Buyer Name');
     await squareSheet.getByRole('button', { name: 'Save', exact: true }).click();
     await expect.poll(() => fixture.row.board.squares[0]?.[0]).toBe('Alice Long Buyer Name');
+    expect(fixture.row.board.allocationLabels[0]).toBe('Mora family');
+    expect(fixture.privateEntries.get(0)?.paid_status).toBe('paid');
     await viewer.getByRole('button', { name: 'Refresh board', exact: true }).click();
     await expect(viewer.getByRole('gridcell', { name: 'Square 1, Alice Long Buyer Name, Mora family', exact: true })).toBeVisible();
     await viewer.getByRole('button', { name: 'Highlight unsold', exact: true }).click();
-    await expect(viewer.getByRole('region', { name: 'Square details', exact: true }).getByRole('listitem')).toHaveCount(2);
+    await expect(viewer.getByRole('region', { name: 'Square details', exact: true }).getByRole('listitem')).toHaveCount(0);
 
     await page.getByRole('button', { name: 'Draw numbers', exact: true }).click();
-    await page.getByRole('button', { name: 'Draw with 99 OPEN', exact: true }).click();
+    await page.getByRole('button', { name: 'Draw with 97 OPEN', exact: true }).click();
     await page.getByRole('button', { name: 'Use these numbers', exact: true }).click();
     await page.getByRole('button', { name: 'Preview', exact: true }).click();
     await page.getByRole('button', { name: 'Review and lock numbers', exact: true }).click();
