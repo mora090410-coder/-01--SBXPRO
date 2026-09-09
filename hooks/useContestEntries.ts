@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../services/supabase';
 import { EntryMeta } from '../types';
 
@@ -6,39 +6,36 @@ export const useContestEntries = (activePoolId: string | null) => {
     const [entryMetaByIndex, setEntryMetaByIndex] = useState<Record<number, EntryMeta>>({});
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-
-    useEffect(() => {
-        if (!activePoolId) {
-            setEntryMetaByIndex({});
-            return;
-        }
-
-        const fetchMeta = async () => {
-            setIsLoading(true);
-            setError(null);
-
-            const { data, error } = await supabase
-                .from('contest_entries')
+    const [loadedPoolId, setLoadedPoolId] = useState<string | null>(null);
+    const sequence = useRef(0);
+    const activeId = useRef(activePoolId);
+    activeId.current = activePoolId;
+    const reloadEntries = useCallback(async () => {
+        const request = ++sequence.current;
+        if (!activePoolId) { setEntryMetaByIndex({}); setError(null); setIsLoading(false); return; }
+        setIsLoading(true); setError(null);
+        try {
+            const { data, error: failure } = await supabase.from('contest_entries')
                 .select('cell_index, paid_status, notify_opt_in, contact_type, contact_value, seller_label')
                 .eq('contest_id', activePoolId);
-
-            if (error) {
-                console.error("Error fetching metadata:", error);
-                setError(error.message);
-                setIsLoading(false);
-                return;
-            }
-
+            if (failure) throw new Error(failure.message);
+            if (request !== sequence.current || activeId.current !== activePoolId) return;
             const map: Record<number, EntryMeta> = {};
-            data?.forEach((row: any) => {
-                map[row.cell_index] = row as EntryMeta;
-            });
+            data?.forEach((row: EntryMeta) => { map[row.cell_index] = row; });
             setEntryMetaByIndex(map);
-            setIsLoading(false);
-        };
-
-        fetchMeta();
+            setLoadedPoolId(activePoolId);
+        } catch (failure) {
+            if (request === sequence.current && activeId.current === activePoolId) {
+                setError('Private square notes could not be refreshed. Reload them before editing.');
+            }
+            throw failure;
+        } finally {
+            if (request === sequence.current && activeId.current === activePoolId) setIsLoading(false);
+        }
     }, [activePoolId]);
-
-    return { entryMetaByIndex, isLoading, error, setEntryMetaByIndex };
+    useEffect(() => {
+        void reloadEntries().catch(() => undefined);
+        return () => { sequence.current += 1; };
+    }, [reloadEntries]);
+    return { entryMetaByIndex, isLoading, error, setEntryMetaByIndex, reloadEntries, hasLoadedEntries: activePoolId !== null && loadedPoolId === activePoolId };
 };

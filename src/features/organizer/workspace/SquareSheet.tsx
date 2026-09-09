@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Sheet } from '../../../design/primitives/Sheet';
 import { CapsuleButton, CapsuleInput, CapsuleTag } from '../../../design/primitives';
-import type { EntryMeta } from '../../../../types';
+import type { EntryMeta, SquareAvailability } from '../../../../types';
 
 export interface SquareSheetProps {
   open: boolean;
@@ -9,9 +9,10 @@ export interface SquareSheetProps {
   name: string;
   allocationLabel?: string | null;
   meta?: EntryMeta;
+  availability?: SquareAvailability;
   isPublished: boolean;
   hasNextOpen: boolean;
-  onSave: (index: number, name: string, meta: EntryMeta, advance: boolean, allocationLabel?: string | null) => void;
+  onSave: (index: number, name: string, meta: EntryMeta, advance: boolean, allocationLabel?: string | null, availability?: SquareAvailability) => void;
   onClose: () => void;
 }
 
@@ -26,7 +27,8 @@ const PAID_OPTIONS: { value: PaidStatus; label: string; tone: 'neutral' | 'cardi
 const PUBLISHED_HELPER = 'This board is published. Renaming a square is recorded in the board history and updates the shared link right away.';
 
 /** Bottom sheet for editing a display name and payment while retaining responsibility to one square. */
-export default function SquareSheet({ open, index, name, allocationLabel, meta, isPublished, hasNextOpen, onSave, onClose }: SquareSheetProps) {
+export default function SquareSheet({ open, index, name, allocationLabel, availability, meta, isPublished, hasNextOpen, onSave, onClose }: SquareSheetProps) {
+  const [availabilityValue, setAvailabilityValue] = useState<SquareAvailability>(availability ?? 'unspecified');
   const [nameValue, setNameValue] = useState(name);
   const [paidStatus, setPaidStatus] = useState<PaidStatus>(meta?.paid_status ?? 'unknown');
   const radioRefs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -34,6 +36,7 @@ export default function SquareSheet({ open, index, name, allocationLabel, meta, 
   useEffect(() => {
     if (!open) return;
     setNameValue(name);
+    setAvailabilityValue(availability ?? 'unspecified');
     setPaidStatus(meta?.paid_status ?? 'unknown');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, index]);
@@ -53,6 +56,10 @@ export default function SquareSheet({ open, index, name, allocationLabel, meta, 
 
   const save = (advance: boolean) => {
     if (index === null || nameValue.trim().length > 80) return;
+    if (!isPublished && (availability !== undefined || availabilityValue !== 'unspecified')) {
+      onSave(index, nameValue, buildMeta(), advance, allocationLabel || nameValue.trim() || null, availabilityValue);
+      return;
+    }
     if (allocationLabel !== undefined) onSave(index, nameValue, buildMeta(), advance, allocationLabel || (isPublished ? null : nameValue.trim() || null));
     else onSave(index, nameValue, buildMeta(), advance);
   };
@@ -91,6 +98,12 @@ export default function SquareSheet({ open, index, name, allocationLabel, meta, 
             <p>Changing the name on the board keeps this responsibility unchanged.</p>
           </div>
         )}
+        {!isPublished && <label className="flex flex-col gap-2 font-ui text-[14px] text-fg-2">Availability on the shared board
+          <select aria-label="Availability on the shared board" value={availabilityValue} onChange={event => setAvailabilityValue(event.target.value as SquareAvailability)} className="min-h-11 rounded-control border border-hairline bg-ground px-3 text-fg">
+            <option value="unspecified">Ask organizer</option><option value="available">Available</option><option value="unavailable">Unavailable</option>
+          </select>
+          <span>A name or private payment note does not determine availability.</span>
+        </label>}
         <div className="flex flex-col gap-2">
           <span className="font-ui text-[14px] text-fg-2">Payment</span>
           <div role="radiogroup" aria-label="Payment" className="flex flex-wrap gap-2">

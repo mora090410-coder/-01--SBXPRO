@@ -111,7 +111,7 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
 
     // Owner-only data never loads on a public viewer route.
     const ownerDataPoolId = isCommissionerMode ? activePoolId : null;
-    const { entryMetaByIndex, setEntryMetaByIndex } = useContestEntries(ownerDataPoolId);
+    const { entryMetaByIndex, setEntryMetaByIndex, reloadEntries, hasLoadedEntries, isLoading: entriesLoading, error: entriesError } = useContestEntries(ownerDataPoolId);
     const [billing, setBilling] = useState<BillingSummary | null>(null);
     const [ownedPublicBoardId, setOwnedPublicBoardId] = useState<string | null>(null);
     useEffect(() => {
@@ -144,6 +144,7 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
             setGame({
                 ...INITIAL_GAME,
                 title: 'Demo: Super Bowl LIX',
+                dates: '2025-02-09',
                 leftAbbr: 'KC',
                 leftName: 'Kansas City Chiefs',
                 topAbbr: 'PHI',
@@ -341,16 +342,12 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
             {/* Demo mode never loads a pool, so loadingPool stays true there */}
             {(demoMode || !loadingPool) && !isCommissionerMode && (
                 <div className="flex-1 flex flex-col relative z-50 w-full max-w-[1440px] mx-auto min-h-0">
-                    {demoMode && (
-                        <aside className="mx-4 mt-20 flex flex-wrap items-center justify-between gap-3 rounded-card border border-hairline bg-panel px-4 py-3" aria-label="Demo board notice">
-                            <p className="font-ui text-[15px] text-fg"><span className="font-medium">Demo board — sample names and scores.</span> This is a sample board. Ready to run yours?</p>
-                            <div className="flex flex-wrap gap-2">
-                                <CapsuleButton onClick={() => navigate('/create')}>Create your free board</CapsuleButton>
-                                <CapsuleButton variant="quiet" onClick={() => navigate('/')}>How GridOne works</CapsuleButton>
-                            </div>
-                        </aside>
-                    )}
+                    {demoMode && <p className="mx-4 mt-20 font-ui text-sm text-fg-2">Demo board — sample names and scores. Sample game · February 9, 2025</p>}
                     {renderMainContent()}
+                    {(demoMode || liveData?.state === 'post') && <aside aria-label="Run your own board" className="mx-4 my-8 flex flex-wrap items-center justify-between gap-4 border-t border-hairline pt-6">
+                        <p className="font-ui text-base text-fg-2">{demoMode ? 'This is a sample board. Ready to run yours?' : 'Bring your next game day together.'}</p>
+                        <CapsuleButton variant="quiet" onClick={() => navigate('/create')}>Create your own board</CapsuleButton>
+                    </aside>}
                 </div>
             )}
 
@@ -368,7 +365,11 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
             )}
 
             {isCommissionerMode && (
-                <OrganizerWorkspace
+                <>
+                {(entriesLoading || (!hasLoadedEntries && !entriesError)) && <p role="status" className="px-5 py-3 text-sm text-fg-2">Refreshing private square notes…</p>}
+                {entriesError && <div role="alert" className="px-5 py-3 text-sm text-fg"><p>{entriesError}</p><CapsuleButton onClick={() => void reloadEntries().catch(() => undefined)}>Reload private notes</CapsuleButton></div>}
+                <div inert={entriesLoading || Boolean(entriesError)}>
+                {hasLoadedEntries && <OrganizerWorkspace
                     game={game}
                     board={board}
                     activePoolId={activePoolId || ''}
@@ -397,7 +398,12 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                         await updatePublishedOpenSquares(activePoolId, squares);
                         await loadPoolData(activePoolId);
                     }}
-                    onReload={() => activePoolId ? loadPoolData(activePoolId) : undefined}
+                    onReload={async () => {
+                        if (!activePoolId) return;
+                        await loadPoolData(activePoolId, { background: true });
+                        await reloadEntries();
+                    }}
+                    onRunAnotherBoard={(template) => navigate('/create', { state: { boardTemplate: template } })}
                     onOpenViewer={() => {
                         if (shareCode) window.open(`/b/${shareCode}`, '_blank', 'noopener,noreferrer');
                     }}
@@ -412,7 +418,9 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                             {renderMainContent(true)}
                         </div>
                     )}
-                />
+                />}
+                </div>
+                </>
             )}
         </div>
     );

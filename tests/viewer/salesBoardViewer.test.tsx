@@ -21,12 +21,12 @@ describe('SalesBoardViewer', () => {
     expect(screen.getByText('Numbers will be drawn before the game.')).toBeInTheDocument();
     expect(screen.getAllByRole('gridcell')).toHaveLength(100);
     expect(screen.getByRole('gridcell', { name: 'Square 1, Alice Long Buyer Name, Mora family' })).toBeInTheDocument();
-    expect(screen.getByRole('gridcell', { name: 'Square 2, Unsold, Mora family' })).toBeInTheDocument();
-    expect(screen.getByRole('gridcell', { name: 'Square 100, Unsold, No family assigned' })).toBeInTheDocument();
+    expect(screen.getByRole('gridcell', { name: 'Square 2, Blank, Mora family' })).toBeInTheDocument();
+    expect(screen.getByRole('gridcell', { name: 'Square 100, Blank, No family assigned' })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Manage board' })).not.toBeInTheDocument();
     expect(screen.queryByText('Find my squares')).not.toBeInTheDocument();
     expect(screen.queryByText(/winner email/i)).not.toBeInTheDocument();
-    expect(screen.getByText('✓ Sold · No checkmark means unsold')).toBeInTheDocument();
+    expect(screen.getByText('✓ Has a name · No checkmark means blank')).toBeInTheDocument();
   });
 
   it('filters family details without removing any board squares and highlights unsold independently', () => {
@@ -36,8 +36,8 @@ describe('SalesBoardViewer', () => {
     const details = screen.getByRole('region', { name: 'Square details' });
     expect(within(details).getAllByRole('listitem')).toHaveLength(2);
     expect(within(details).getByText('Alice Long Buyer Name')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Highlight unsold' }));
-    expect(screen.getByRole('button', { name: 'Highlight unsold' })).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(screen.getByRole('button', { name: 'Highlight blank squares' }));
+    expect(screen.getByRole('button', { name: 'Highlight blank squares' })).toHaveAttribute('aria-pressed', 'true');
     expect(within(details).getAllByRole('listitem')).toHaveLength(1);
     expect(screen.getAllByRole('gridcell')).toHaveLength(100);
   });
@@ -49,9 +49,47 @@ describe('SalesBoardViewer', () => {
     cells[0].focus();
     fireEvent.keyDown(cells[0], { key: 'ArrowRight' });
     expect(cells[1]).toHaveFocus();
-    expect(screen.getByRole('status', { name: 'Selected square' })).toHaveTextContent('Square 2 · Unsold · Mora family');
+    expect(screen.getByRole('status', { name: 'Selected square' })).toHaveTextContent('Square 2 · Blank · Mora family');
     fireEvent.keyDown(cells[1], { key: 'End', ctrlKey: true });
     expect(cells[99]).toHaveFocus();
+  });
+
+  it('finds a holder or exact square number and keeps the full board visible', () => {
+    render(<SalesBoardViewer game={INITIAL_GAME} board={fixture()} />);
+    const search = screen.getByRole('searchbox', { name: 'Find a name or square number' });
+    fireEvent.change(search, { target: { value: 'alice' } });
+    expect(within(screen.getByRole('region', { name: 'Square details' })).getAllByRole('listitem')).toHaveLength(1);
+    expect(screen.getAllByRole('gridcell')).toHaveLength(100);
+    fireEvent.change(search, { target: { value: '13' } });
+    expect(within(screen.getByRole('region', { name: 'Square details' })).getByText('Square 13')).toBeInTheDocument();
+    fireEvent.change(search, { target: { value: 'Nobody' } });
+    expect(screen.getByText('No squares match these filters.')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Clear filters' }));
+    expect(search).toHaveValue('');
+  });
+
+  it('does not infer purchase or availability from names and keeps solo boards simple', () => {
+    render(<SalesBoardViewer game={INITIAL_GAME} board={{ ...fixture(), allocationLabels: undefined }} />);
+    expect(screen.queryByLabelText('Family')).not.toBeInTheDocument();
+    expect(screen.getByText('Squares with names')).toBeInTheDocument();
+    expect(screen.getByText('99 blank squares')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'How to join' }));
+    expect(screen.getByText(/Contact the person who shared this board/)).toBeInTheDocument();
+    expect(screen.getByText('Availability is confirmed by the organizer. Payments happen outside GridOne.')).toBeInTheDocument();
+    expect(screen.queryByText(/sold/i)).not.toBeInTheDocument();
+  });
+
+  it('shows only explicitly published participation details and availability', () => {
+    render(<SalesBoardViewer game={INITIAL_GAME} board={{ ...fixture(), participation: { purpose: 'Support our baseball season', instructions: 'Text Anthony with your square numbers.', squarePrice: '$20' }, availability: Array.from({ length: 100 }, (_, i) => i === 0 ? 'available' : 'unspecified') }} />);
+    expect(screen.getByText('Support our baseball season')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'How to join' }));
+    expect(screen.getByText('Text Anthony with your square numbers.')).toBeVisible();
+    expect(screen.getByText('$20 per square')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Show available squares' }));
+    const details = screen.getByRole('region', { name: 'Square details' });
+    expect(within(details).getAllByRole('listitem')).toHaveLength(1);
+    expect(within(details).getByText('Alice Long Buyer Name')).toBeInTheDocument();
+    expect(within(details).getByText('Available · confirm with organizer')).toBeInTheDocument();
   });
 
   it('reports freshness honestly and exposes refresh and an optional organizer link', () => {

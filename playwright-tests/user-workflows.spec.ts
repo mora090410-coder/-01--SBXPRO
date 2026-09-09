@@ -116,8 +116,8 @@ const quarterScores = {
 };
 
 test('protected routes preserve the exact destination through sign-in', async ({ page }) => {
-  await page.goto('/create?scoreTest=1');
-  await expect(page).toHaveURL(new RegExp(`/login\\?.*returnTo=${encodeURIComponent('/create?scoreTest=1').replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&')}`));
+  await page.goto('/dashboard');
+  await expect(page).toHaveURL(new RegExp(`/login\\?.*returnTo=${encodeURIComponent('/dashboard').replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&')}`));
 
   await page.route('**/api/nfl/games?**', (route) => route.fulfill({
     status: 200,
@@ -130,7 +130,7 @@ test('protected routes preserve the exact destination through sign-in', async ({
   });
   await page.reload();
 
-  await expect(page).toHaveURL(/\/create\?scoreTest=1$/);
+  await expect(page).toHaveURL(/\/dashboard$/);
 });
 
 test('organizer creates a board from one scheduled NFL event', async ({ page }) => {

@@ -1,3 +1,16 @@
+export const validateParticipation = (board: Record<string, unknown>): string | null => {
+  if (board.availability !== undefined && (!Array.isArray(board.availability) || board.availability.length !== 100 || board.availability.some(value => !['unspecified', 'available', 'unavailable'].includes(value)))) return 'Availability must contain exactly 100 valid statuses.';
+  if (board.participation !== undefined) {
+    const details = board.participation;
+    if (!details || typeof details !== 'object' || Array.isArray(details)) return 'Public instructions must be an object.';
+    const limits: Record<string, number> = { purpose: 280, instructions: 500, squarePrice: 40 };
+    for (const [key, value] of Object.entries(details)) {
+      if (!Object.hasOwn(limits, key) || typeof value !== 'string' || value.length > limits[key]) return 'Public instructions must use bounded text.';
+    }
+  }
+  return null;
+};
+
 /** Explicit public allocation labels are separate from the organizer's private ledger. */
 export const validateAllocationLabels = (value: unknown): string | null => {
   if (value === undefined) return null;
@@ -15,11 +28,13 @@ export const validateSalesBoard = (value: unknown): string | null => {
   if (!Array.isArray(board.squares) || board.squares.length !== 100) return 'The board must contain exactly 100 squares.';
   if (board.squares.some(cell => !Array.isArray(cell) || cell.length > 1 || cell.some(name => (
     typeof name !== 'string' || name.length < 1 || name.length > 80 || name.trim() !== name
-  )))) return 'Each square must be unsold or contain one trimmed buyer name of 1–80 characters.';
-  return validateAllocationLabels(board.allocationLabels);
+  )))) return 'Each square must be blank or contain one trimmed buyer name of 1–80 characters.';
+  return validateAllocationLabels(board.allocationLabels) || validateParticipation(board);
 };
 
 export const projectSalesBoard = (board: Record<string, any>) => ({
+  availability: board.availability ? [...board.availability] : Array(100).fill('unspecified'),
+  participation: Object.fromEntries(['purpose', 'instructions', 'squarePrice'].filter(key => typeof board.participation?.[key] === 'string').map(key => [key, board.participation[key]])),
   squares: board.squares.map((names: string[]) => [...names]),
   allocationLabels: board.allocationLabels ? [...board.allocationLabels] : Array(100).fill(null),
   leftAxis: Array(10).fill(null),

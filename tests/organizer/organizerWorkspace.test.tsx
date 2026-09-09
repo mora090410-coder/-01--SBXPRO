@@ -705,6 +705,17 @@ describe('OrganizerWorkspace published boards', () => {
     expect(publishMilestoneCorrectionToServer).toHaveBeenCalledWith('pool-1', expect.objectContaining({ milestone: 'Q1', reason: 'Scoreboard error' }));
   });
 
+  it('reuses only current title and rules from the final organizer action', () => {
+    const onRunAnotherBoard = vi.fn();
+    renderPublished({
+      game: { ...game, payoutDescriptions: { FINAL: '$200' } },
+      liveData: { state: 'post', leftScore: 21, topScore: 17, isManual: false } as any,
+      onRunAnotherBoard,
+    });
+    fireEvent.click(screen.getByRole('link', { name: 'Create another board' }));
+    expect(onRunAnotherBoard).toHaveBeenCalledWith({ title: game.title, payoutDescriptions: { FINAL: '$200' } });
+  });
+
   it('locks the board as the final record once the game is over', () => {
     renderPublished({ liveData: { state: 'post', leftScore: 21, topScore: 17, isManual: false } as any });
 
@@ -1089,4 +1100,21 @@ it('warns before leaving unsaved payout input and clears the warning after save'
   const saved = new Event('beforeunload', { cancelable: true });
   window.dispatchEvent(saved);
   expect(saved.defaultPrevented).toBe(false);
+});
+
+it('keeps family changes disabled after board autosave until the private-note write finishes', async () => {
+  let finish!: () => void;
+  vi.mocked(saveEntryMeta).mockImplementationOnce(() => new Promise<void>(resolve => { finish = resolve; }));
+  const board = emptyBoard(); board.squares[0] = ['Anthony']; board.allocationLabels = Array.from({length:100}, (_, index) => index === 0 ? 'Anthony' : null);
+  const {onPublish} = renderWorkspace({board});
+  fireEvent.click(screen.getByRole('button', {name:/^Square 1,/}));
+  fireEvent.click(screen.getByRole('radio', {name:'Paid'}));
+  fireEvent.click(screen.getByRole('button', {name:'Save'}));
+  fireEvent.click(screen.getByText('Family access (optional)'));
+  fireEvent.change(screen.getByLabelText('Responsible family'), {target:{value:'Anthony'}});
+  await waitFor(() => expect(onPublish).toHaveBeenCalled(), {timeout:2000});
+  await act(async () => {});
+  expect(screen.getByRole('button', {name:'Create private family link'})).toBeDisabled();
+  await act(async () => finish());
+  expect(screen.getByRole('button', {name:'Create private family link'})).toBeEnabled();
 });

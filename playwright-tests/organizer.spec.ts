@@ -145,11 +145,11 @@ const installOrganizerBoard = async (page: Page, persistEdits = false) => {
 };
 
 test.describe('organizer workspace contract', () => {
-  test('create route redirects an unauthenticated visitor into the login flow', async ({ page }) => {
+  test('create route previews before account creation', async ({ page }) => {
     await page.goto('/create');
 
-    await expect(page).toHaveURL(/\/login/);
-    await expect(page.getByRole('heading', { name: /Create your organizer account|Welcome back/i })).toBeVisible();
+    await expect(page).toHaveURL(/\/create/);
+    await expect(page.getByRole('region', { name: 'Board preview' })).toBeVisible();
   });
 
   test('dashboard lists the organizer boards and links into the workspace', async ({ page }) => {

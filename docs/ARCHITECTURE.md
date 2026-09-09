@@ -26,9 +26,10 @@ One app. One design system. This file describes what is in the repository today.
 | `/demo` | `BoardView` in demo mode |
 | `/b/:shareCode` | `BoardView` — the public viewer link |
 | `/boards/:boardId` | `BoardView` behind `RequireAuth` — the organizer workspace |
+| `/family` | Scoped private family editor; fragment credential, no organizer account |
 | `/login` | `pages/Login` |
 | `/dashboard` | `pages/Dashboard` behind `RequireAuth` |
-| `/create` | `pages/CreateContest` behind `RequireAuth` |
+| `/create` | Public `pages/CreateContest` preview; API creation remains authenticated |
 | `/paid` | `pages/Paid` — checkout return |
 | `/articles`, `/articles/:slug` (12 guides) | `pages/*` (lazy) |
 | `/privacy`, `/terms` | `pages/Privacy`, `pages/Terms` |
@@ -121,3 +122,13 @@ functions/api/stripe/webhook.ts
 `026_pregame_sharing.sql` adds explicit `contests.shared_at`, guarded owner sharing via service-only `gridone_share_board`, seasonal allowance reservation, and safe public allocation projection. First share reserves activation; `published_at` continues to represent final number locking. All scoring entry points must require finalization as well as activation. The existing final snapshot lookup takes precedence over a strict sales projection at the same share code.
 
 `POST /api/pools/:id/share` requires verified organizer identity and current revision. `functions/_lib/pregameBoard.ts` validates exactly 100 buyer cells/public allocation labels and constructs the narrow selling payload. It never projects private metadata, draft numbers, scoring or contact information. `BoardData.allocationLabels` is explicit public data independent of private entry metadata. `usePoolData` tracks sharing separately and retains visible data during background refresh. `SalesBoardViewer` owns selling presentation; `ViewerShell` retains finalized game-day behavior.
+
+## Simpler board setup and family collaboration
+
+`src/features/organizer/create/createDraft.ts` validates a bounded 24-hour session preview and adopts it after auth; `boardTemplateModel.ts` whitelists reusable setup. The public create route never writes anonymously.
+
+`BoardData.participation` and `availability` are explicit public fields. Server and migration 027 validate shape and bounds; the sales projection remains an allowlist. Neither names nor payment notes imply availability.
+
+`POST /api/pools/:id/family` verifies the organizer and issues, revokes, or reassigns scoped family access. `POST /api/family` accepts a family bearer token, hashes it with SHA-256 and invokes service-only `gridone_family_access`. The private table has RLS enabled and no anon/authenticated grants. The RPC serializes on the contest row before checking credential, revision and cell scope. Tokens are randomly generated 256-bit values in URL fragments; they are never stored plaintext, included in public payloads, or sent in referrers. Mutating POST requests are never automatically retried. A conflict preserves UI edits until deliberate reload.
+
+Migration `027_family_access.sql` is additive and must be installed before releasing these controls. Rollback revokes active family links while retaining all edited names and history; do not drop the data or break existing public share links.

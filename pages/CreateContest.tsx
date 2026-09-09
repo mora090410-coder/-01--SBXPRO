@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { compressImage } from '../utils/image';
 import { parseBoardImage } from '../services/boardImportService';
@@ -7,6 +7,9 @@ import { GameState, BoardData, ScheduledGame } from '../types';
 import { INITIAL_GAME, EMPTY_BOARD } from '../hooks/usePoolData';
 import ScheduledGamePicker from '../components/ScheduledGamePicker';
 import { Base, CapsuleButton, Eyebrow, Glass, CapsuleInput } from '../src/design/primitives';
+
+import { projectBoardTemplate } from '../src/features/organizer/repeat/boardTemplateModel';
+import { readCreateDraft, writeCreateDraft, clearCreateDraft } from '../src/features/organizer/create/createDraft';
 
 const CAPSULE_LINK = 'inline-flex items-center justify-center gap-2 rounded-capsule bg-panel border border-hairline px-5 h-11 font-ui text-[15px] font-semibold leading-none text-fg transition-[color,background-color,border-color,scale] hover:bg-panel-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action focus-visible:ring-offset-2 focus-visible:ring-offset-ground motion-safe:active:scale-[0.98]';
 
@@ -16,36 +19,34 @@ const CreateContest: React.FC = () => {
     const requestedScoreTestMode = new URLSearchParams(window.location.search).get('scoreTest') === '1';
     const [scoreTestMode, setScoreTestMode] = useState(false);
 
-    const [game, setGame] = useState<GameState>(() => ({
-        ...INITIAL_GAME,
-        gameExternalId: undefined,
-        kickoffAt: undefined,
-        leftAbbr: '',
-        leftName: '',
-        topAbbr: '',
-        topName: '',
-        dates: '',
-    }));
-    const [board, setBoard] = useState<BoardData>(EMPTY_BOARD);
+    const location = useLocation();
+    const [restored] = useState(() => {
+        try { return readCreateDraft(sessionStorage); } catch { return { issue: 'unavailable' as const }; }
+    });
+    const [game, setGame] = useState<GameState>(() => {
+        const template = location.state?.boardTemplate ? projectBoardTemplate(location.state.boardTemplate) : null;
+        if (template) return { ...INITIAL_GAME, title: template.title, payoutDescriptions: template.payoutDescriptions };
+        return restored.draft?.game || { ...INITIAL_GAME };
+    });
+    const [board, setBoard] = useState<BoardData>(() => location.state?.boardTemplate ? EMPTY_BOARD : restored.draft?.board || EMPTY_BOARD);
+    const [storageUnavailable, setStorageUnavailable] = useState(restored.issue === 'unavailable');
+    const submitting = useRef(false);
     const [isLoading, setIsLoading] = useState(false);
     const [isScanning, setIsScanning] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [scanSuccess, setScanSuccess] = useState(false);
     const fileRef = useRef<HTMLInputElement>(null);
 
-    // Restore the draft if the user was redirected away from /create for auth.
+    // Keep the preview through refresh and authentication; consume only after server success.
     useEffect(() => {
-        const savedGame = sessionStorage.getItem('gridone_draft_game');
-        const savedBoard = sessionStorage.getItem('gridone_draft_board');
-        if (savedGame) {
-            try { setGame(JSON.parse(savedGame)); } catch { /* corrupt data */ }
-            sessionStorage.removeItem('gridone_draft_game');
-        }
-        if (savedBoard) {
-            try { setBoard(JSON.parse(savedBoard)); } catch { /* corrupt data */ }
-            sessionStorage.removeItem('gridone_draft_board');
-        }
-    }, []); // Run once on mount
+        let saved = false;
+        try { saved = writeCreateDraft(sessionStorage, { game, board }); } catch { /* blocked storage getter */ }
+        setStorageUnavailable(!saved);
+    }, [game, board]);
+
+    useEffect(() => {
+        if (location.state?.boardTemplate) navigate(location.pathname + location.search, { replace: true, state: null });
+    }, []);
 
     useEffect(() => {
         const accessToken = session?.access_token;
@@ -119,18 +120,16 @@ const CreateContest: React.FC = () => {
         const finalBoard = manualBoard || board;
         const leagueTitle = game.title?.trim();
 
+        if (submitting.current) return;
         if (!user) {
-            try {
-                sessionStorage.setItem('gridone_draft_game', JSON.stringify(game));
-                sessionStorage.setItem('gridone_draft_board', JSON.stringify(finalBoard));
-            } catch {
-                // sessionStorage unavailable — the draft is lost on redirect
-            }
+            let saved = false;
+            try { saved = writeCreateDraft(sessionStorage, { game, board: finalBoard }); } catch { /* blocked storage getter */ }
+            if (!saved) { setStorageUnavailable(true); return; }
             const returnTo = encodeURIComponent(requestedScoreTestMode ? '/create?scoreTest=1' : '/create');
             navigate(`/login?mode=signup&returnTo=${returnTo}`);
             return;
         }
-
+        submitting.current = true;
         setIsLoading(true);
         setError(null);
 
@@ -156,11 +155,13 @@ const CreateContest: React.FC = () => {
             if (!response.ok) throw new Error(data.message || data.error || 'Could not create the board.');
             if (!data.poolId) throw new Error("No data returned from create flow.");
 
+            clearCreateDraft();
             navigate(`/boards/${data.poolId}`);
         } catch (err: any) {
             console.error("Publish Error:", err);
             setError(err.message || "Could not create the board.");
         } finally {
+            submitting.current = false;
             setIsLoading(false);
         }
     };
@@ -169,13 +170,23 @@ const CreateContest: React.FC = () => {
 
     return (
         <Base kind="cream">
-            <main aria-label="New board" className="mx-auto flex w-full max-w-2xl flex-col gap-8 px-5 py-10 md:px-8 md:py-14">
+            <main aria-label="New board" className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-5 py-10 md:px-8 md:py-14">
 
                 <header className="flex items-center justify-between gap-4">
-                    <Link to="/dashboard" className={CAPSULE_LINK}>Your boards</Link>
-                    <CapsuleButton variant="ghost" onClick={() => void signOut?.()}>Log out</CapsuleButton>
+                    <Link to={user ? "/dashboard" : "/"} className={CAPSULE_LINK}>{user ? "Your boards" : "GridOne"}</Link>
+                    {user && <CapsuleButton variant="ghost" onClick={() => void signOut?.()}>Log out</CapsuleButton>}
                 </header>
 
+                {storageUnavailable && (
+                    <Glass role="status" className="flex flex-col gap-3 font-ui text-[14px] text-fg-2">
+                        <p>This preview is only on this page. Your browser could not save it for refresh or sign-in.</p>
+                        {!user && <a className={CAPSULE_LINK} href="/login?returnTo=%2Fdashboard" target="_blank" rel="noopener noreferrer">Sign in in a new tab</a>}
+                        {!user && <p>Keep this tab open. After signing in, return here and continue with your preview.</p>}
+                    </Glass>
+                )}
+                {(restored.issue === 'expired' || restored.issue === 'invalid') && (
+                    <p role="status" className="font-ui text-[14px] text-fg-2">{restored.issue === 'expired' ? 'The previous preview expired after 24 hours.' : 'The previous preview could not be recovered.'} Start a new preview below.</p>
+                )}
                 {error && (
                     <Glass role="alert" className="flex flex-wrap items-center justify-between gap-3 font-ui text-[15px] text-tone-cardinal">
                         <span className="min-w-0">{error}</span>
@@ -187,9 +198,12 @@ const CreateContest: React.FC = () => {
 
                 <div className="flex flex-col gap-3">
                     <Eyebrow>New board</Eyebrow>
-                    <h1 className="font-display text-[40px] leading-[1] tracking-[-0.01em] text-fg md:text-[52px]">Name your board</h1>
+                    <h1 className="font-display text-[40px] leading-[1] tracking-[-0.01em] text-fg md:text-[52px]">Your next great game day.</h1>
+                    <p className="font-ui text-[15px] text-fg-2">Name your board and see it take shape. Nothing is shared until you choose to share it.</p>
                 </div>
 
+                <div className="grid items-start gap-8 lg:grid-cols-2 lg:gap-12">
+                <div className="flex min-w-0 flex-col gap-6">
                 <CapsuleInput
                     id="board-name"
                     label="Board name"
@@ -228,10 +242,25 @@ const CreateContest: React.FC = () => {
                     disabled={!canCreate || isLoading || isScanning}
                     onClick={() => void createBoard()}
                 >
-                    {isLoading ? 'Creating board…' : isScanning ? 'Scanning photo…' : 'Create board'}
+                    {isLoading ? 'Creating board…' : isScanning ? 'Scanning photo…' : user ? 'Create board' : 'Save and continue'}
                 </CapsuleButton>
 
-                <section aria-labelledby="paper-import" className="flex flex-col gap-3 border-t border-hairline pt-6">
+                <p className="font-ui text-[14px] text-fg-2">Choose a scheduled NFL game to save your board. If your game is not listed yet, keep this preview and return when it is available.</p>
+
+                </div>
+                <section aria-label="Board preview" className="flex min-w-0 flex-col gap-4 rounded-card border border-hairline bg-panel p-4 md:p-6">
+                    <Eyebrow>Preview · Not shared</Eyebrow>
+                    <h2 className="break-words font-display text-[32px] leading-tight text-fg">{game.title.trim() || 'Your board'}</h2>
+                    <p className="font-ui text-[14px] text-fg-2">{game.gameExternalId ? `${game.leftAbbr} at ${game.topAbbr}` : 'Choose your game above'}</p>
+                    <p className="font-ui text-[14px] text-fg-2">100 squares · Numbers drawn later</p>
+                    <div aria-hidden="true" className="grid grid-cols-10 gap-1">
+                        {board.squares.map((names, index) => <div key={index} className="flex aspect-square min-w-0 items-center justify-center overflow-hidden rounded-cell border border-hairline bg-ground font-mono text-[11px] text-fg-2" title={names.join(', ')}>{index + 1}</div>)}
+                    </div>
+                    <p className="font-ui text-[14px] text-fg-2">After saving, add names, share your board, then draw the numbers before the game. Square payments happen outside GridOne.</p>
+                </section>
+
+                </div>
+                {user && <section aria-labelledby="paper-import" className="flex flex-col gap-3 border-t border-hairline pt-6">
                     <h2 id="paper-import" className="font-ui text-[17px] font-semibold text-fg">Import a paper board photo</h2>
                     <p className="font-ui text-[14px] text-fg-2">Already started on paper? Add a photo and the names are read into the board. You review every square before publishing.</p>
                     <label htmlFor="board-photo" className="font-ui text-[14px] text-fg-2">Board photo (JPG, PNG, or WebP)</label>
@@ -250,7 +279,7 @@ const CreateContest: React.FC = () => {
                     {scanSuccess && !isScanning && (
                         <p role="status" className="font-ui text-[14px] text-fg-2">Names read from the photo. Create the board to review them.</p>
                     )}
-                </section>
+                </section>}
             </main>
         </Base>
     );

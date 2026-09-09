@@ -11,10 +11,10 @@ const board: BoardData = { topAxis: Array(10).fill(null), leftAxis: Array(10).fi
 describe('BoardEditor', () => {
   it('names cells accessibly and opens the selected square', () => {
     const onSelectSquare = vi.fn();
-    render(<BoardEditor board={board} game={game} entryMeta={{ 0: { cell_index: 0, paid_status: 'paid', notify_opt_in: false, contact_type: null, contact_value: null } }} drawPreview={null} highlightOpen={false} isPublished={false} canAssignOpenSquares={false} selectMode={false} selection={new Set<number>()} onSelectionChange={vi.fn()} onToggleSelectMode={vi.fn()} onSelectSquare={onSelectSquare} />);
+    render(<BoardEditor board={{...board, allocationLabels:Array.from({length:100},(_,i)=>i===1?'Mora':null)}} game={game} entryMeta={{ 0: { cell_index: 0, paid_status: 'paid', notify_opt_in: false, contact_type: null, contact_value: null } }} drawPreview={null} highlightOpen={false} isPublished={false} canAssignOpenSquares={false} selectMode={false} selection={new Set<number>()} onSelectionChange={vi.fn()} onToggleSelectMode={vi.fn()} onSelectSquare={onSelectSquare} />);
     fireEvent.click(screen.getByRole('button', { name: 'Square 1, assigned to Ann' }));
     expect(onSelectSquare).toHaveBeenCalledWith(0);
-    expect(screen.getByRole('button', { name: 'Square 2, unassigned' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Square 2, unassigned, allocated to Mora, blank' })).toHaveTextContent('Blank');
     expect(screen.getByText('paid')).toBeInTheDocument();
   });
   it('shows draw preview digits in the axes with the draft tag', () => {
@@ -108,4 +108,12 @@ it('prevents saving a buyer longer than the server limit', () => {
   expect(screen.getByRole('button', {name: 'Save and next'})).toBeDisabled();
   fireEvent.keyDown(name, {key: 'Enter'});
   expect(onSave).not.toHaveBeenCalled();
+});
+
+it('saves explicit availability independently of the name and payment', () => {
+  const onSave = vi.fn();
+  render(<SquareSheet open index={12} name="Anthony" allocationLabel="Anthony" availability="unspecified" isPublished={false} hasNextOpen={false} onSave={onSave} onClose={vi.fn()}/>);
+  fireEvent.change(screen.getByLabelText('Availability on the shared board'), { target: { value: 'available' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+  expect(onSave).toHaveBeenCalledWith(12, 'Anthony', expect.objectContaining({paid_status:'unknown'}), false, 'Anthony', 'available');
 });

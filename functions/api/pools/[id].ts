@@ -1,4 +1,4 @@
-import { findVisibleSalesBoard, validateAllocationLabels, validateSalesBoard } from '../../_lib/pregameBoard';
+import { findVisibleSalesBoard, validateAllocationLabels, validateParticipation, validateSalesBoard } from '../../_lib/pregameBoard';
 import { createClient } from '@supabase/supabase-js';
 import {
   fetchScheduledGameById,
@@ -441,7 +441,7 @@ export const onRequestPut: PagesFunction = async ({ request, env, params }) => {
     if (body.board) {
       const validationError = currentContest.shared_at && !currentContest.published_at
         ? validateSalesBoard(body.board)
-        : validateAllocationLabels(body.board.allocationLabels);
+        : validateAllocationLabels(body.board.allocationLabels) || validateParticipation(body.board);
       if (validationError) return json(request, { error: validationError }, 400, env.PUBLIC_SITE_URL);
     }
     if (currentContest.published_at && body.board && JSON.stringify(body.board) !== JSON.stringify(currentContest.board_data)) {

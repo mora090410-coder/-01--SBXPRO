@@ -27,7 +27,7 @@ const liveScore = {
   freshness: 'fresh',
 };
 
-const installPublishedBoard = async (page: Page) => {
+const installPublishedBoard = async (page: Page, score = liveScore) => {
   await page.route('**/api/pools/ABCDEFGH', (route) => route.fulfill({
     status: 200,
     contentType: 'application/json',
@@ -42,7 +42,7 @@ const installPublishedBoard = async (page: Page) => {
       topName: 'Washington Commanders',
       dates: '2026-09-13',
       board: publishedBoard,
-      score: liveScore,
+      score,
       winner_history: [{ milestone: 'Q1', topDigit: 7, sideDigit: 3, participantName: 'Ann', resolvedAt: '2026-09-13T18:00:00.000Z' }],
       pending_milestones: [],
       payoutDescriptions: {},
@@ -53,11 +53,36 @@ const installPublishedBoard = async (page: Page) => {
   await page.route('**/api/pools/ABCDEFGH/score', (route) => route.fulfill({
     status: 200,
     contentType: 'application/json',
-    body: JSON.stringify({ score: liveScore, winnerHistory: [], pendingMilestones: [] }),
+    body: JSON.stringify({ score, winnerHistory: [], pendingMilestones: [] }),
   }));
 };
 
 test.describe('viewer shell', () => {
+  test('places the demo invitation after the board and labels the sample date', async ({ page }) => {
+    await page.goto('/demo');
+    await expect(page.getByText('Sample game · February 9, 2025')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Create your own board' })).toBeVisible();
+    const isAfterViewer = await page.getByRole('complementary', { name: 'Run your own board' }).evaluate((element) => {
+      const viewer = document.querySelector('main');
+      return Boolean(viewer && (viewer.compareDocumentPosition(element) & Node.DOCUMENT_POSITION_FOLLOWING));
+    });
+    expect(isAfterViewer).toBe(true);
+    await expect(page.getByText('Game date pending')).toHaveCount(0);
+  });
+
+  test('offers a quiet new-board invitation after a final public record', async ({ page }) => {
+    await installPublishedBoard(page, { ...liveScore, state: 'post', clock: 'Final' });
+    await page.route('**/api/pools/ABCDEFGH/score', (route) => route.fulfill({
+      status: 200, contentType: 'application/json',
+      body: JSON.stringify({ score: { ...liveScore, state: 'post', clock: 'Final' }, winnerHistory: [], pendingMilestones: [] }),
+    }));
+    await page.goto('/b/ABCDEFGH');
+    await expect(page.getByText('Final', {exact: true}).first()).toBeVisible();
+    await expect(page.getByRole('complementary', { name: 'Run your own board' })).toBeVisible();
+    await page.getByRole('button', { name: 'Create your own board' }).click();
+    await expect(page).toHaveURL(/\/(create|login)/);
+  });
+
   test('demo read-only query can show the viewer without enabling mutation routes', async ({ page }) => {
     await page.goto('/demo');
 
@@ -67,7 +92,8 @@ test.describe('viewer shell', () => {
     await expect(page.getByTestId('viewer-first-viewport')).not.toContainText(/Payouts|makes me win/i);
 
     await page.goto('/create');
-    await expect(page).toHaveURL(/\/login/);
+    await expect(page).toHaveURL(/\/create/);
+    await expect(page.getByRole('region', { name: 'Board preview' })).toBeVisible();
     await expect(page.locator('[data-feature-flag]')).toHaveCount(0);
   });
 

@@ -243,7 +243,7 @@ export default function BoardEditor({
                     const selected = selectMode && selection.has(index);
                     const family = board.allocationLabels?.[index];
                     const baseLabel = isOpen ? `Square ${index + 1}, unassigned` : `Square ${index + 1}, assigned to ${name}`;
-                    const label = family ? `${baseLabel}, allocated to ${family}${isOpen ? ', unsold' : ''}` : baseLabel;
+                    const label = family ? `${baseLabel}, allocated to ${family}${isOpen ? ', blank' : ''}` : baseLabel;
                     const openClasses = 'bg-transparent border border-dashed border-hairline text-fg-3';
                     const assignedClasses = 'bg-panel text-fg';
                     const highlightClasses = highlightOpen && isOpen ? 'ring-2 ring-tone-cardinal' : '';
@@ -266,7 +266,7 @@ export default function BoardEditor({
                       >
                         <span className="font-mono text-[10px] text-fg-3">#{index + 1}</span>
                         {family && family !== name && <span className="line-clamp-2 text-center text-[10px] text-fg-2">{family}</span>}
-                        {isOpen && <span className="text-[10px]">Unsold</span>}
+                        {isOpen && <span className="text-[10px]">Blank</span>}
                         {!isOpen && <span className="line-clamp-2 text-center leading-tight">{name}</span>}
                         {paid && <span className="font-mono text-[10px] text-fg-2">paid</span>}
                       </button>

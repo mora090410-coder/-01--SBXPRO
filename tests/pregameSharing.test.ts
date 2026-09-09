@@ -5,7 +5,7 @@ describe('pregame public projection',()=>{
  it('keeps public allocation separate from private metadata and hides drawn draft digits',()=>{
   const input=board(); input.squares[26]=['Jane']; input.allocationLabels[26]='Mora family';
   const result=projectSalesBoard({...input,seller_label:'PRIVATE',payments:{Jane:'paid'},contacts:['private@example.com']});
-  expect(result).toEqual({squares:input.squares,allocationLabels:input.allocationLabels,leftAxis:Array(10).fill(null),topAxis:Array(10).fill(null),isDynamic:false});
+  expect(result).toEqual({availability:Array(100).fill('unspecified'),participation:{},squares:input.squares,allocationLabels:input.allocationLabels,leftAxis:Array(10).fill(null),topAxis:Array(10).fill(null),isDynamic:false});
  });
  it('permits a completely unsold board',()=>expect(validateSalesBoard(board())).toBeNull());
  it('rejects invalid lengths, allocations, duplicate buyers, and legacy dynamic boards',()=>{

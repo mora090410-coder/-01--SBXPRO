@@ -20,11 +20,11 @@ GridOne is a tracking and communication tool. It may record purchaser names, sel
 
 A youth-sports or community volunteer running an NFL football-squares fundraiser. They are accountable to a group, usually work from a phone or laptop between other responsibilities, and care more about trust and reduced follow-up than software configurability.
 
-One signed-in organizer owns and edits each board.
+One signed-in organizer owns each board. Before finalization, the organizer may grant a revocable, seven-day private family link that edits only the names and explicit availability of its assigned squares. Public viewer links never grant editing.
 
 ### Purchaser/viewer
 
-A parent, supporter, friend, or community member who receives a shared link. They do not need an account and cannot edit the board. During sales they see permanent square numbers 1–100, public family allocations, buyer names, and unsold squares; families report purchases to the organizer. On game day they want three answers immediately:
+A parent, supporter, friend, or community member who receives a shared link. They do not need an account and cannot edit the board. During sales they see permanent square numbers 1–100, public family allocations, display names, explicit availability, and blank squares. Families can report names to the organizer or use a separately issued private family link. A name does not prove a sale or payment; a blank square does not promise availability. On game day they want three answers immediately:
 
 1. Where are my squares?
 2. Who wins now?
@@ -34,8 +34,8 @@ A parent, supporter, friend, or community member who receives a shared link. The
 
 The organizer workspace at `/boards/:boardId` moves through eight phases, evaluated by `src/features/organizer/lifecycle/organizerLifecycle.ts`.
 
-1. **Create Draft:** Name the board and link the scheduled NFL game. Native blank-board creation is primary; photo import is a recovery path.
-2. **Fill and share:** Allocate selected squares to a person or family with one name and payment status. The first assigned person remains responsible when the public displayed name changes. Explicitly share before drawing game numbers; every team member sees allocations and available squares. Payment and existing private seller metadata stay private; there is no separate buyer/family mode or seller input.
+1. **Create Draft:** Preview a named board before signup, then sign in and link the scheduled NFL game to save. The local preview lasts 24 hours and is never shared automatically. Native blank-board creation is primary; photo import is a recovery path.
+2. **Fill and share:** Allocate selected squares to a person or family with one name and payment status. The first assigned person remains responsible when the public displayed name changes. Explicitly share before drawing game numbers; every team member sees allocations and available squares. Payment and existing private seller metadata stay private. Optional family links preserve responsibility and cannot change payment notes, axes, game, or finalization. Explicit availability is independent of names.
 3. **Reconcile:** Review what blocks publishing and what is only private follow-up. Advisories never block progression.
 4. **Draw:** Securely randomize and commit one fixed set of 0–9 digits per axis. Draft redraws are allowed before publication.
 5. **Preview:** Inspect the exact viewer experience and the public/private boundary before numbers are locked. If already shared, participants continue seeing the selling board without draft axis numbers.
@@ -49,7 +49,7 @@ Use `docs/organizer-journey-contract.md` for the exact control names, phase crit
 
 ## Viewer hierarchy
 
-Before finalization, `/b/:shareCode` renders `SalesBoardViewer`: board identity, selling progress, a family filter, unsold highlighting, numbered board and accessible full square details. Saved changes refresh every 30 seconds while visible and on manual refresh; errors retain an explicitly last-known board. Finalization switches the same link to the game viewer.
+Before finalization, `/b/:shareCode` renders `SalesBoardViewer`: board identity, counts of named and blank squares, a family filter when allocations exist, name/number search, blank highlighting, explicit available-only filtering, numbered board and accessible full square details. Saved changes refresh every 30 seconds while visible and on manual refresh; errors retain an explicitly last-known board. Finalization switches the same link to the game viewer.
 
 The finalized viewer at `/b/:shareCode` is composed by `src/features/viewer/shell/ViewerShell.tsx`. Phone viewers first see board identity, the score and current result, score authority and freshness, and **Find my squares**. Selecting a durable participant identity changes the structure to show:
 
@@ -104,7 +104,8 @@ The ladder is written once, in `src/features/homepage/pricing.ts`. Change it the
 
 ### Public through the board link
 
-- Explicitly shared title, matchup, square IDs, buyer display names and public family allocations
+- Explicitly shared title, matchup, square IDs, display names, public family allocations and availability
+- Optional organizer-written purpose, amount per square, and joining instructions; these are explicitly public text, never extracted from private contact fields
 - Axis digits only after finalization; draft draws remain private
 - Organizer-published payout descriptions
 - Canonical score, winner history, and current-quarter scenarios
@@ -114,6 +115,7 @@ The ladder is written once, in `src/features/homepage/pricing.ts`. Change it the
 - Owner identity, full participant records, purchaser emails
 - Notification verification and delivery state
 - Private seller attribution and paid/unpaid status (public family allocation is a separate, explicitly labelled field)
+- Private family token hashes and reassignment history; only a newly issued private editing link exposes its capability to the organizer
 - Unshared draft data, draft axis numbers, Stripe identifiers, and internal audit history
 
 ### System-only
@@ -145,7 +147,7 @@ Do not use pool, contest, player, guest, bet, wager, or payout-processing langua
 
 ### Later
 
-- Seller accounts or delegated entry
+- Seller accounts
 - Viewer claiming
 - In-app money handling or payouts
 - SMS, co-organizers, non-NFL sports
@@ -171,3 +173,11 @@ Use `docs/product-metrics-and-evidence.md` for qualification, leading metrics, g
 - Gold means a result has been settled or a high-stakes action is being committed.
 - The product is pre-launch. Never invent customers, testimonials, revenue, usage, or fundraising totals.
 - Demonstration data must be labeled when it could be mistaken for real activity.
+
+## Optional family editing and repeat setup
+
+A private family link is a bearer capability, distinct from the public board link. Anyone possessing it can update the specified family's names and explicit availability until expiry, revocation, responsibility change, or finalization. The database locks the board and verifies revision, cell scope, and credential on every read/write. No family can access payment notes, alter responsibility, or publish. Creating a new link for a family revokes its previous links.
+
+An organizer's deliberate pre-finalization reassignment preserves holder names, archives previous private entries, resets payment status to unknown and clears old seller attribution. It requires an explicit payment-note review acknowledgement and invalidates all affected family links. Existing generic payment notes are never reinterpreted as proof of payment.
+
+Use this setup again copies only title and prize descriptions. It creates no board until the organizer selects a new scheduled game and saves. Names, responsibility, availability, payments, axes, identifiers, credentials, scores and subscriptions never carry over.

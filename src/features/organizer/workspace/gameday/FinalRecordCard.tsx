@@ -5,10 +5,11 @@ import { buildResolvedMilestoneRows } from '../../../viewer/milestones/milestone
 
 export interface FinalRecordCardProps {
   winnerHistory: WinnerResolution[];
+  onCreateAnotherBoard?: () => void;
 }
 
 /** The locked record shown once the game reaches its final state: milestones, winners, and a path to the next board. */
-export default function FinalRecordCard({ winnerHistory }: FinalRecordCardProps) {
+export default function FinalRecordCard({ winnerHistory, onCreateAnotherBoard }: FinalRecordCardProps) {
   const rows = buildResolvedMilestoneRows(winnerHistory);
   return (
     <Glass padding="lg" className="flex flex-col gap-4 border-gold/40">
@@ -29,6 +30,7 @@ export default function FinalRecordCard({ winnerHistory }: FinalRecordCardProps)
       )}
       <a
         href="/create"
+        onClick={onCreateAnotherBoard ? (event) => { event.preventDefault(); onCreateAnotherBoard(); } : undefined}
         className="inline-flex items-center justify-center gap-2 self-start rounded-capsule bg-action px-5 h-11 font-ui text-[15px] font-semibold leading-none text-action-text transition-[color,background-color,border-color,scale] hover:bg-action-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action focus-visible:ring-offset-2 focus-visible:ring-offset-ground motion-safe:active:scale-[0.98]"
       >
         Create another board

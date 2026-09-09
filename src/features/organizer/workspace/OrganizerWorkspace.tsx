@@ -1,7 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { projectBoardTemplate, type BoardTemplate } from '../repeat/boardTemplateModel';
 import { Base, Glass, Eyebrow, CapsuleButton, Sheet } from '../../../design/primitives';
 import type {
   BoardData,
+  SquareAvailability,
   EntryMeta,
   GameState,
   LiveGameData,
@@ -39,6 +41,8 @@ import WorkspaceHeader from './WorkspaceHeader';
 import BoardEditor from './BoardEditor';
 import RangeAssignBar, { type RangeAssignInput } from './RangeAssignBar';
 import SquareSheet from './SquareSheet';
+import FamilyAccessCard from './FamilyAccessCard';
+import ParticipationCard from './ParticipationCard';
 import OrganizerIsland from './OrganizerIsland';
 import DrawControl from './DrawControl';
 import ReconcileCard from './ReconcileCard';
@@ -67,6 +71,7 @@ export interface OrganizerWorkspaceProps {
   onAssignOpenSquares: (squares: string[][]) => Promise<void>;
   onReload?: () => Promise<void> | void;
   onOpenViewer?: () => void;
+  onRunAnotherBoard?: (template: BoardTemplate) => void;
   onLogout: () => void;
   isActivated: boolean;
   isPublished: boolean;
@@ -185,6 +190,7 @@ export default function OrganizerWorkspace({
   onAssignOpenSquares,
   onReload,
   onOpenViewer,
+  onRunAnotherBoard,
   onLogout,
   isActivated,
   isPublished,
@@ -203,6 +209,7 @@ export default function OrganizerWorkspace({
     onReload,
   });
 
+  const [familyBusy, setFamilyBusy] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [sharePending, setSharePending] = useState(false);
   const [shareError, setShareError] = useState<string | null>(null);
@@ -213,6 +220,18 @@ export default function OrganizerWorkspace({
   const [selectMode, setSelectMode] = useState(false);
   const [selection, setSelection] = useState<Selection>(() => new Set<number>());
   const [rangeBusy, setRangeBusy] = useState(false);
+  const [privateWritesPending, setPrivateWritesPending] = useState(0);
+  const [privateNotesUncertain, setPrivateNotesUncertain] = useState(false);
+  const withPrivateWrite = async (write: () => Promise<void>) => {
+    setPrivateWritesPending(count => count + 1);
+    try { await write(); }
+    catch (error) { setPrivateNotesUncertain(true); throw error; }
+    finally { setPrivateWritesPending(count => count - 1); }
+  };
+  const reloadFamilyState = async () => {
+    await reloadLatest();
+    setPrivateNotesUncertain(false);
+  };
   // Bumped once a range apply settles so BoardEditor can take focus back even
   // when the apply failed and the selection is still standing.
   const [rangeFocusSignal, setRangeFocusSignal] = useState(0);
@@ -362,7 +381,7 @@ export default function OrganizerWorkspace({
     return null;
   };
 
-  const saveSquare = async (index: number, name: string, meta: EntryMeta, advance: boolean, allocationLabel?: string | null) => {
+  const saveSquare = async (index: number, name: string, meta: EntryMeta, advance: boolean, allocationLabel?: string | null, availability?: SquareAvailability) => {
     const trimmed = name.trim();
     if (trimmed.length > 80) { setAlert('Names must be 80 characters or fewer.'); return; }
     let nextSquares: string[][] = board.squares;
@@ -370,7 +389,7 @@ export default function OrganizerWorkspace({
       const squares = [...current.squares];
       squares[index] = trimmed ? [trimmed] : [];
       nextSquares = squares;
-      return { ...current, squares, allocationLabels: Array.from({ length: 100 }, (_, cell) => cell === index
+      return { ...current, squares, ...(availability ? { availability: Array.from({ length: 100 }, (_, cell) => cell === index ? availability : current.availability?.[cell] ?? 'unspecified') } : {}), allocationLabels: Array.from({ length: 100 }, (_, cell) => cell === index
         ? current.allocationLabels?.[cell] || current.squares[cell]?.[0] || allocationLabel || trimmed || null
         : current.allocationLabels?.[cell] ?? null) };
     });
@@ -378,7 +397,7 @@ export default function OrganizerWorkspace({
 
     if (!activePoolId) return;
     try {
-      await saveEntryMeta(activePoolId, meta);
+      await withPrivateWrite(() => saveEntryMeta(activePoolId, meta));
       onEntryMetaChange(meta);
       setNote(null);
       setAlert(null);
@@ -475,7 +494,7 @@ export default function OrganizerWorkspace({
         await onAssignOpenSquares(nextSquares);
         if (activePoolId) {
           try {
-            await saveEntryMetaBatch(activePoolId, metas);
+            await withPrivateWrite(() => saveEntryMetaBatch(activePoolId, metas));
             metas.forEach((meta) => onEntryMetaChange(meta));
           } catch {
             // The names are live on the published board: rolling back is not
@@ -488,7 +507,7 @@ export default function OrganizerWorkspace({
       } else {
         setBoard((current) => ({ ...current, squares: nextSquares, allocationLabels: nextAllocations }));
         if (activePoolId) {
-          await saveEntryMetaBatch(activePoolId, metas);
+          await withPrivateWrite(() => saveEntryMetaBatch(activePoolId, metas));
           metas.forEach((meta) => onEntryMetaChange(meta));
         }
       }
@@ -508,7 +527,7 @@ export default function OrganizerWorkspace({
     setBoard((current) => ({ ...current, squares: current.squares.map(() => []) }));
     if (!activePoolId) return;
     try {
-      await clearEntryMeta(activePoolId);
+      await withPrivateWrite(() => clearEntryMeta(activePoolId));
       setAlert(null);
     } catch {
       setAlert(CLEAR_META_FAILED);
@@ -722,7 +741,7 @@ export default function OrganizerWorkspace({
 
     if (!activePoolId) return;
     try {
-      await saveEntryMeta(activePoolId, meta);
+      await withPrivateWrite(() => saveEntryMeta(activePoolId, meta));
       onEntryMetaChange(meta);
     } catch {
       setAlert(SQUARE_META_FAILED);
@@ -875,7 +894,7 @@ export default function OrganizerWorkspace({
       <Sheet open={shareOpen} onClose={() => { if (!sharePending) setShareOpen(false); }} title="Share while selling">
         <div className="flex flex-col gap-4">
           <CapsuleButton variant="quiet" className="self-start" disabled={sharePending} onClick={() => setShareOpen(false)}>Cancel</CapsuleButton>
-          <p className="font-ui text-[15px] text-fg-2">Everyone with the link can see buyer names and assigned families. Only you can edit. Private payment and contact notes stay private.</p>
+          <p className="font-ui text-[15px] text-fg-2">Everyone with the link can see buyer names and assigned families. The public link cannot edit. You can separately give a family a private link for its assigned squares. Private payment and contact notes stay private.</p>
           <p className="font-ui text-[15px] text-fg-2">Share now and keep selling. Game numbers appear only after you finalize the board. Sharing uses one board from your season allowance; finalizing this same board uses no additional board.</p>
           {shareError && <>
             <p role="alert" className="text-tone-cardinal">{shareError}</p>
@@ -893,12 +912,13 @@ export default function OrganizerWorkspace({
         index={selectedSquare}
         name={selectedSquare === null ? '' : board.squares[selectedSquare]?.[0] ?? ''}
         allocationLabel={selectedSquare === null ? undefined : board.allocationLabels?.[selectedSquare]}
+        availability={selectedSquare === null ? 'unspecified' : board.availability?.[selectedSquare] ?? 'unspecified'}
         meta={selectedSquare === null ? undefined : entryMeta[selectedSquare]}
         isPublished={isPublished}
         hasNextOpen={openCount > 0}
-        onSave={(index, name, meta, advance, allocationLabel) => void (isPublished
+        onSave={(index, name, meta, advance, allocationLabel, availability) => void (isPublished
           ? savePublishedSquare(index, name, meta)
-          : saveSquare(index, name, meta, advance, allocationLabel))}
+          : saveSquare(index, name, meta, advance, allocationLabel, availability))}
         onClose={() => setSelectedSquare(null)}
       />
 
@@ -949,8 +969,11 @@ export default function OrganizerWorkspace({
   );
 
   if (isPublished) {
+    const runAnotherBoard = () => onRunAnotherBoard
+      ? onRunAnotherBoard(projectBoardTemplate(game))
+      : window.location.assign('/create');
     const gameDayPrimary = finalRecord
-      ? { label: 'Create another board', onClick: () => window.location.assign('/create') }
+      ? { label: 'Create another board', onClick: runAnotherBoard }
       : { label: 'Copy link', onClick: () => void copyViewerLink() };
 
     return (
@@ -963,7 +986,7 @@ export default function OrganizerWorkspace({
           primary={gameDayPrimary}
           secondary={onOpenViewer ? [{ label: 'Open public board', onClick: () => onOpenViewer() }] : undefined}
         />
-        <main aria-label={mainLabel} className="mx-auto max-w-7xl px-4 pt-6 pb-24 lg:pt-8">
+        <main inert={familyBusy} aria-label={mainLabel} className="mx-auto max-w-7xl px-4 pt-6 pb-24 lg:pt-8">
           {header}
           {alertRegion}
           {/* Game-day confirmations stay in the flow: the island collapses, and
@@ -971,7 +994,7 @@ export default function OrganizerWorkspace({
           {note ? <p role="status" className="mt-4 font-ui text-[15px] text-fg-2">{note}</p> : null}
           <div className="mt-8 grid min-w-0 gap-8 lg:grid-cols-[minmax(0,1fr)_360px] [&>*]:min-w-0">
             <section id="workspace-board" aria-label="Board" className="flex min-w-0 max-w-full flex-col gap-6">
-              {finalRecord && <FinalRecordCard winnerHistory={correctionHistory} />}
+              {finalRecord && <FinalRecordCard winnerHistory={correctionHistory} onCreateAnotherBoard={runAnotherBoard} />}
               <SharePanel shareUrl={shareUrl} onOpenViewer={() => onOpenViewer?.()} />
               <ScoreAuthorityCard
                 game={game}
@@ -1044,6 +1067,7 @@ export default function OrganizerWorkspace({
 
   return (
     <Base kind="cream">
+      {familyBusy && <p role="status" className="px-5 py-3 text-sm text-fg-2">Updating family access. Board editing will resume when this finishes.</p>}
       <OrganizerIsland
         filled={assignedCount}
         paid={paidCount}
@@ -1053,11 +1077,11 @@ export default function OrganizerWorkspace({
         secondary={secondary}
         note={islandNote}
       />
-      <main aria-label={mainLabel} className="mx-auto max-w-7xl px-4 pt-6 pb-24 lg:pt-8">
+      <main inert={familyBusy} aria-label={mainLabel} className="mx-auto max-w-7xl px-4 pt-6 pb-24 lg:pt-8">
         {header}
         <Glass className="mt-6 flex flex-col gap-4" padding="lg">
           <Eyebrow>{isShared ? 'Selling · Shared board' : 'Selling · Set up your board'}</Eyebrow>
-          <p className="font-ui text-[15px] text-fg-2">{assignedCount} assigned · {openCount} available. Allocate squares to a person or family. Update display names as needed; the original person stays responsible. Draw game numbers when allocations are finished.</p>
+          <p className="font-ui text-[15px] text-fg-2">{assignedCount} squares with names · {openCount} blank squares. Allocate squares to a person or family. Update display names as needed; the original person stays responsible. Draw game numbers when allocations are finished.</p>
           <div className="flex flex-wrap gap-2">
             {isShared && shareUrl ? <>
               <CapsuleButton onClick={() => void copyViewerLink()}>Copy link</CapsuleButton>
@@ -1121,6 +1145,10 @@ export default function OrganizerWorkspace({
               />
             )}
             </div>
+            {privateWritesPending > 0 && <p role="status" className="text-sm text-fg-2">Saving private square notes. Family access will resume when this finishes.</p>}
+            {privateNotesUncertain && <div role="status" className="text-sm text-fg-2"><p>Refresh private notes before changing family access.</p><CapsuleButton variant="quiet" disabled={privateWritesPending > 0} onClick={() => void reloadFamilyState().catch(() => setAlert('Private notes could not be refreshed. Try again.'))}>Refresh private notes</CapsuleButton></div>}
+            {activePoolId && <FamilyAccessCard boardId={activePoolId} labels={board.allocationLabels ?? []} clean={saveState.status === 'clean' && payoutDraft === null && privateWritesPending === 0 && !privateNotesUncertain && !rangeBusy} flush={flush} onReload={reloadFamilyState} onBusy={setFamilyBusy} />}
+            <ParticipationCard details={board.participation ?? {}} onChange={(participation) => setBoard(current => ({ ...current, participation }))} />
             <ReconcileCard
               model={model}
               unpaidCount={unpaidCount}

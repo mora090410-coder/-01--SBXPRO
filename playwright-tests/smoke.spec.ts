@@ -67,8 +67,9 @@ test('find-squares dialog traps focus, closes with Escape, and returns focus', a
   await expect(trigger).toBeFocused();
 });
 
-test('create route redirects unauthenticated users into login flow', async ({ page }) => {
+test('create route offers an unsaved preview before authentication', async ({ page }) => {
   await page.goto('/create');
-  await expect(page).toHaveURL(/\/login/);
-  await expect(page.getByRole('heading', { name: /Create your organizer account|Welcome back/i })).toBeVisible();
+  await expect(page).toHaveURL(/\/create/);
+  await expect(page.getByRole('region', {name:'Board preview'})).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Save and continue' })).toBeVisible();
 });

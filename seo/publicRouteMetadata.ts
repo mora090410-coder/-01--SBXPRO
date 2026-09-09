@@ -93,6 +93,8 @@ export const PUBLIC_ROUTE_METADATA: PublicRouteMetadata[] = [
     'Open a complete GridOne sample board with score context, winner scenarios, and no viewer account.',
     { noIndex: true },
   ),
+  websiteRoute('/create', 'Preview your board | GridOne', 'Name and preview a football squares board before saving it.', { noIndex: true }),
+  websiteRoute('/family', 'Your assigned squares | GridOne', 'Update names and availability on the squares assigned to your family.', { noIndex: true }),
   websiteRoute(
     '/login',
     'Organizer sign in | GridOne',

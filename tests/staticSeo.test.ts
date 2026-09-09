@@ -25,7 +25,7 @@ const publicAppPaths = (): string[] => {
     (match) => match[1],
   );
   // Auth-gated routes; none are public SEO surfaces.
-  const excludedPaths = new Set(['/boards/:boardId', '/dashboard', '/create']);
+  const excludedPaths = new Set(['/boards/:boardId', '/dashboard']);
 
   return literalRoutePaths.filter((path) => (
     path !== '*'

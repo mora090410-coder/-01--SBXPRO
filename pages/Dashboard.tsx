@@ -3,10 +3,11 @@ import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../services/supabase';
 import usePoolData from '../hooks/usePoolData';
-import { BoardData, GameState } from '../types';
+import { BoardData, GameState, PayoutDescriptions } from '../types';
 import { Base, CapsuleButton, CapsuleTag, Eyebrow, Glass, IslandRings } from '../src/design/primitives';
 import { hasBoardActivation } from '../utils/boardActivation';
 import { ghostLink } from '../src/features/homepage/sections/cta';
+import { projectBoardTemplate } from '../src/features/organizer/repeat/boardTemplateModel';
 
 interface Contest {
     id: string;
@@ -14,6 +15,7 @@ interface Contest {
     created_at: string;
     status: string;
     settings: GameState;
+    payout_descriptions?: PayoutDescriptions | null;
     board_data?: BoardData | null;
     published_at?: string | null;
     shared_at?: string | null;
@@ -160,7 +162,7 @@ const Dashboard: React.FC = () => {
         try {
             const { data, error } = await supabase
                 .from('contests')
-                .select('id, title, created_at, settings, board_data, status, published_at, shared_at, board_activations(id)')
+                .select('id, title, created_at, settings, payout_descriptions, board_data, status, published_at, shared_at, board_activations(id)')
                 .eq('owner_id', user.id)
                 .order('created_at', { ascending: false });
 
@@ -350,6 +352,13 @@ const Dashboard: React.FC = () => {
                                         </div>
                                         <div className="flex flex-wrap items-center gap-5">
                                             <Link to={`/boards/${contest.id}`} className={CAPSULE_LINK} aria-label={`Manage ${boardName}`}>Manage board</Link>
+                                            <CapsuleButton
+                                                variant="quiet"
+                                                aria-label={`Run another board using ${boardName}`}
+                                                onClick={() => navigate('/create', { state: {
+                                                    boardTemplate: projectBoardTemplate({ title: boardName, payoutDescriptions: contest.payout_descriptions }),
+                                                } })}
+                                            >Run another board</CapsuleButton>
                                             <IslandRings
                                                 rings={[
                                                     {

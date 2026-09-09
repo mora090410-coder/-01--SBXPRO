@@ -102,6 +102,11 @@ for (const width of [390, 1440]) {
     await expect(viewer.getByRole('gridcell')).toHaveCount(100);
     await expect(viewer.getByRole('gridcell', { name: 'Square 12, Mora family, Mora family', exact: true })).toBeVisible();
     await expect(viewer.getByRole('link', { name: 'Manage board' })).toHaveCount(0);
+    await viewer.getByRole('button', { name: 'How to join', exact: true }).click();
+    await expect(viewer.getByText(/Contact the person who shared this board/)).toBeVisible();
+    await viewer.getByRole('searchbox', { name: 'Find a name or square number', exact: true }).fill('12');
+    await expect(viewer.getByRole('region', { name: 'Square details', exact: true }).getByRole('listitem')).toHaveCount(1);
+    await viewer.getByRole('button', { name: 'Clear filters', exact: true }).click();
     await viewer.getByLabel('Family', { exact: true }).selectOption('Mora family');
     await expect(viewer.getByRole('region', { name: 'Square details', exact: true }).getByRole('listitem')).toHaveCount(3);
     await expect(viewer.getByRole('gridcell')).toHaveCount(100);
@@ -136,7 +141,7 @@ for (const width of [390, 1440]) {
     expect(fixture.privateEntries.get(0)?.paid_status).toBe('paid');
     await viewer.getByRole('button', { name: 'Refresh board', exact: true }).click();
     await expect(viewer.getByRole('gridcell', { name: 'Square 1, Alice Long Buyer Name, Mora family', exact: true })).toBeVisible();
-    await viewer.getByRole('button', { name: 'Highlight unsold', exact: true }).click();
+    await viewer.getByRole('button', { name: 'Highlight blank squares', exact: true }).click();
     await expect(viewer.getByRole('region', { name: 'Square details', exact: true }).getByRole('listitem')).toHaveCount(0);
 
     await page.getByRole('button', { name: 'Draw numbers', exact: true }).click();

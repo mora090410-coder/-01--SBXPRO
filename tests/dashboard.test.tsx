@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import Dashboard from '../pages/Dashboard';
 
@@ -104,6 +104,22 @@ beforeEach(() => {
 });
 
 describe('organizer dashboard', () => {
+  it('starts another board with only reusable setup and no immediate server mutation', async () => {
+    const source = { ...rows[0], settings: { title: 'Old title', gameExternalId: 'old-game', payoutDescriptions: { Q1: '$25 stale' } }, payout_descriptions: { Q1: '$100' } };
+    useContests([source]);
+    const Destination = () => <output aria-label="Create navigation">{JSON.stringify(useLocation().state)}</output>;
+    render(<MemoryRouter initialEntries={['/dashboard']}><Routes>
+      <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/create" element={<Destination />} />
+    </Routes></MemoryRouter>);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Run another board using Chiefs Fundraiser' }));
+
+    expect(screen.getByLabelText('Create navigation')).toHaveTextContent(JSON.stringify({ boardTemplate: { title: 'Chiefs Fundraiser', payoutDescriptions: { Q1: '$100' } } }));
+    expect(fetch).not.toHaveBeenCalled();
+    expect(mocks.deleteEq).not.toHaveBeenCalled();
+    expect(source.board_data).toEqual(rows[0].board_data);
+  });
   it('renders a row per board with its matchup and a link to the board', async () => {
     useContests(rows);
     renderDashboard();
@@ -125,7 +141,7 @@ describe('organizer dashboard', () => {
     await screen.findByRole('link', { name: 'Chiefs Fundraiser' });
     const query = mocks.from.mock.results[0].value;
     expect(query.select).toHaveBeenCalledWith(
-      'id, title, created_at, settings, board_data, status, published_at, shared_at, board_activations(id)',
+      'id, title, created_at, settings, payout_descriptions, board_data, status, published_at, shared_at, board_activations(id)',
     );
   });
 

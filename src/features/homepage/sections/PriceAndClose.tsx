@@ -7,8 +7,8 @@ import { primaryLink, quietLink } from './cta';
 const faq = [
   { q: 'Do viewers need an account?', a: 'No. Viewers open the link without creating an account. Only the organizer signs in.' },
   { q: 'Does GridOne collect square money?', a: `No. ${MONEY_BOUNDARY} Squares and payouts stay between you and your group.` },
-  { q: 'When do I pay?', a: 'Building, editing, and previewing are free on every plan. Your first published board is free. You pay only when you publish a second board.' },
-  { q: 'Who can edit the board?', a: 'Only the signed-in organizer. Everyone else sees the same live board. Published names change only through a visible, dated correction.' },
+  { q: 'When do I pay?', a: 'Building, editing, and previewing are free on every plan. Your first published board is free. Sharing a board before the game uses the same allowance as publishing it; finalizing that board never counts twice. Upgrade when you need another board.' },
+  { q: 'Who can edit the board?', a: 'The organizer controls the board and can give a family a private link to update its assigned names before finalization. Public viewer links cannot edit. Published names change only through a visible, dated correction.' },
 ];
 
 /**
@@ -71,7 +71,7 @@ export function PriceAndClose() {
 
         <Reveal className="relative z-10 flex flex-col gap-3 max-w-[460px]">
           <p className="font-ui text-[15px] text-fg-3">2026 season</p>
-          <h2 className="font-ui font-medium tracking-[-0.05em] text-[36px] leading-[1.05] text-fg md:text-[56px]">Free to start. Pay when you publish another.</h2>
+          <h2 className="font-ui font-medium tracking-[-0.05em] text-[36px] leading-[1.05] text-fg md:text-[56px]">Free to start. Ready for your next board.</h2>
           <p className="font-ui text-[17px] leading-[1.5] text-fg-2">{PRICING_SENTENCE}</p>
           <p className="font-ui text-[15px] text-fg-3">{MONEY_BOUNDARY}</p>
         </Reveal>

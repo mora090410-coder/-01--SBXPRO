@@ -171,3 +171,11 @@ Sharing and finalization are separate. The permanent IDs 1–100 identify positi
 The visible selling summary contains `Share board` before sharing, or `Copy link` and `Open shared board` afterward. The next draw/preview action is visible without expanding Organizer status. `My boards` returns to `/dashboard` throughout. Dirty, failed, or conflicted saves block first sharing. `Share while selling` confirms public names and allocations, private payment/contact notes, and use of one seasonal allowance. `Enable shared board` calls the revision-checked owner endpoint. All 100 squares may be unsold when sharing; finalization still requires a buyer and explicit OPEN acknowledgment.
 
 For already shared boards, `Preview final board` leads to `Review and lock numbers` then `Lock game numbers`. Participants do not see draft axes; the same URL transitions only after final publication. `Manage board` closes success into the organizer workspace. Existing finalized-board edit/correction boundaries remain intact.
+
+## Approved optional family workflow
+
+The setup page includes collapsed **Help people join** and **Family access (optional)** sections. Public purpose/price/instructions are explicitly labelled; private contacts are never prefilled. **Availability** is a separate square field with Not specified, Available and Not available; a name never sets availability.
+
+**Create private family link** rotates a seven-day scoped link. **Revoke family links** ends that family's access. Only a clean saved draft can perform these actions. **Change responsible family** shows selected squares and previous/new families and requires payment-note acknowledgement; names remain unchanged, old payment notes are archived/reset and previous affected links stop working. Finalized boards never show these controls.
+
+The family editor exposes only its assigned names and availability. Save failures preserve input. Revision conflict disables resubmission until a deliberate reload, with unsaved-change confirmation.

@@ -64,7 +64,18 @@ export interface QuarterAxes {
   Q4: (number | null)[];  // Q4 is also used for Final score
 }
 
+export type SquareAvailability = 'unspecified' | 'available' | 'unavailable';
+export interface ParticipationDetails {
+  purpose?: string;
+  instructions?: string;
+  squarePrice?: string;
+}
+
 export interface BoardData {
+  /** Explicit public organizer instructions; never populated from private contact notes. */
+  participation?: ParticipationDetails;
+  /** An offer is independent of a displayed name or a private payment note. */
+  availability?: SquareAvailability[];
   leftAxis: (number | null)[];   // Standard board (backward compatible)
   topAxis: (number | null)[];     // Standard board (backward compatible)
   squares: string[][];

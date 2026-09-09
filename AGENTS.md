@@ -23,7 +23,7 @@ GridOne is a production football-squares organizer and game-day viewer. Product 
 - Organization: $79 per season for up to 50 published boards plus the documented organization features.
 - The ladder is written once, in `src/features/homepage/pricing.ts`. `tests/pricingCopyConsistency.test.ts` enforces it across the customer-facing corpus.
 - GridOne never collects square money, holds funds, adjudicates off-platform payment, or pays winners.
-- One signed-in organizer owns and edits each board; viewers need no account and cannot edit.
+- One signed-in organizer owns each board; public viewers cannot edit. Optional private family links may edit scoped names/availability before finalization, with database-enforced revision, revocation, and scope checks.
 - Manual score authority is canonical until deliberately returned to automatic; stale automatic data never overwrites manual or newer state.
 - One fixed 0–9 top/side axis set per board. Do not flatten legacy dynamic boards without an approved preservation plan.
 - OPEN outcomes stay OPEN, do not roll over, and send no winner email.

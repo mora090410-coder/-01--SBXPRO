@@ -56,7 +56,7 @@ const SECTION_HEADINGS: Array<[string, RegExp]> = [
   ['score', /^Scores update themselves\.$/],
   ['parent moments', /^Three answers, no scrolling\.$/],
   ['organizer', /^One screen\. No wizard\.$/],
-  ['pricing', /^Free to start\. Pay when you publish another\.$/],
+  ['pricing', /^Free to start\. Ready for your next board\.$/],
   ['close', /^Ready to build the board\?$/],
 ];
 
@@ -303,12 +303,13 @@ test('the board fills its squares before a single axis digit is drawn', async ({
   expect(midway.digits, `no axis digit drawn at ${midway.progress}`).toBe(0);
 });
 
-test('demo handoff still leads to signup with create intent', async ({ page }) => {
+test('demo handoff leads to a personal board preview', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('link', { name: 'See a live board' }).first().click();
   await expect(page.getByText('This is a sample board. Ready to run yours?')).toBeVisible();
-  await page.getByRole('button', { name: 'Create your free board' }).click();
-  await expect(page).toHaveURL(/\/login\?mode=signup&returnTo=%2Fcreate/);
+  await page.getByRole('button', { name: 'Create your own board' }).click();
+  await expect(page).toHaveURL(/\/create/);
+  await expect(page.getByRole('region', {name:'Board preview'})).toBeVisible();
 });
 
 test('no-JS fallback keeps the promise, the actions, and the boundary', async ({ browser }) => {

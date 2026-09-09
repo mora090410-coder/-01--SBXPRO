@@ -4,7 +4,7 @@ import { beforeEach, expect, it, vi } from 'vitest';
 const m = vi.hoisted(() => ({ pool: {} as any, scoring: vi.fn() }));
 vi.mock('../hooks/usePoolData', () => ({ usePoolData: () => m.pool, INITIAL_GAME: {} }));
 vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: null, loading: false }) }));
-vi.mock('../hooks/useContestEntries', () => ({ useContestEntries: () => ({ entryMetaByIndex: {}, setEntryMetaByIndex: vi.fn() }) }));
+vi.mock('../hooks/useContestEntries', () => ({ useContestEntries: () => ({ entryMetaByIndex: {}, hasLoadedEntries: true, setEntryMetaByIndex: vi.fn() }) }));
 vi.mock('../hooks/useBoardActions', () => ({ useBoardActions: () => ({ handlePublish: vi.fn() }) }));
 vi.mock('../hooks/useLiveScoring', () => ({ useLiveScoring: (...args: any[]) => { m.scoring(...args); return { liveData: { leftScore: 0, topScore: 0, quarterScores: {}, state: 'pre', period: 0 }, winnerHistory: [], pendingMilestones: [], liveStatus: 'idle' }; } }));
 vi.mock('../services/supabase', () => ({ supabase: {} }));
