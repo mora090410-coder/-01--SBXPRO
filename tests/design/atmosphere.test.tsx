@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs';
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -335,66 +334,5 @@ describe('IslandRings growOnEnter', () => {
     render(<IslandRings rings={rings} growOnEnter />);
     expect(observer.observed).toHaveLength(2);
     rect.mockRestore();
-  });
-});
-
-describe('device rim light', () => {
-  const tokens = readFileSync('src/design/tokens.css', 'utf8');
-  const rule = tokens.slice(tokens.indexOf('.device-rim::before'), tokens.indexOf('}', tokens.indexOf('mask-composite: exclude')));
-
-  it('is a single-hue gradient, not a multi-color one', () => {
-    const stops = [...rule.matchAll(/rgba?\([^)]*\)|var\(--g-rim[\w-]*\)/g)].map(([s]) => s);
-    // Every stop resolves to one of the three white rim tokens: one hue, three alphas.
-    expect(stops.length).toBeGreaterThan(2);
-    for (const stop of stops) expect(stop).toMatch(/^var\(--g-rim(-soft|-none)?\)$/);
-    for (const name of ['--g-rim', '--g-rim-soft', '--g-rim-none']) {
-      expect(tokens).toMatch(new RegExp(`${name}:\\s*rgba\\(255, 255, 255, [\\d.]+\\)`));
-    }
-  });
-
-  it('is an edge, not a corner glow: the gradient is directional and fully out before halfway', () => {
-    expect(rule).toContain('linear-gradient(');
-    expect(rule).not.toContain('radial-gradient');
-    expect(rule).toMatch(/linear-gradient\(\s*145deg/);
-    const lastStop = Number(rule.match(/var\(--g-rim-none\)\s*(\d+)%/)![1]);
-    expect(lastStop).toBeLessThanOrEqual(50);
-  });
-
-  it('cannot change the frame box or add overflow, and is not animated', () => {
-    expect(rule).toContain('position: absolute');
-    expect(rule).toContain('inset: 0');
-    expect(rule).toContain('pointer-events: none');
-    expect(rule).not.toMatch(/animation|transition/);
-  });
-
-  it('is defined once, as a containing block plus its own stacking context and nothing else', () => {
-    const frame = readFileSync('src/features/homepage/renders/PhoneFrame.tsx', 'utf8');
-    // `isolate` scopes the pseudo-element's `z-index: 1` to the frame instead
-    // of letting it join an ancestor's stacking context.
-    expect(frame).toMatch(/export const RIM = 'relative isolate device-rim'/);
-    expect(rule).toContain('z-index: 1');
-    // No radius of its own: the rim inherits the frame's, and the frame's is
-    // `Glass`'s `rounded-card`. The dead 32px override is gone from the markup
-    // (comments stripped first, since one explains why it left).
-    const code = frame.replace(/\/\*[\s\S]*?\*\//g, '');
-    expect(code).not.toMatch(/rounded-/);
-    // The exported hover lift is untouched: still `translate`, still motion-safe.
-    expect(frame).toContain('motion-safe:hover:-translate-y-1');
-    expect(frame).toContain("transitionProperty: 'background-color, translate, box-shadow'");
-  });
-
-  it('reaches every framed artifact on the page from that one definition', () => {
-    const frame = readFileSync('src/features/homepage/renders/PhoneFrame.tsx', 'utf8');
-    const organizer = readFileSync('src/features/homepage/renders/OrganizerPreview.tsx', 'utf8');
-    // Both phone aspects here...
-    expect([...frame.matchAll(/\$\{RIM\}/g)]).toHaveLength(2);
-    // ...and the organizer preview, which shares the class rather than the CSS.
-    expect(organizer).toMatch(/import \{[^}]*\bRIM\b[^}]*\} from '\.\/PhoneFrame'/);
-    expect([...organizer.matchAll(/\$\{RIM\}/g)]).toHaveLength(1);
-    // The rim can only ever be clipped, never scrolled to: the frame clips.
-    expect(organizer).toContain('overflow-hidden');
-    // No second copy of the gradient anywhere outside `tokens.css`.
-    expect(organizer).not.toContain('linear-gradient');
-    expect(frame).not.toContain('linear-gradient');
   });
 });

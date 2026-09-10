@@ -344,7 +344,7 @@ test.describe('Slice 2 signed-out accessibility contract automation', () => {
     await page.goto('/');
     for (const control of [
       page.getByRole('link', { name: 'Create your free board' }).first(),
-      page.getByRole('link', { name: 'See a live board' }).first(),
+      page.getByRole('link', { name: 'Explore a sample board' }).first(),
     ]) {
       await expectTouchTarget(control);
       await control.focus();

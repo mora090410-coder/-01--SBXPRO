@@ -141,147 +141,6 @@
   animation: spotlight-breathe 12s ease-in-out infinite alternate;
 }
 
-/* Live dot. Decorative only: the word "Live" beside it carries the meaning, so
-   the pulse never encodes state. Opacity only, so it cannot shift layout. */
-@keyframes live-dot-pulse {
-  from { opacity: 1; }
-  to { opacity: 0.35; }
-}
-.live-dot {
-  animation: live-dot-pulse 2.4s ease-in-out infinite alternate;
-}
-
-/* Winning-cell entry pulse for BoardFragment. Decorative only: the fragment's
-   role="img" label already names the winning square and the cell's gold fill is
-   the same with or without the pulse, so no meaning is carried by motion. One
-   900ms ring, then rest. box-shadow only, so it cannot shift layout or add
-   scrollable overflow. Neutralized in the reduced-motion block below. */
-@keyframes board-cell-pulse {
-  from { box-shadow: 0 0 0 0 color-mix(in srgb, var(--g-gold) 70%, transparent); }
-  to { box-shadow: 0 0 0 10px color-mix(in srgb, var(--g-gold) 0%, transparent); }
-}
-.board-cell-pulse {
-  animation: board-cell-pulse 900ms var(--g-ease-state) 1;
-}
-
-/* ── Rim light on the device frame. ──────────────────────────────────────────
-   A hard, ~1px specular edge along the frame's top-left, the detail that
-   separates a rendered product shot from a flat panel. Static and purely
-   decorative: no animation, no hover state, nothing to neutralize under
-   reduced motion.
-
-   It is a HAIRLINE, not a glow. The gradient runs at 145deg — down and to the
-   right — and is fully out by 46%, so what lands on screen is a bright edge on
-   the top-left that dies away along the frame's flank. Anti-slop rule 8 bans
-   corner glows and multi-color gradients; this is one hue at three alphas,
-   confined to a 1px ring, and it is brightest along the whole top and left
-   EDGE rather than pooled at the corner.
-
-   Zero effect on layout: an absolutely positioned pseudo-element contributes
-   no size, `inset: 0` cannot exceed its frame, and the frame already carries
-   `overflow-hidden`, so the rim can never add a scrollable pixel.
-
-   `padding: 1px` plus the two-layer mask is the border-gradient trick: the
-   element paints the gradient across its whole box, then the mask subtracts
-   the content box and leaves only the 1px padding ring, which follows the
-   inherited 32px radius exactly. It is wrapped in @supports because an engine
-   without mask compositing would paint the UNSUBTRACTED gradient — a soft
-   wash over the artifact, which is precisely the corner glow rule 8 bans.
-   Where the trick is unavailable the frame simply has no rim. */
-@supports ((-webkit-mask-composite: xor) or (mask-composite: exclude)) {
-  .device-rim::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    z-index: 1;
-    border-radius: inherit;
-    padding: 1px;
-    pointer-events: none;
-    background: linear-gradient(
-      145deg,
-      var(--g-rim) 0%,
-      var(--g-rim) 7%,
-      var(--g-rim-soft) 22%,
-      var(--g-rim-none) 46%
-    );
-    -webkit-mask:
-      linear-gradient(#000 0 0) content-box,
-      linear-gradient(#000 0 0);
-    -webkit-mask-composite: xor;
-    mask:
-      linear-gradient(#000 0 0) content-box,
-      linear-gradient(#000 0 0);
-    mask-composite: exclude;
-  }
-}
-
-/* ── BoardFill. One style write per frame. ───────────────────────────────────
-   The root of the board carries `--fill-progress`, 0 to 1. Each cell carries a
-   `--fill-threshold`, fixed at render from its place in the fill order. A cell
-   then works out its own opacity, so a scroll frame is ONE setProperty on ONE
-   element rather than a hundred class toggles. See
-   src/features/homepage/artifacts/BoardFill.tsx.
-
-   `--fill-progress` inherits: it is written once on the root and has to reach
-   every cell and every axis digit below it. Registering it `inherits: false`
-   would hand each descendant the initial value instead — 0 — and the board
-   would never fill, which is the one mistake this pair of registrations is
-   easiest to make.
-
-   `--fill-threshold` does NOT inherit, and that is equally deliberate. It is
-   read on the exact element that declares it, so inheritance buys nothing and
-   costs something real: it would leak a square's threshold into the text node
-   wrapper inside it, and it would leak an axis digit's threshold to anything
-   nested there later. Both rules below are written so the value is consumed on
-   the declaring element, never on a child or a pseudo-element — a registered
-   non-inheriting property does not reach either.
-
-   Registration also makes both values type-safe. An invalid or missing write
-   substitutes the `<number>` initial value rather than poisoning the whole
-   declaration, so `clamp()` always resolves and the board can never end up
-   blank because of a bad frame. */
-@property --fill-progress {
-  syntax: '<number>';
-  inherits: true;
-  initial-value: 0;
-}
-@property --fill-threshold {
-  syntax: '<number>';
-  inherits: false;
-  initial-value: 0;
-}
-
-/* The empty square: a hairline outline and nothing else. This layer never
-   changes opacity, so the lattice stays visible for the whole fill. */
-.board-fill-cell {
-  box-shadow: inset 0 0 0 1px var(--g-hairline);
-}
-
-/* The resting state is the FINISHED board. A board with no `data-fill` gets no
-   rule at all: full squares, still digits, no transition. Only the two blocks
-   below react to progress, and they apply only while a driver is attached. */
-[data-fill="on"] .board-fill-in {
-  opacity: clamp(0, calc((var(--fill-progress) - var(--fill-threshold)) * 12), 1);
-}
-
-/* Digits draw AFTER the squares, which is the real order of operations on a
-   board and the thing organizers most often get backwards. Thresholds start at
-   0.85, past the last square's 0.76.
-
-   The roll is scrubbed, not played: `paused` freezes the animation and the
-   negative delay picks the frame, so progress drives it with the same single
-   write and no timer of its own. `both` holds the from-state through the
-   positive-delay phase, which is every frame before the digit's threshold. */
-[data-fill="on"] .board-fill-axis {
-  animation: digit-roll 1s var(--g-ease-state) both paused;
-  /* -20s, not -10s: the ramp must finish the last digit before progress
-     reaches exactly 1.0. A driver that plateaus at 0.95 would otherwise rest
-     the axis rows permanently half-rolled, with no way for the reader to
-     finish them. The squares already carry that slack; this gives it to the
-     digits too. */
-  animation-delay: calc((var(--fill-progress) - var(--fill-threshold)) * -20s);
-}
-
 /* Reveal. The resting state is VISIBLE: an element with no `data-reveal`
    attribute has no transition and no transform, so no-JS, no-observer, and
    server renders show finished content. `Reveal` only adds the attribute from
@@ -305,14 +164,6 @@
     animation: none;
     scale: none;
   }
-  .live-dot {
-    animation: none;
-    opacity: 1;
-  }
-  .board-cell-pulse {
-    animation: none;
-    box-shadow: none;
-  }
   [data-reveal] {
     transition: none;
     transition-delay: 0ms !important;
@@ -321,17 +172,7 @@
     opacity: 1;
     transform: none;
   }
-  /* Second guard on BoardFill. The component already declines to set
-     `data-fill` when the preference is set, but the preference can flip after
-     the attribute is on; this makes the finished board the answer either way. */
-  [data-fill="on"] .board-fill-in {
-    opacity: 1;
-  }
-  [data-fill="on"] .board-fill-axis {
-    animation: none;
-    opacity: 1;
-    transform: none;
-  }
+
 }
 
 /* Print. A reveal that has not fired yet sits at `opacity: 0`, and print never
@@ -347,16 +188,7 @@
     opacity: 1;
     transform: none;
   }
-  /* Same reasoning for the board: print never scrolls, so a half-filled board
-     is the only thing a printed page could ever catch. Print the finished one. */
-  [data-fill="on"] .board-fill-in {
-    opacity: 1;
-  }
-  [data-fill="on"] .board-fill-axis {
-    animation: none;
-    opacity: 1;
-    transform: none;
-  }
+
 }
 
 /* Safari < 16 and Firefox < 97 do not support `overflow: clip`, so every

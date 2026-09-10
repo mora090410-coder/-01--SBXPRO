@@ -54,15 +54,7 @@ Large, soft ground light for one section. Derived with `color-mix` from the lock
 
 ### Rim light
 
-A hard, ~1px specular edge along the top-left of every framed artifact on the homepage (`.device-rim`, exported as `RIM` from `PhoneFrame` and applied by both phone aspects and `OrganizerPreview`, so all four frames read alike). One hue — white — at three alphas, so it is a highlight and not a second color. Static and decorative: no animation, no hover state, nothing for reduced motion to switch off. The frames carry no radius of their own — the rim inherits `Glass`'s `rounded-card`, 20px.
-
-| Meaning | CSS variable | Tailwind | Value |
-|---|---|---|---|
-| Rim highlight | `--g-rim` | used by `.device-rim` | white 55% |
-| Rim falloff | `--g-rim-soft` | used by `.device-rim` | white 14% |
-| Rim end | `--g-rim-none` | used by `.device-rim` | white 0% |
-
-The end stop is written `rgba(255, 255, 255, 0)` and not `transparent`, which is transparent *black*: interpolating white to it in sRGB walks the gradient through grey and reads as a smudge on the frame's edge. The rule is wrapped in `@supports` for mask compositing, because an engine that cannot subtract the content box would paint the whole gradient as a soft wash over the artifact — the corner glow DESIGN.md rule 8 bans. Where the trick is unavailable the frame simply has no rim.
+The former homepage device frames and their rim CSS were retired in the approved editorial redesign. The palette tokens `--g-rim`, `--g-rim-soft`, and `--g-rim-none` remain reserved; the homepage no longer consumes them. Product excerpts use the standard surface and cell borders.
 
 ## Type
 

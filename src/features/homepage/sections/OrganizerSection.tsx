@@ -1,34 +1,39 @@
-import React, { useLayoutEffect, useRef } from 'react';
-import { Reveal, SectionTone } from '../../../design/primitives';
-import { OrganizerPreview } from '../renders/OrganizerPreview';
-import './studioChapters.css';
+import React from 'react';
+import { demoGame } from '../demoData';
+import { MONEY_BOUNDARY } from '../pricing';
+import { ORGANIZER_FILLED, organizerDemoBoard } from '../renders/organizerDemoData';
+
+const shownSquares = [0, 1, 61, 62];
 
 export function OrganizerSection() {
-  const previewRef = useRef<HTMLDivElement>(null);
-  useLayoutEffect(() => {
-    const preview = previewRef.current;
-    if (!preview || typeof ResizeObserver === 'undefined') return;
-    const sync = () => preview.style.setProperty('--g-studio-organizer-scale', String((preview.clientWidth - 2) / 800));
-    sync();
-    const observer = new ResizeObserver(sync);
-    observer.observe(preview);
-    return () => observer.disconnect();
-  }, []);
   return (
-    <section data-sc-act="flow" className="studio-organizer relative overflow-x-clip" aria-labelledby="studio-organizer-heading">
-      <SectionTone tone="gold" side="right" />
-      <div className="studio-chapter relative z-10">
-        <Reveal className="studio-organizer-intro studio-chapter-intro">
-          <h2 id="studio-organizer-heading">One screen. No wizard.</h2>
-          <div>
-            <p>Name the board. Add your names. Draw the numbers, preview your group’s link, then publish.</p>
-            <p className="studio-organizer-detail">You control the board. Payment and seller details stay private. OPEN squares stay visible.</p>
-          </div>
-        </Reveal>
-        <Reveal className="studio-organizer-artifact" delay={120}>
-          <div className="studio-organizer-caption"><span>YOUR ORGANIZER WORKSPACE</span><span>Sample board</span></div>
-          <div ref={previewRef}><OrganizerPreview className="studio-organizer-preview" /></div>
-        </Reveal>
+    <section data-base="cream" className="editorial-organizer" aria-labelledby="organizer-heading">
+      <div className="editorial-section">
+        <header className="editorial-intro">
+          <p className="editorial-kicker">Before kickoff</p>
+          <h2 id="organizer-heading">Less paper. Less chasing.</h2>
+          <p>Names, open squares, and what comes next. Keep the preparation in one place, then share one link with your group.</p>
+        </header>
+        <div className="editorial-organizer-layout">
+
+          <section className="editorial-workspace" aria-label="Sample organizer workspace">
+            <header><p className="editorial-kicker">Sample organizer workspace</p><h3>{demoGame.title}</h3><p>Chiefs at Eagles</p></header>
+            <div className="editorial-workspace-status"><span><strong>{ORGANIZER_FILLED}</strong> filled</span><span><strong>{100 - ORGANIZER_FILLED}</strong> open</span><span>Numbers not drawn</span></div>
+            <div className="editorial-workspace-detail">
+              <div><p className="editorial-small-label">Selected excerpts from 100 squares</p><ol className="editorial-square-list" aria-label="Sample square assignments">
+                {shownSquares.map(index => <li key={index} className={index === 0 ? 'is-selected' : ''}><span>Square {String(index + 1).padStart(2, '0')}</span><strong>{organizerDemoBoard.squares[index][0] || 'OPEN'}</strong>{index === 0 && <span>Selected</span>}</li>)}
+              </ol></div>
+              <aside className="editorial-square-detail" aria-label="Sample selected square details"><h4>Square 01</h4><dl><dt>Name on the board</dt><dd>{organizerDemoBoard.squares[0][0]}</dd><dt>Payment record · private</dt><dd>Paid</dd></dl><p>A note for the organizer. GridOne does not collect the payment.</p></aside>
+            </div>
+            <p className="editorial-workspace-next">Next: Draw numbers, preview, then publish.</p>
+          </section>
+          <ol className="editorial-annotations">
+            <li><span aria-hidden="true">01</span><div><h3>Keep names together.</h3><p>Assign one square or a whole block. Everyone has a place on the board.</p></div></li>
+            <li><span aria-hidden="true">02</span><div><h3>See what’s still open.</h3><p>Review the remaining OPEN squares before you draw and lock the game numbers.</p></div></li>
+            <li><span aria-hidden="true">03</span><div><h3>Share when you’re ready.</h3><p>Share during preparation. After you publish, that same link becomes the game-day view.</p></div></li>
+          </ol>
+        </div>
+        <p className="editorial-boundary">{MONEY_BOUNDARY}</p>
       </div>
     </section>
   );

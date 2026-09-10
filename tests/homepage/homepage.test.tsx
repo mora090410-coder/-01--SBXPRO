@@ -1,10 +1,7 @@
 import React from 'react';
-import { act, fireEvent, render, renderHook, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import { Spotlight } from '../../src/design/primitives';
-import { useParallax } from '../../src/features/homepage/atmosphere/useParallax';
-import { useScrollProgress } from '../../src/features/homepage/atmosphere/useScrollProgress';
+import { describe, expect, it } from 'vitest';
 import Homepage from '../../src/features/homepage/Homepage';
 
 const renderPage = () => render(<MemoryRouter><Homepage /></MemoryRouter>);
@@ -13,26 +10,41 @@ describe('Homepage', () => {
   it('puts identity, promise, one primary action, and the money boundary in the first viewport', () => {
     renderPage();
     const hero = screen.getByTestId('homepage-first-viewport');
-    expect(within(hero).getByRole('heading', { level: 1 })).toHaveTextContent('Build it once. Share one link.');
-    expect(within(hero).getByText(/For youth-sports teams, booster clubs, schools, and community organizers/)).toBeInTheDocument();
+    expect(within(hero).getByRole('heading', { level: 1 })).toHaveTextContent('Your fundraiser. One clear board.');
+    expect(within(hero).getByText(/Build your football squares board, share one link/)).toBeInTheDocument();
     expect(within(hero).getByRole('link', { name: 'Create your free board' })).toHaveAttribute('href', '/create');
-    expect(within(hero).getByRole('link', { name: 'See a live board' })).toHaveAttribute('href', '/demo');
+    expect(within(hero).getByRole('link', { name: 'Explore a sample board' })).toHaveAttribute('href', '/demo');
     expect(within(hero).getByRole('link', { name: 'Sign in' })).toHaveAttribute('href', '/login?mode=signin');
     expect(within(hero).getByText('First published board free')).toBeInTheDocument();
-    expect(within(hero).getByText('Viewers open the link without creating an account')).toBeInTheDocument();
+    expect(within(hero).getByText('Viewers don’t need an account')).toBeInTheDocument();
     expect(within(hero).getByText(/does not collect square money, hold funds, adjudicate off-platform payment, or pay winners/)).toBeInTheDocument();
     expect(within(hero).getByText('Demo board — sample names and scores')).toBeInTheDocument();
   });
 
-  it('shows the live score, the three parent answers, and the organizer screen', () => {
+  it('separates preparation from game day in static excerpts of the same board', () => {
     renderPage();
-    expect(screen.getByRole('region', { name: 'Live score' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Where are my squares?' })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Who wins right now?' }));
-    expect(screen.getByRole('heading', { name: 'Who wins right now?' })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'What score wins next?' }));
-    expect(screen.getByRole('heading', { name: 'What score wins next?' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'One screen. No wizard.' })).toBeInTheDocument();
+    const hero = screen.getByTestId('homepage-first-viewport');
+    for (const name of ['Prepare your board', 'Your group on game day']) {
+      const excerpt = within(hero).getByRole('region', { name });
+      expect(within(excerpt).getByText('Lincoln Softball Booster Board')).toBeInTheDocument();
+      expect(excerpt.querySelector('a, button, input, select, textarea, [tabindex]')).toBeNull();
+    }
+    expect(within(hero).getByText('Numbers not drawn')).toBeInTheDocument();
+    expect(within(hero).getByText('Published · numbers locked')).toBeInTheDocument();
+    expect(within(hero).getByText('Currently matching')).toBeInTheDocument();
+    expect(hero.querySelector('[data-reveal], [data-fill]')).toBeNull();
+  });
+
+  it('tells the organizer, game-day, then pricing story without retired demonstrations', () => {
+    const { container } = renderPage();
+    const organizer = screen.getByRole('heading', { name: 'Less paper. Less chasing.' });
+    const score = screen.getByRole('heading', { name: 'Scores update themselves.' });
+    const pricing = screen.getByRole('region', { name: 'Plans' });
+    expect(organizer.compareDocumentPosition(score) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(score.compareDocumentPosition(pricing) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(container.querySelector('[data-fill], [data-reveal]')).toBeNull();
+    expect(screen.queryByTestId('board-fill-section')).toBeNull();
+    expect(screen.queryByRole('group', { name: 'Explore the viewer' })).toBeNull();
   });
 
   it('uses the exact pricing strings and keeps FAQ closed by default', () => {
@@ -77,485 +89,18 @@ describe('Homepage', () => {
   });
 });
 
-describe('Hero atmosphere', () => {
-  const setMatchMedia = (answer: (query: string) => boolean) => {
-    Object.defineProperty(window, 'matchMedia', {
-      writable: true,
-      configurable: true,
-      value: (query: string) => ({
-        matches: answer(query),
-        media: query,
-        onchange: null,
-        addListener: () => {},
-        removeListener: () => {},
-        addEventListener: () => {},
-        removeEventListener: () => {},
-        dispatchEvent: () => false,
-      }),
-    });
-  };
-
-  const original = window.matchMedia;
-  afterEach(() => {
-    Object.defineProperty(window, 'matchMedia', { writable: true, configurable: true, value: original });
-    vi.restoreAllMocks();
-  });
-
-  it('keeps exactly one h1 and both calls to action inside the first viewport', () => {
+describe('Pricing and FAQ interaction', () => {
+  it('opens and closes an answer without removing other questions', () => {
     renderPage();
-    const hero = screen.getByTestId('homepage-first-viewport');
-    expect(within(hero).getAllByRole('heading', { level: 1 })).toHaveLength(1);
-    expect(within(hero).getByRole('link', { name: 'Create your free board' })).toBeInTheDocument();
-    expect(within(hero).getByRole('link', { name: 'See a live board' })).toBeInTheDocument();
-  });
-
-  it('useParallax attaches no scroll listener and writes nothing under reduced motion', () => {
-    setMatchMedia((q) => q.includes('prefers-reduced-motion') || q.includes('min-width'));
-    const add = vi.spyOn(window, 'addEventListener');
-    const { result } = renderHook(() => useParallax<HTMLDivElement>({ maxPx: 40, rotateFromDeg: -3, rotateToDeg: -1 }));
-    const node = document.createElement('div');
-    result.current.current = node;
-    expect(add.mock.calls.filter(([type]) => type === 'scroll')).toHaveLength(0);
-    expect(node.style.transform).toBe('');
-    expect(node.style.translate).toBe('');
-    expect(node.style.rotate).toBe('');
-    // No animation can run, so no compositor layer is requested either.
-    expect(node.style.willChange).toBe('');
-  });
-
-  it('useParallax is inert below the md breakpoint', () => {
-    setMatchMedia(() => false);
-    const add = vi.spyOn(window, 'addEventListener');
-    renderHook(() => useParallax<HTMLDivElement>({ maxPx: 40 }));
-    expect(add.mock.calls.filter(([type]) => type === 'scroll')).toHaveLength(0);
-  });
-
-  // Structural assertions only: jsdom has no layout and does not compose
-  // `translate`/`rotate`/`transform` into a matrix, so what is checked here is
-  // WHICH properties the hook writes, not the rendered result. That is the point
-  // — writing `transform` is exactly the regression being fenced off, because
-  // `transform` composes with (rather than overrides) the element's
-  // `md:rotate-[3deg]` class and rests the hero at 6deg.
-  it('useParallax drives translate and rotate, never transform, and clears both on unmount', () => {
-    setMatchMedia((q) => q.includes('min-width'));
-    const add = vi.spyOn(window, 'addEventListener');
-    const remove = vi.spyOn(window, 'removeEventListener');
-    let node: HTMLDivElement | null = null;
-    const Probe = () => {
-      const ref = useParallax<HTMLDivElement>({ maxPx: 40, rotateFromDeg: 3, rotateToDeg: 1 });
-      // Keep our own handle: React detaches `ref` on unmount, and the assertion
-      // below is about the element the hook wrote to, not about React's bookkeeping.
-      return <div ref={(el) => { ref.current = el; if (el) node = el; }} data-testid="probe" />;
-    };
-    const view = render(<Probe />);
-    const probe = screen.getByTestId('probe');
-    expect(add.mock.calls.filter(([type]) => type === 'scroll')).toHaveLength(1);
-    expect(add.mock.calls.find(([type]) => type === 'scroll')?.[2]).toEqual({ passive: true });
-
-    // Independent properties, written before paint by useLayoutEffect.
-    expect(probe.style.rotate).toBe('3.000deg');
-    expect(probe.style.translate).toMatch(/^0 [\d.]+px$/);
-    // Vertical only: the x component of `translate` is a literal 0.
-    expect(probe.style.translate.split(' ')[0]).toBe('0');
-    // The whole point: `transform` is never touched.
-    expect(probe.style.transform).toBe('');
-    expect(probe.getAttribute('style') ?? '').not.toContain('transform');
-    // The compositor hint is the hook's, and lives only while it is attached.
-    expect(probe.style.willChange).toBe('translate, rotate');
-
-    view.unmount();
-    expect(remove.mock.calls.filter(([type]) => type === 'scroll')).toHaveLength(1);
-    // Cleanup hands both properties back to the class values and drops the layer.
-    expect(node!.style.translate).toBe('');
-    expect(node!.style.rotate).toBe('');
-    expect(node!.style.willChange).toBe('');
-  });
-
-  it('useParallax clears its inline values when the viewport narrows past md', () => {
-    let desktop = true;
-    const listeners = new Set<(e: MediaQueryListEvent) => void>();
-    Object.defineProperty(window, 'matchMedia', {
-      writable: true,
-      configurable: true,
-      value: (query: string) => ({
-        get matches() { return query.includes('min-width') ? desktop : false; },
-        media: query,
-        onchange: null,
-        addListener: () => {},
-        removeListener: () => {},
-        addEventListener: (_t: string, fn: (e: MediaQueryListEvent) => void) => { if (query.includes('min-width')) listeners.add(fn); },
-        removeEventListener: (_t: string, fn: (e: MediaQueryListEvent) => void) => { listeners.delete(fn); },
-        dispatchEvent: () => false,
-      }),
-    });
-
-    const Probe = () => {
-      const ref = useParallax<HTMLDivElement>({ maxPx: 40, rotateFromDeg: 3, rotateToDeg: 1 });
-      return <div ref={ref} data-testid="probe" />;
-    };
-    render(<Probe />);
-    const probe = screen.getByTestId('probe');
-    expect(probe.style.rotate).toBe('3.000deg');
-
-    // Narrow the window below md. The class rotation must take over again, so the
-    // inline desktop values have to go — otherwise they cancel the phone tilt.
-    desktop = false;
-    act(() => { for (const fn of listeners) fn({ matches: false } as MediaQueryListEvent); });
-    expect(probe.style.rotate).toBe('');
-    expect(probe.style.translate).toBe('');
-    expect(probe.style.willChange).toBe('');
-    expect(listeners.size).toBeGreaterThan(0);
-  });
-
-  it('Spotlight breathes only when motion is allowed', () => {
-    setMatchMedia(() => false);
-    const { container, unmount } = render(<Spotlight breathe />);
-    expect(container.firstElementChild?.className).toContain('spotlight-breathe');
-    unmount();
-
-    setMatchMedia((q) => q.includes('prefers-reduced-motion'));
-    const reduced = render(<Spotlight breathe />);
-    expect(reduced.container.firstElementChild?.className).not.toContain('spotlight-breathe');
-    reduced.unmount();
-
-    const plain = render(<Spotlight />);
-    expect(plain.container.firstElementChild?.className).not.toContain('spotlight-breathe');
-  });
-});
-
-describe('Pricing bookend and list interactions', () => {
-  const renderClose = () => renderPage();
-
-  it('closes the colour loop with a cardinal tone and leaves the final call to action untinted', () => {
-    const { container } = renderClose();
-    const plans = screen.getByRole('region', { name: 'Plans' });
-    const priceSection = plans.closest('section[class*="overflow-x-clip"]');
-    expect(priceSection).not.toBeNull();
-
-    // The tint is decorative: never read, never clickable, always behind content.
-    const tint = priceSection!.querySelector(':scope > [aria-hidden="true"][class*="blur-"]');
-    expect(tint).not.toBeNull();
-    expect(tint!.className).toContain('pointer-events-none');
-    // Edge-anchored on the left, and the section clips so the page cannot widen.
-    expect(tint!.className).toContain('left-0');
-    expect(priceSection!.className).toContain('relative');
-    // X-only clip: stops the blob widening the page, lets it fade vertically.
-    expect(priceSection!.className).toContain('overflow-x-clip');
-    for (const child of Array.from(priceSection!.children)) {
-      if (child === tint) continue;
-      expect(child.className).toContain('relative z-10');
-    }
-
-    // The last section on the page is the action, not the atmosphere.
-    const closing = screen.getByRole('heading', { name: 'Ready to build the board?' }).closest('section')!;
-    expect(closing.querySelector('[class*="blur-"]')).toBeNull();
-    expect(container.querySelectorAll('section [class*="blur-"][aria-hidden="true"]').length).toBeGreaterThan(0);
-  });
-
-  it('marks the free figure as the offer and leaves the other two tiers alone', () => {
-    renderClose();
-    const free = screen.getByRole('img', { name: '$0 per season' });
-    expect(free.className).toContain('text-tone-gold');
-    expect(screen.getByRole('img', { name: '$9.99 once' }).className).not.toContain('text-tone-gold');
-    expect(screen.getByRole('img', { name: '$79 per season' }).className).not.toContain('text-tone-gold');
-  });
-
-  it('lifts a plan row on hover and on focus-within, and names the properties it transitions', () => {
-    renderClose();
-    const row = screen.getByText('1 published board per account per season').closest('div')!.parentElement!;
-    expect(row.className).toContain('hover:bg-panel-hover');
-    expect(row.className).toContain('focus-within:bg-panel-hover');
-    expect(row.className).toContain('hover:border-tone-gold/30');
-    expect(row.className).toContain('focus-within:border-tone-gold/30');
-    expect(row.className).toContain('transition-[background-color,border-color]');
-  });
-
-  it('keeps all four questions and both markers in the DOM whatever is open', () => {
-    renderClose();
     const questions = ['Do viewers need an account?', 'Does GridOne collect square money?', 'When do I pay?', 'Who can edit the board?'];
-
-    const assertIntact = () => {
-      for (const q of questions) expect(screen.getByText(q)).toBeInTheDocument();
-      // Both glyphs are always present. The open/closed state is carried by which
-      // one CSS shows, never by motion or colour alone.
-      expect(screen.getAllByText('+')).toHaveLength(4);
-      expect(screen.getAllByText('−')).toHaveLength(4);
-    };
-
-    assertIntact();
-    for (const q of questions) expect(screen.getByText(q).closest('details')!.open).toBe(false);
-
     const first = screen.getByText(questions[0]).closest('details')!;
-    fireEvent.click(first.querySelector('summary')!);
-    expect(first.open).toBe(true);
-    assertIntact();
-
-    fireEvent.click(first.querySelector('summary')!);
+    const summary = first.querySelector('summary')!;
     expect(first.open).toBe(false);
-    assertIntact();
-  });
-
-  it('rotates the marker via the independent rotate property, only when motion is allowed', () => {
-    renderClose();
-    const marker = screen.getAllByText('+')[0].parentElement!;
-    // Tailwind v4 compiles `-rotate-90` to `rotate:`, which a `transform` list
-    // would not animate. This assertion is the fence around that bug.
-    expect(marker.className).toContain('transition-[rotate]');
-    expect(marker.className).not.toMatch(/transition-\[[^\]]*transform/);
-    expect(marker.className).toContain('motion-safe:-rotate-90');
-    // `rotate-0` would compile to `rotate: none`; the explicit angle keeps both
-    // ends of the transition in the same unit.
-    expect(marker.className).toContain('motion-safe:group-open:rotate-[0deg]');
-    expect(marker).toHaveAttribute('aria-hidden', 'true');
-
-    const answer = screen.getByText(/Viewers open the link without creating an account\. Only the organizer signs in\./);
-    expect(answer.className).toContain('motion-safe:animate-[sheet-fade');
-  });
-
-  it('keeps every summary at the 44px target with its focus ring intact', () => {
-    renderClose();
-    for (const q of ['Do viewers need an account?', 'When do I pay?']) {
-      const summary = screen.getByText(q).closest('summary')!;
-      expect(summary.className).toContain('min-h-11');
-      expect(summary.className).toContain('cursor-pointer');
-    }
-  });
-
-  it('gives the footer guide links the same underline wipe as every other ghost link', () => {
-    renderClose();
-    const footer = screen.getByRole('contentinfo');
-    const link = within(footer).getByRole('link', { name: 'How football squares work' });
-    expect(link.className).toContain('bg-[length:0%_1px]');
-    expect(link.className).toContain('hover:bg-[length:100%_1px]');
-    expect(link.className).toContain('transition-[background-size,color]');
-  });
-});
-
-describe('The board fills as you scroll', () => {
-  const setMatchMedia = (answer: (query: string) => boolean) => {
-    Object.defineProperty(window, 'matchMedia', {
-      writable: true,
-      configurable: true,
-      value: (query: string) => ({
-        matches: answer(query),
-        media: query,
-        onchange: null,
-        addListener: () => {},
-        removeListener: () => {},
-        addEventListener: () => {},
-        removeEventListener: () => {},
-        dispatchEvent: () => false,
-      }),
-    });
-  };
-
-  /** A minimal observer, so `BoardFill` and `Reveal` can arm at all. */
-  const stubObserver = () => {
-    class Stub {
-      observe() {}
-      unobserve() {}
-      disconnect() {}
-      takeRecords() { return []; }
-      root = null;
-      rootMargin = '';
-      thresholds: number[] = [];
-    }
-    vi.stubGlobal('IntersectionObserver', Stub);
-  };
-
-  /** A detached element plus a stable ref to it, the way the section holds one. */
-  const probe = () => {
-    const el = document.createElement('div');
-    return { el, ref: { current: el } as React.RefObject<HTMLDivElement | null> };
-  };
-
-  /** A track whose rect we control, since jsdom does no layout at all. */
-  const track = (top: number, height: number) => {
-    const el = document.createElement('div');
-    el.getBoundingClientRect = () => ({
-      top, height, bottom: top + height, left: 0, right: 0, width: 0, x: 0, y: top,
-      toJSON: () => ({}),
-    }) as DOMRect;
-    return { current: el } as React.RefObject<HTMLDivElement | null>;
-  };
-
-  const FACTS = [
-    '100 squares. Your group fills them.',
-    'Open squares stay clearly marked.',
-    'Draw the numbers when you\'re ready.',
-  ];
-
-  const original = window.matchMedia;
-  afterEach(() => {
-    Object.defineProperty(window, 'matchMedia', { writable: true, configurable: true, value: original });
-    vi.unstubAllGlobals();
-    vi.restoreAllMocks();
-  });
-
-  it('renders the finished board and all three facts under reduced motion', () => {
-    // Reduced motion AND a desktop viewport AND an observer: every ingredient
-    // for the animation is present except permission, and the reader still gets
-    // the whole thing, finished, without scrolling.
-    setMatchMedia((q) => q.includes('prefers-reduced-motion') || q.includes('min-width'));
-    stubObserver();
-    renderPage();
-
-    const section = screen.getByTestId('board-fill-section');
-    const board = within(section).getByRole('img');
-    expect(board).toHaveAccessibleName(/Example board/);
-    // The resting state is the finished board: no attribute, no property.
-    expect(board).not.toHaveAttribute('data-fill');
-    expect(board.style.getPropertyValue('--fill-progress')).toBe('');
-    expect(board.querySelectorAll('[data-fill-cell]')).toHaveLength(100);
-    expect(within(section).getAllByText('OPEN').length).toBeGreaterThan(0);
-
-    for (const fact of FACTS) expect(within(section).getByText(fact)).toBeInTheDocument();
-    expect(section.querySelectorAll('[data-reveal]')).toHaveLength(0);
-    expect(board.parentElement!.className).not.toContain('md:sticky');
-    expect(section.querySelector('[class*="md:min-h-[46vh]"]')).toBeNull();
-  });
-
-  it('renders the finished board and all three facts with no observer at all', () => {
-    setMatchMedia(() => false);
-    renderPage();
-    const section = screen.getByTestId('board-fill-section');
-    const board = within(section).getByRole('img');
-    expect(board).not.toHaveAttribute('data-fill');
-    for (const fact of FACTS) expect(within(section).getByText(fact)).toBeInTheDocument();
-    expect(board.parentElement!.className).not.toContain('md:sticky');
-    expect(section.querySelector('[class*="md:min-h-[46vh]"]')).toBeNull();
-  });
-
-  it('is full-bleed with capped content, and pins the board only from md up', () => {
-    setMatchMedia((q) => q.includes('min-width'));
-    stubObserver();
-    renderPage();
-    const section = screen.getByTestId('board-fill-section');
-    expect(section.className).toContain('relative');
-    expect(section.className).toContain('overflow-x-clip');
-    expect(section.querySelector('[class*="max-w-[1320px]"]')).not.toBeNull();
-
-    // A phone must not fight a pinned element: the sticky is `md:` only.
-    const pinned = within(section).getByRole('img').parentElement!;
-    expect(pinned.className).toContain('md:sticky');
-    expect(pinned.className).toContain('md:top-24');
-    expect(pinned.className).not.toMatch(/(^|\s)(sticky|fixed)(\s|$)/);
-  });
-
-  it('puts the heading before the example board in reading order and labels its matchup', () => {
-    renderPage();
-    const section = screen.getByTestId('board-fill-section');
-    const heading = within(section).getByRole('heading', { name: 'Add your names. Then draw the numbers.' });
-    const board = within(section).getByRole('img');
-    const caption = within(section).getByText('Example board · Chiefs at Eagles');
-
-    expect(heading.compareDocumentPosition(board) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(board).toHaveAccessibleName(/Example board.*Chiefs at Eagles/);
-    expect(caption).toBeVisible();
-    expect(within(section).getAllByRole('heading', { level: 2 })).toHaveLength(1);
-  });
-
-  it('uses compact spacing when the fill is not driven', () => {
-    setMatchMedia(() => false);
-    renderPage();
-    const section = screen.getByTestId('board-fill-section');
-    const boardWrapper = within(section).getByRole('img').parentElement!;
-
-    expect(boardWrapper.className).not.toContain('md:sticky');
-    expect(section.querySelector('[class*="md:min-h-[46vh]"]')).toBeNull();
-  });
-
-  it('clips the page root rather than hiding it, so the sticky board can pin at all', () => {
-    // `overflow-x: hidden` forces the other axis to `auto`, making the page root
-    // a scroll container — and `position: sticky` resolves against the nearest
-    // scroll container. With `hidden` the board tracked the page instead of
-    // holding at `top-24`. This is the fence around that regression.
-    const { container } = renderPage();
-    const base = container.querySelector('[data-base]')!;
-    expect(base.className).toContain('overflow-x-clip');
-    expect(base.className).not.toContain('overflow-x-hidden');
-  });
-
-  it('useScrollProgress attaches nothing and writes nothing under reduced motion', () => {
-    setMatchMedia((q) => q.includes('prefers-reduced-motion') || q.includes('min-width'));
-    const add = vi.spyOn(window, 'addEventListener');
-    const { el, ref } = probe();
-    const { result } = renderHook(() => useScrollProgress({ ref, trackRef: track(-100, 2000) }));
-    expect(result.current).toBeUndefined();
-    expect(add.mock.calls.filter(([type]) => type === 'scroll')).toHaveLength(0);
-    expect(el.style.getPropertyValue('--fill-progress')).toBe('');
-    expect(el.getAttribute('style')).toBeNull();
-  });
-
-  it('useScrollProgress attaches nothing and writes nothing when disabled', () => {
-    setMatchMedia((q) => q.includes('min-width'));
-    const add = vi.spyOn(window, 'addEventListener');
-    const { el, ref } = probe();
-    renderHook(() => useScrollProgress({ ref, trackRef: track(-100, 2000), disabled: true }));
-    expect(add.mock.calls.filter(([type]) => type === 'scroll')).toHaveLength(0);
-    expect(el.style.getPropertyValue('--fill-progress')).toBe('');
-  });
-
-  it('useScrollProgress is inert below the md breakpoint', () => {
-    setMatchMedia(() => false);
-    const add = vi.spyOn(window, 'addEventListener');
-    const { el, ref } = probe();
-    renderHook(() => useScrollProgress({ ref, trackRef: track(-100, 2000) }));
-    expect(add.mock.calls.filter(([type]) => type === 'scroll')).toHaveLength(0);
-    expect(el.style.getPropertyValue('--fill-progress')).toBe('');
-  });
-
-  it('useScrollProgress writes one custom property passively and clears it on unmount', () => {
-    setMatchMedia((q) => q.includes('min-width'));
-    const add = vi.spyOn(window, 'addEventListener');
-    const remove = vi.spyOn(window, 'removeEventListener');
-    const { el, ref } = probe();
-    const view = renderHook(() => useScrollProgress({ ref, trackRef: track(-100, 2000) }));
-
-    const scroll = add.mock.calls.filter(([type]) => type === 'scroll');
-    expect(scroll).toHaveLength(1);
-    expect(scroll[0][2]).toEqual({ passive: true });
-
-    // The first write happens in useLayoutEffect, before paint, so a page
-    // loaded already scrolled is correct on its first frame.
-    const value = Number(el.style.getPropertyValue('--fill-progress'));
-    expect(value).toBeGreaterThan(0);
-    expect(value).toBeLessThan(1);
-    // ONE property, and nothing else. No transform, no opacity, no class.
-    expect(el.getAttribute('style')).toBe('--fill-progress: ' + el.style.getPropertyValue('--fill-progress') + ';');
-
-    view.unmount();
-    expect(remove.mock.calls.filter(([type]) => type === 'scroll')).toHaveLength(1);
-    expect(el.style.getPropertyValue('--fill-progress')).toBe('');
-  });
-
-  it('useScrollProgress clamps to 0 before the section arrives and to 1 once it is through', () => {
-    setMatchMedia((q) => q.includes('min-width'));
-    const below = probe();
-    renderHook(() => useScrollProgress({ ref: below.ref, trackRef: track(10_000, 2000) }));
-    expect(Number(below.el.style.getPropertyValue('--fill-progress'))).toBe(0);
-
-    const past = probe();
-    renderHook(() => useScrollProgress({ ref: past.ref, trackRef: track(-10_000, 2000) }));
-    expect(Number(past.el.style.getPropertyValue('--fill-progress'))).toBe(1);
-
-    // A section shorter than the fill window has no travel to spend, so it is
-    // finished rather than stuck at zero.
-    const short = probe();
-    renderHook(() => useScrollProgress({ ref: short.ref, trackRef: track(0, 10) }));
-    expect(Number(short.el.style.getPropertyValue('--fill-progress'))).toBe(1);
-  });
-
-  it('drives the board root itself on desktop, never a wrapper', () => {
-    setMatchMedia((q) => q.includes('min-width'));
-    stubObserver();
-    renderPage();
-
-    const board = within(screen.getByTestId('board-fill-section')).getByRole('img');
-    // Same node carries the arming attribute and the driven value: an element's
-    // own custom property shadows an inherited one, so a wrapper would not work.
-    expect(board).toHaveAttribute('data-fill', 'on');
-    expect(board.style.getPropertyValue('--fill-progress')).not.toBe('');
-    expect(board.parentElement!.style.getPropertyValue('--fill-progress')).toBe('');
+    fireEvent.click(summary);
+    expect(first.open).toBe(true);
+    expect(within(first).getByText(/Viewers open the link without creating an account/)).toBeVisible();
+    for (const question of questions) expect(screen.getByText(question)).toBeInTheDocument();
+    fireEvent.click(summary);
+    expect(first.open).toBe(false);
   });
 });

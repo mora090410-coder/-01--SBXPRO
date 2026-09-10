@@ -43,7 +43,7 @@ describe('launch pricing copy', () => {
       .join('\n');
 
     expect(landing).not.toMatch(/\b(?:beta|synthetic|fallback|read-only|grounded|native|canonical|provenance|freshness|entitlement)\b/i);
-    expect(landing).toContain('See a live board');
+    expect(landing).toContain('Explore a sample board');
     expect(landing).toContain('First published board free');
   });
 

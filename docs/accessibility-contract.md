@@ -148,7 +148,7 @@ A blocker and an advisory must never look or sound alike. The organizer's `Befor
 ## Reflow, zoom, and text
 
 - At 320 and 390 CSS pixels the page has no horizontal overflow outside the intentional board viewport — asserted at both widths.
-- Scroll-driven motion never widens the document. `document.documentElement.scrollWidth` equals `clientWidth` on the homepage at **390 and 1280 CSS pixels, both before and after a full scroll to the bottom** — asserted at both widths in `playwright-tests/homepage.spec.ts`. Reveals and parallax animate `opacity`, `translate`, and `rotate` on the vertical axis only, and reserve or collapse no space.
+- Scroll-driven motion never widens the document. `document.documentElement.scrollWidth` equals `clientWidth` on the homepage at **390 and 1280 CSS pixels, both before and after a full scroll to the bottom** — asserted at both widths in `playwright-tests/homepage.spec.ts`. The homepage keeps all explanatory text static; its optional score animation affects only decorative accents and reserves or collapses no space.
 - At 400% browser zoom, content reflows without loss of information or function; the board stays in its controlled viewport.
 - At 200% text scaling, controls, errors, dialogs, and sticky regions remain usable (manual gate).
 - Long participant, organization, board, team, and correction text wraps or truncates with an accessible path to the full value.
@@ -171,9 +171,7 @@ Scroll reveals (`src/design/primitives/Reveal.tsx`, with the `[data-reveal]` rul
 
 A reveal may therefore hide only what a reader has not yet reached. It may never gate a landmark, a heading a reader can already see, an error, a status message, or anything focusable that is reachable by `Tab` before the reveal fires.
 
-Asserted in `playwright-tests/homepage.spec.ts`: in a `reducedMotion: 'reduce'` context and **without scrolling at all**, one heading from each of the homepage's six blocks is present at computed `opacity: 1`, and no element in the document carries `data-reveal` in any state. Separately, at 1280 pixels a below-fold section heading sits at `pending` with `opacity: 0` and reaches a computed `opacity: 1` once scrolled into view — polled to a timeout, never slept past. The no-JS test asserts the same headline, actions, and money boundary with JavaScript disabled.
-
-Count-ups, the score pulse, the winning-cell pulse, the spotlight drift, and hero parallax follow the same shape: each renders its true final value when motion is reduced, when JavaScript is off, or when the observer never fires. A number that animates is never the only place that number appears.
+The editorial homepage does not use scroll reveals, parallax, count-ups, or fill choreography. `playwright-tests/homepage.spec.ts` verifies its static hero, readable 320/390 layouts, 200% text, blocked fonts, and no-JavaScript promise/actions. `playwright-tests/studio-landing.spec.ts` verifies that the single score explanation loads GSAP only on intersection, plays once per mounted visit, keeps all content visible if the import fails, and requests no GSAP under reduced motion. The shared Reveal contract above continues to apply to other routes.
 
 ## Loading, stale, offline, and recovery
 

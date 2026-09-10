@@ -9,8 +9,8 @@ const expectTouchTarget = async (locator: Locator) => {
 
 test('landing page leads with the live board and free-first publishing model', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('Build it once. Share one link.');
-  await expect(page.getByText(/youth-sports teams, booster clubs, schools, and community organizers/i)).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('Your fundraiser. One clear board.');
+  await expect(page.getByText(/Build your football squares board, share one link/i)).toBeVisible();
   await expect(page.getByRole('link', { name: 'Create your free board' }).first()).toBeVisible();
   await expect(page.getByText('First published board free')).toBeAttached();
 });
@@ -26,10 +26,10 @@ test('representative landing controls expose names, touch geometry, and keyboard
   await page.goto('/');
 
   const build = page.getByRole('link', { name: 'Create your free board' }).first();
-  const demo = page.getByRole('link', { name: 'See a live board' }).first();
+  const demo = page.getByRole('link', { name: 'Explore a sample board' }).first();
 
   await expect(build).toHaveAccessibleName('Create your free board');
-  await expect(demo).toHaveAccessibleName('See a live board');
+  await expect(demo).toHaveAccessibleName('Explore a sample board');
   await expectTouchTarget(build);
   await expectTouchTarget(demo);
 
