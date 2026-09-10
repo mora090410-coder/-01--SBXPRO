@@ -19,16 +19,16 @@ A viewer arrives from a text message, on a phone, mid-game, with no account and 
 
 ## Composition
 
-`ViewerShell` renders on a `<Base kind="dark">` ground: a `ViewerIsland` pinned above, then a `main` named `{board title} viewer` in two columns — the first column is the phone stack, the second is the board.
+`ViewerShell` renders on a `<Base kind="dark">` ground: a `ViewerIsland` pinned above only while the main score is scrolled out of view, then a `main` named `{board title} viewer` in two columns — the first column is the phone stack, the second is the board.
 
 | Order | Component | Accessible name |
 |---|---|---|
-| — | `shell/ViewerIsland` | island `Score` — collapsed score chyron, always present |
+| — | `shell/ViewerIsland` | island `Score` — collapsed score chyron, shown only after the main score scrolls above the viewport |
 | 1 | `score/ScoreInstrument` | region `Score`; carries the `h1` (an `h2` in organizer preview) |
 | 2 | `identity/FindSquaresEntry` | region `Find squares` |
-| 3 | `personal/YourSquaresSummary` | region `{name} square summary`, only once a name is selected |
-| 4 | `Pending confirmation` block | heading `Pending confirmation`, only when milestones await confirmation |
-| 5 | `details/BoardDetailsDisclosure` `FinalRecord` | heading `Final record`, only when the game is `post` |
+| 3 | `details/BoardDetailsDisclosure` `CompletedResults` or `FinalRecord` | heading `Completed results` during live play, `Final record` after the game |
+| 4 | `personal/YourSquaresSummary` | region `{name} square summary`, only once a name is selected |
+| 5 | `Pending confirmation` block | heading `Pending confirmation`, only when milestones await confirmation |
 | 6 | `scenarios/ScenarioDisclosure` | region `Next scores that match your squares` |
 | 7 | `notifications/WinnerEmailDisclosure` | form `winner email` |
 | — | `board/ViewerBoardGrid` | grid `Football squares board, Top team {away}, Side team {home}`, in the board column under heading `Board` |
@@ -47,9 +47,10 @@ No name selected. The stack is score, then `Find my squares`, then scenarios, th
 A name is selected through the `Find my squares` dialog. `YourSquaresSummary` appears directly under `FindSquaresEntry` and shows:
 
 - the count (`1 square`, `{n} squares`),
+- one detailed list, initially limited to four squares with the current match first; Show all squares exposes the full list,
 - each coordinate as `{away team} column {digit} × {home team} row {digit}`,
 - `View on board top {n} side {n}` per square, which centers the grid without stealing focus first,
-- the current result — `This square matches the current result.` / `Current result: none of the selected squares match now.`,
+- the current result — `Currently matching this square.` / `Currently matching: none of your squares.`,
 - and, when nothing upcoming matches, `None of the next scores listed here match this square.`
 
 `FindSquaresEntry` then shows `Selected name` with `Choose another name` and `Clear`. `WinnerEmailDisclosure` (`Get winner emails`) appears **after** the personal answer, never before it.
@@ -158,3 +159,9 @@ Data arrives from `hooks/usePoolData`, `hooks/useContestEntries`, and `hooks/use
 An explicitly shared, unfinalized board renders `sales/SalesBoardViewer` before the game-day composition described above. Its phone hierarchy is board identity, pending draw explanation, sold/unsold progress and last update, Family filter and Highlight unsold, permanent 1–100 grid, selected-square full detail, and expandable matching-square details. The entire team can view all public family allocations; filters highlight without concealing the full grid. Allocation does not count as a buyer. One grid cell participates in the tab order; arrow keys move among cells. On phones the full 10×10 numbered overview fits the viewport; a checkmark and text legend distinguish sold squares. Full selected-square and matching-family details precede the grid, with a bounded list when many match. Desktop cells include buyer and family names.
 
 No game axes, scores, scenarios or winner signup appear before finalization. The board refreshes every 30 seconds while visible, on window focus, and via Refresh board. A failed refresh retains the last-known board with error context. A successful refresh clears prior errors. Final publication changes the composition at the same share URL. Authenticated owners receive a Manage board route; viewers cannot edit.
+
+## Live results and score clarity (September 9)
+
+Confirmed milestones render as Completed results in the first column during live play, after Find my squares and before the personal square list; Final retains the Final record heading. These are published winner records, never inferred from current scores. Payout rows pair each published amount with the milestone winner, OPEN outcome, pending confirmation, or Not yet confirmed. Corrections remain visible.
+
+The main score displays quarter/time once, with Currently matching distinct from confirmed results. The floating score appears only after the main score and trust block scroll above the viewport, and disappears on return. The redundant desktop grid Find action is hidden; phones retain the shortcut below the long viewer stack. Personal squares render once in an expandable detailed list, with current-match status above it.

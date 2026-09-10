@@ -16,11 +16,13 @@ describe('ScoreInstrument', () => {
     expect(screen.getByRole('img', { name: 'Kansas City 21' })).toBeInTheDocument();
     expect(screen.getByRole('img', { name: 'Philadelphia 14' })).toBeInTheDocument();
     const status = screen.getByRole('status');
-    expect(status).toHaveTextContent(/Current result/);
+    expect(status).toHaveTextContent(/Currently matching/);
     expect(status).toHaveTextContent('Carrie Moss');
     expect(status).toHaveTextContent('PHI 4 across × KC 1 down');
     expect(status).toHaveTextContent(/Score updates about every minute/);
     expect(status).toHaveTextContent(/Checked/);
+    expect(screen.getAllByText('Q3 · 8:12')).toHaveLength(1);
+    expect(screen.queryByText('3rd quarter')).toBeNull();
   });
 
   it('marks stale scores as last known', () => {
@@ -35,4 +37,9 @@ describe('ScoreInstrument', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Waiting for score');
     expect(screen.getByRole('img', { name: 'Kansas City score not yet available' })).toBeInTheDocument();
   });
+});
+
+it('preserves meaningful provider phase details', () => {
+  render(<ScoreInstrument game={game} board={board} live={live({ detail: 'Halftime' })} liveStatus="LIVE" isSynced />);
+  expect(screen.getByText('Halftime')).toBeVisible();
 });

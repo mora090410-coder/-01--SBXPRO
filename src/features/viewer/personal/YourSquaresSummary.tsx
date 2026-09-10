@@ -37,8 +37,13 @@ export interface YourSquaresSummaryProps {
 }
 
 const YourSquaresSummary: React.FC<YourSquaresSummaryProps> = ({ board, game, live, selectedPlayer, onViewSquare }) => {
+  const [expanded, setExpanded] = React.useState(false);
+  const listId = React.useId();
+  React.useEffect(() => setExpanded(false), [selectedPlayer]);
   if (!selectedPlayer) return null;
-  const rows = selectedRows(board, game, live, selectedPlayer);
+  const rows = selectedRows(board, game, live, selectedPlayer)
+    .sort((a, b) => Number(b.matchesCurrent) - Number(a.matchesCurrent));
+  const visibleRows = expanded ? rows : rows.slice(0, 4);
   const currentQuarter = quarterForLive(live);
   const currentNames = live ? playersForDigits(board, live.topScore % 10, live.leftScore % 10, currentQuarter) : [];
   const winsNow = currentNames.includes(selectedPlayer);
@@ -51,24 +56,17 @@ const YourSquaresSummary: React.FC<YourSquaresSummaryProps> = ({ board, game, li
         <Eyebrow>Your squares · {selectedPlayer}</Eyebrow>
         <span className="whitespace-nowrap font-mono tabular-nums text-[15px] text-fg">{rows.length} {rows.length === 1 ? 'square' : 'squares'}</span>
       </div>
-      <ul className="flex flex-wrap gap-2" aria-label="Your squares">
-        {rows.map((row) => (
-          <li key={row.index} className={`inline-flex items-center h-9 px-3 rounded-capsule border font-mono tabular-nums text-[14px] ${row.matchesCurrent ? 'border-gold text-gold' : 'border-hairline text-fg'}`}>
-            {topLabel} {row.top} · {leftLabel} {row.left}
-          </li>
-        ))}
-      </ul>
       <p className={`font-ui text-[17px] font-medium ${winsNow ? 'text-gold' : 'text-fg-2'}`}>
-        {winsNow ? 'Current result matches now.' : 'Current result: none of the selected squares match now.'}
+        {winsNow ? 'Currently matching: one of your squares.' : 'Currently matching: none of your squares.'}
       </p>
-      <ul className="flex flex-col gap-2">
-        {rows.map((row) => (
+      <ul id={listId} className="flex flex-col gap-2" aria-label="Your squares">
+        {visibleRows.map((row) => (
           <li key={`row-${row.index}`}>
-            <Glass padding="md" className="flex items-center justify-between gap-3">
+            <Glass padding="md" className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex flex-col gap-1 min-w-0">
                 <span className="font-mono tabular-nums text-[15px] text-fg">{topLabel} column {row.top} × {leftLabel} row {row.left}</span>
                 <span className="font-ui text-[14px] text-fg-2">
-                  {row.matchesCurrent ? 'This square matches the current result.' : row.nextLabels.length ? `Next score: ${row.nextLabels[0]}` : 'None of the next scores listed here match this square.'}
+                  {row.matchesCurrent ? 'Currently matching this square.' : row.nextLabels.length ? `Next score: ${row.nextLabels[0]}` : 'None of the next scores listed here match this square.'}
                 </span>
               </div>
               {row.top !== null && row.left !== null && (
@@ -81,6 +79,11 @@ const YourSquaresSummary: React.FC<YourSquaresSummaryProps> = ({ board, game, li
           </li>
         ))}
       </ul>
+      {rows.length > 4 && (
+        <CapsuleButton variant="quiet" aria-expanded={expanded} aria-controls={listId} onClick={() => setExpanded(!expanded)}>
+          {expanded ? 'Show fewer squares' : `Show all ${rows.length} squares`}
+        </CapsuleButton>
+      )}
     </section>
   );
 };

@@ -1,5 +1,5 @@
 import React from 'react';
-import type { BoardData, GameState, WinnerResolution } from '../../../../types';
+import type { BoardData, GameState, PendingMilestone, WinnerResolution } from '../../../../types';
 import { Eyebrow, Glass } from '../../../design/primitives';
 import { milestoneLabel } from '../milestones/milestoneViewModel';
 
@@ -8,11 +8,12 @@ export interface BoardDetailsDisclosureProps {
   board: BoardData;
   winnerHistory: WinnerResolution[];
   final: boolean;
+  pendingMilestones?: PendingMilestone[];
 }
 
-export const FinalRecord: React.FC<{ winnerHistory: WinnerResolution[]; game: GameState }> = ({ winnerHistory, game }) => (
-  <Glass as="section" padding="lg" className="flex flex-col gap-3 border-gold/40" role="region" aria-labelledby="final-record-title">
-    <h2 id="final-record-title" className="font-display text-[26px] leading-[1.1] text-fg">Final record</h2>
+const ResultRecord: React.FC<{ winnerHistory: WinnerResolution[]; game: GameState; final?: boolean }> = ({ winnerHistory, game, final = false }) => (
+  <Glass as="section" padding="lg" className="flex flex-col gap-3 border-gold/40" role="region" aria-labelledby={final ? 'final-record-title' : 'completed-results-title'}>
+    <h2 id={final ? 'final-record-title' : 'completed-results-title'} className="font-display text-[26px] leading-[1.1] text-fg">{final ? 'Final record' : 'Completed results'}</h2>
     {winnerHistory.length ? (
       <ol className="flex flex-col gap-2">
         {winnerHistory.map((winner) => {
@@ -24,7 +25,7 @@ export const FinalRecord: React.FC<{ winnerHistory: WinnerResolution[]; game: Ga
           const showPrevious = winner.corrected && previousName && previousName !== currentName;
           return (
             <li key={`${winner.milestone}-${winner.resolvedAt}-${winner.resolutionVersion || 1}`} className="flex flex-col gap-1">
-              <span className="flex items-baseline justify-between gap-3">
+              <span className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
                 <span className="font-ui text-[15px] text-fg">
                   <span className="font-medium">{milestoneLabel(winner.milestone)}</span> ·{' '}
                   {isOpenSquare ? (
@@ -61,6 +62,12 @@ export const FinalRecord: React.FC<{ winnerHistory: WinnerResolution[]; game: Ga
   </Glass>
 );
 
+export const FinalRecord: React.FC<{ winnerHistory: WinnerResolution[]; game: GameState }> = (props) => <ResultRecord {...props} final />;
+
+export const CompletedResults: React.FC<{ winnerHistory: WinnerResolution[]; game: GameState }> = (props) => (
+  props.winnerHistory.length ? <ResultRecord {...props} /> : null
+);
+
 const PAYOUT_ROWS = [
   ['Q1', 'Q1'],
   ['HALF', 'Halftime'],
@@ -68,10 +75,16 @@ const PAYOUT_ROWS = [
   ['FINAL', 'Final'],
 ] as const;
 
-export const PayoutsAndRules: React.FC<{ game: GameState }> = ({ game }) => {
+export const PayoutsAndRules: React.FC<{ game: GameState; winnerHistory?: WinnerResolution[]; pendingMilestones?: PendingMilestone[] }> = ({ game, winnerHistory = [], pendingMilestones = [] }) => {
   const rows = PAYOUT_ROWS.flatMap(([key, label]) => {
     const description = game.payoutDescriptions?.[key]?.trim();
-    return description ? [{ key, label, description }] : [];
+    const milestone = key === 'HALF' ? 'Q2' : key;
+    const winner = winnerHistory.find((result) => result.milestone === milestone);
+    const pending = pendingMilestones.some((result) => result.milestone === milestone);
+    const status = winner
+      ? `${winner.participantName || (winner.openSquare ? 'Open square' : 'Unassigned')}${winner.corrected ? ' · corrected' : ''}`
+      : pending ? 'Pending confirmation' : 'Not yet confirmed';
+    return description ? [{ key, label, description, status }] : [];
   });
   const notes = game.payoutDescriptions?.notes?.trim();
 
@@ -85,7 +98,7 @@ export const PayoutsAndRules: React.FC<{ game: GameState }> = ({ game }) => {
           {rows.map((row) => (
             <div key={row.key}>
               <dt><Eyebrow as="span">{row.label}</Eyebrow></dt>
-              <dd className="font-ui text-[15px] text-fg mt-1">{row.description}</dd>
+              <dd className="font-ui text-[15px] text-fg mt-1">{row.description}<span className="block text-fg-2">{row.status}</span></dd>
             </div>
           ))}
         </dl>
@@ -103,10 +116,10 @@ export const PayoutsAndRules: React.FC<{ game: GameState }> = ({ game }) => {
   );
 };
 
-const BoardDetailsDisclosure: React.FC<BoardDetailsDisclosureProps> = ({ game, board, winnerHistory, final }) => (
+const BoardDetailsDisclosure: React.FC<BoardDetailsDisclosureProps> = ({ game, board, winnerHistory, final, pendingMilestones }) => (
   <section className="flex flex-col gap-4" aria-labelledby="board-details-title">
     {final && <FinalRecord winnerHistory={winnerHistory} game={game} />}
-    <PayoutsAndRules game={game} />
+    <PayoutsAndRules game={game} winnerHistory={winnerHistory} pendingMilestones={pendingMilestones} />
     <details className="group rounded-card border border-hairline p-3">
       <summary id="board-details-title" className="min-h-11 flex items-center justify-between cursor-pointer list-none [&::-webkit-details-marker]:hidden font-ui text-[15px] text-fg">
         <span>Board details</span>

@@ -52,11 +52,11 @@ const ScoreInstrument: React.FC<ScoreInstrumentProps> = ({ game, board, live, li
       </Glass>
 
       <div className="flex flex-col gap-1 font-ui text-[15px] text-fg" role="status" aria-live="polite">
-        <p><strong className="font-medium">{score.periodLabel}</strong> · Current result: <strong className="font-medium">{live ? shortName(currentNames) : 'Waiting for score'}</strong></p>
-        {live && live.state !== 'pre' && <p>Winning square: <strong className="font-mono font-medium">{topLabel} {topDigit} across × {leftLabel} {sideDigit} down</strong></p>}
+        <p>{live?.state === 'post' ? 'Final score matches:' : 'Currently matching:'} <strong className="font-medium">{live && live.state !== 'pre' ? shortName(currentNames, 'Open square') : 'Waiting for score'}</strong></p>
+        {live && live.state !== 'pre' && <p>Square: <strong className="font-mono font-medium">{topLabel} {topDigit} across × {leftLabel} {sideDigit} down</strong></p>}
         <p className="text-fg-2"><strong className="font-medium text-fg">{score.authority.label}</strong> · {score.authority.detail}</p>
         <p className="font-mono text-[13px] text-fg-3">{stale ? 'Last known · ' : ''}{score.freshness || 'Checked time unavailable'} · {score.pollingText}</p>
-        {live?.detail && <p className="text-fg-3">{live.detail}</p>}
+        {score.phaseDetail && <p className="text-fg-3">{score.phaseDetail}</p>}
         {live?.warning && <p className="text-gold">{live.warning}</p>}
       </div>
     </section>

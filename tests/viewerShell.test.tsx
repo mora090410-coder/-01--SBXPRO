@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import ViewerShell from '../src/features/viewer/shell/ViewerShell';
 import type { BoardData, GameState, LiveGameData, WinnerResolution } from '../types';
@@ -61,14 +61,14 @@ describe('ViewerShell', () => {
     expect(within(firstViewport).getByRole('img', { name: 'Kansas City 21' })).toBeInTheDocument();
     expect(within(firstViewport).getByRole('img', { name: 'Philadelphia 14' })).toBeInTheDocument();
     const status = within(firstViewport).getByRole('status');
-    expect(status).toHaveTextContent(/Current result/);
+    expect(status).toHaveTextContent(/Currently matching/);
     expect(status).toHaveTextContent('Carrie Moss');
     expect(status).toHaveTextContent('PHI 4 across × KC 1 down');
     expect(status).toHaveTextContent(/Score updates about every minute/);
     expect(within(firstViewport).getByRole('button', { name: 'Find my squares' })).toBeVisible();
     expect(firstViewport).not.toHaveTextContent(/payout|makes me win/i);
     expect(screen.getByRole('main', { name: 'GridOne Bowl viewer' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /^Score/ })).toHaveTextContent('KC 21');
+    expect(screen.queryByRole('button', { name: /^Score/ })).toBeNull();
   });
 
   it('puts personalized summary and scenarios before winner email', () => {
@@ -79,11 +79,11 @@ describe('ViewerShell', () => {
     expect(summary.compareDocumentPosition(scenarios)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     expect(scenarios.compareDocumentPosition(winnerEmail)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     expect(within(summary).getByText('2 squares')).toBeVisible();
-    expect(within(summary).getByText('Current result matches now.')).toBeVisible();
+    expect(within(summary).getByText('Currently matching: one of your squares.')).toBeVisible();
     expect(within(summary).getByRole('button', { name: /View on board top 4 side 1/ })).toBeInTheDocument();
     expect(screen.getByText('Next score: KC Safety +2')).toBeVisible();
     expect(screen.getByText('These are arithmetic score outcomes, not odds or predictions.')).toBeVisible();
-    expect(screen.getByRole('img', { name: '2 squares for Carrie Moss' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Score/ })).toBeNull();
   });
 
   it('shows no inert scenarios in pregame and promotes the final record at Final', () => {
@@ -157,4 +157,32 @@ describe('ViewerShell', () => {
 it('keeps the organizer return route available on the finalized public viewer', () => {
   renderShell({ organizerHref: '/boards/owner-board' });
   expect(screen.getByRole('link', { name: 'Manage board' })).toHaveAttribute('href', '/boards/owner-board');
+});
+
+it('shows the floating score only after the main score scrolls above the viewport', () => {
+  let notify: IntersectionObserverCallback = () => {};
+  const disconnect = vi.fn();
+  vi.stubGlobal('IntersectionObserver', class {
+    constructor(callback: IntersectionObserverCallback) { notify = callback; }
+    observe() {}
+    disconnect = disconnect;
+  });
+  const view = renderShell();
+  const update = (bottom: number, isIntersecting: boolean) => act(() => notify([{ isIntersecting, boundingClientRect: { bottom } } as IntersectionObserverEntry], {} as IntersectionObserver));
+  expect(screen.queryByRole('button', { name: /^Score/ })).toBeNull();
+  update(400, true);
+  expect(screen.queryByRole('button', { name: /^Score/ })).toBeNull();
+  update(-1, false);
+  expect(screen.getByRole('button', { name: /^Score/ })).toHaveTextContent('KC 21');
+  update(400, true);
+  expect(screen.queryByRole('button', { name: /^Score/ })).toBeNull();
+  view.unmount();
+  expect(disconnect).toHaveBeenCalled();
+  vi.unstubAllGlobals();
+});
+
+it('shows the confirmed Q1 winner during Q2', () => {
+  renderShell({ live: live({ period: 2 }), winnerHistory: [{ milestone: 'Q1', topDigit: 0, sideDigit: 0, participantName: 'Demo Family', resolvedAt: '2026-09-10T01:00:00Z' }] });
+  expect(screen.getByRole('region', { name: 'Completed results' })).toHaveTextContent('Q1 · Demo Family');
+  expect(screen.queryByRole('region', { name: 'Final record' })).toBeNull();
 });

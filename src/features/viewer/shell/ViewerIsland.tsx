@@ -40,7 +40,7 @@ const ViewerIsland: React.FC<ViewerIslandProps> = ({ game, live, liveStatus, isS
       )}
       expanded={(
         <div className="flex flex-col gap-2 min-w-[260px] font-ui text-[14px] text-broadcast-white/80">
-          {winsNow && selectedPlayer ? <p className="font-medium text-gold">{selectedPlayer} wins right now</p> : null}
+          {winsNow && selectedPlayer ? <p className="font-medium text-gold">Currently matching: {selectedPlayer}</p> : null}
           <p><span className="font-medium text-broadcast-white">{score.authority.label}</span> · {score.authority.detail}</p>
           <p className="font-mono text-[12px] text-broadcast-white/60">{stale ? 'Last known · ' : ''}{score.freshness || 'Checked time unavailable'} · {score.pollingText}</p>
           {live.sourceName && !score.authority.detail.includes(live.sourceName) ? (

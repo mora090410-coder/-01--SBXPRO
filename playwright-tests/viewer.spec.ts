@@ -132,6 +132,8 @@ test.describe('viewer shell', () => {
     expect((statusBox?.y ?? 0) + (statusBox?.height ?? 845)).toBeLessThanOrEqual(844);
 
     const islandToggle = page.getByRole('button', { name: /^Score/ });
+    await expect(islandToggle).toHaveCount(0);
+    await page.getByTestId('viewer-board-grid').scrollIntoViewIfNeeded();
     await expect(islandToggle).toBeVisible();
     await islandToggle.click();
     const scoreRegion = page.getByRole('region', { name: 'Score', exact: true });
@@ -140,5 +142,38 @@ test.describe('viewer shell', () => {
 
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
     expect(overflow).toBe(false);
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await expect(islandToggle).toHaveCount(0);
   });
 });
+
+for (const width of [320, 390, 1440]) {
+  test(`completed Q1 and compact 99-square selection at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    const score = { ...liveScore, period: 2, leftScore: 0, topScore: 0, clock: '12:21', detail: '12:21 - 2nd Quarter' };
+    const winnerHistory = [{ milestone: 'Q1', topDigit: 0, sideDigit: 0, participantName: 'Ann', resolvedAt: '2026-09-13T18:00:00.000Z' }];
+    await page.route('**/api/pools/ABCDEFGH', route => route.fulfill({ json: {
+      share_code: 'ABCDEFGH', title: 'Quarter result check', revision: 7, published_at: '2026-09-12T20:00:00.000Z',
+      leftAbbr: 'DAL', topAbbr: 'WAS', dates: '2026-09-13',
+      board: { ...publishedBoard, squares: Array.from({ length: 100 }, (_, i) => i < 99 ? ['Ann'] : []) },
+      score, winner_history: winnerHistory, pending_milestones: [], payoutDescriptions: { Q1: '$100' }, is_activated: true,
+    } }));
+    await page.route('**/api/pools/ABCDEFGH/score', route => route.fulfill({ json: { score, winnerHistory, pendingMilestones: [] } }));
+    await page.goto('/b/ABCDEFGH');
+    await expect(page.getByRole('region', { name: 'Completed results' })).toContainText('Q1 · Ann');
+    await expect(page.getByRole('button', { name: /^Score/ })).toHaveCount(0);
+    await page.getByTestId('viewer-first-viewport').getByRole('button', { name: 'Find my squares' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Find my squares' });
+    await dialog.getByRole('button', { name: 'Ann', exact: true }).click();
+    const summary = page.getByRole('region', { name: 'Ann square summary' });
+    await expect(summary.getByRole('button', { name: /View on board/ })).toHaveCount(4);
+    await summary.getByRole('button', { name: /Show all/ }).click();
+    await expect(summary.getByRole('button', { name: /View on board/ })).toHaveCount(99);
+    await summary.getByRole('button', { name: /Show fewer/ }).click();
+    await expect(summary.getByRole('button', { name: /View on board/ })).toHaveCount(4);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.screenshot({ path: `/tmp/gridone-viewer-${width}.png`, fullPage: true });
+  });
+}

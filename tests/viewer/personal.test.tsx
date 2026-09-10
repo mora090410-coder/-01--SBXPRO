@@ -13,16 +13,37 @@ const game: GameState = { title: 'GridOne Bowl', meta: '', leftAbbr: 'KC', leftN
 const live: LiveGameData = { leftScore: 21, topScore: 14, quarterScores: { Q1: { left: 7, top: 0 }, Q2: { left: 7, top: 7 }, Q3: { left: 7, top: 7 }, Q4: { left: 0, top: 0 }, OT: { left: 0, top: 0 } }, clock: '8:12', period: 3, state: 'in', detail: '3rd quarter', isOvertime: false, sourceName: 'ESPN', retrievedAt: '2026-09-13T20:15:00.000Z', staleAfter: '2026-09-13T20:16:00.000Z', freshness: 'fresh' };
 
 describe('YourSquaresSummary', () => {
-  it('lists every square as a mono chip and says who wins now in gold', () => {
+  it('shows one detailed list with the current match status first', () => {
     const onViewSquare = vi.fn();
     render(<YourSquaresSummary board={board} game={game} live={live} selectedPlayer="Carrie Moss" onViewSquare={onViewSquare} />);
     const region = screen.getByRole('region', { name: 'Carrie Moss square summary' });
     expect(within(region).getByText('2 squares')).toBeInTheDocument();
-    const winsNow = within(region).getByText('Current result matches now.');
+    const winsNow = within(region).getByText('Currently matching: one of your squares.');
     expect(winsNow.className).toContain('text-gold');
+    const list = within(region).getByRole('list', { name: 'Your squares' });
+    expect(within(region).getAllByRole('list')).toHaveLength(1);
+    expect(within(list).getAllByRole('listitem')).toHaveLength(2);
+    expect(winsNow.compareDocumentPosition(list) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     fireEvent.click(within(region).getByRole('button', { name: /View on board top 4 side 1/ }));
     expect(onViewSquare).toHaveBeenCalledWith({ top: 4, left: 1 });
     expect(within(region).getByText(/Next score: KC Safety \+2/)).toBeInTheDocument();
+  });
+
+  it('keeps a large selection compact, with the current match first and every square reachable', () => {
+    const manySquares = { ...board, squares: Array.from({ length: 100 }, () => ['Carrie Moss']) };
+    const onViewSquare = vi.fn();
+    render(<YourSquaresSummary board={manySquares} game={game} live={live} selectedPlayer="Carrie Moss" onViewSquare={onViewSquare} />);
+    const list = screen.getByRole('list', { name: 'Your squares' });
+    expect(within(list).getAllByRole('listitem')).toHaveLength(4);
+    expect(within(list).getAllByRole('listitem')[0]).toHaveTextContent('PHI column 4 × KC row 1');
+    const expand = screen.getByRole('button', { name: 'Show all 100 squares' });
+    expect(expand).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.click(expand);
+    expect(within(list).getAllByRole('listitem')).toHaveLength(100);
+    fireEvent.click(screen.getByRole('button', { name: 'View on board top 9 side 9' }));
+    expect(onViewSquare).toHaveBeenCalledWith({ top: 9, left: 9 });
+    fireEvent.click(screen.getByRole('button', { name: 'Show fewer squares' }));
+    expect(within(list).getAllByRole('listitem')).toHaveLength(4);
   });
 });
 

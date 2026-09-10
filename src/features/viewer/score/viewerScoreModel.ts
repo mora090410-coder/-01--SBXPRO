@@ -10,6 +10,7 @@ export interface ViewerScoreAuthority {
 
 export interface ViewerScoreModel {
   periodLabel: string;
+  phaseDetail: string | null;
   authority: ViewerScoreAuthority;
   freshness: string | null;
   pollingText: 'Score updates about every minute';
@@ -21,6 +22,14 @@ export const viewerPeriodLabel = (live: LiveGameData | null): string => {
   if (live.state === 'pre') return 'Pregame';
   if (live.period > 4 || live.isOvertime) return `OT · ${live.clock || 'In progress'}`;
   return `Q${Math.max(live.period, 1)} · ${live.clock || 'In progress'}`;
+};
+
+/** Retain breaks, delays and other provider context; omit ordinary repeated clock/quarter text. */
+export const viewerPhaseDetail = (live: LiveGameData | null): string | null => {
+  const detail = live?.detail?.trim();
+  if (!detail || /^(?:(?:\d{1,2}:\d{2})\s*[-·]\s*)?(?:(?:1st|2nd|3rd|4th|first|second|third|fourth)\s+quarter|Q[1-4]|OT|overtime)$/i.test(detail)) return null;
+  if (detail.toLowerCase() === viewerPeriodLabel(live).toLowerCase()) return null;
+  return detail;
 };
 
 export const viewerAuthorityLabel = (
@@ -62,6 +71,7 @@ export const buildViewerScoreModel = ({
   isSynced: boolean;
 }): ViewerScoreModel => ({
   periodLabel: viewerPeriodLabel(live),
+  phaseDetail: viewerPhaseDetail(live),
   authority: viewerAuthorityLabel(live, liveStatus, isSynced),
   freshness: formatViewerFreshness(live),
   pollingText: 'Score updates about every minute',

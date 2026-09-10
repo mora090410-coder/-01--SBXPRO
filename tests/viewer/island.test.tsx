@@ -24,7 +24,7 @@ describe('ViewerIsland', () => {
     render(<ViewerIsland game={game} board={board} live={live} liveStatus="LIVE" isSynced selectedPlayer="Carrie Moss" yourSquares={3} winsNow />);
     expect(screen.getByRole('img', { name: '3 squares for Carrie Moss' })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Score/ }));
-    expect(screen.getByText('Carrie Moss wins right now')).toBeInTheDocument();
+    expect(screen.getByText('Currently matching: Carrie Moss')).toBeInTheDocument();
   });
 
   it('renders nothing without a score', () => {
