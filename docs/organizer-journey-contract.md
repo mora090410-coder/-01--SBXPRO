@@ -64,7 +64,7 @@ The editor does not offer sequential paste-to-fill. Selecting a square keeps foc
 
 `ReconcileCard` splits what stops publication from what is merely worth a look. It never merges them.
 
-**`Before you can publish`** — hard blockers, each with its own sentence: `Add a board title before publishing.`, `Choose the scheduled game before publishing.`, `Draw one complete set of numbers before publishing.`, `Confirm that the remaining OPEN squares should stay OPEN.`, `Save the latest changes before publishing.`, `Wait for the board to finish saving.`, `The latest changes did not save. Reload or try again.`, `Review and save the recovered draft before publishing.`, `The board owner could not be verified. Reload and try again.` When there are none: `Nothing blocking publish.`
+**`Before you can publish`** — hard blockers, each with its own sentence: `Add a board title before publishing.`, `Choose the scheduled game before publishing.`, `Draw one complete set of numbers before publishing.`, `Confirm that the remaining OPEN squares should stay OPEN.`, `Save the latest changes before publishing.`, `Wait for the board to finish saving.`, `The latest changes did not save. Reload or try again.`, `Review and save the recovered draft before publishing.`, `The board owner could not be verified. Reload and try again.` When ready and there are none: `Ready for preview.`
 
 **`Private follow-up`** — advisories, never blockers: `OPEN squares remain. You can publish if you are okay leaving them OPEN.`, `Some private payment notes still need follow-up.`. When there are none: `No private follow-up.`
 
@@ -74,7 +74,7 @@ Off-platform payment status never gates progression.
 
 Primary action: **`Draw numbers`**, enabled only when `canEnterDraw`. If squares are still OPEN, a confirmation group named `{n} squares are open. Draw anyway?` appears, states that **Open squares stay marked OPEN**, and offers `Keep assigning` (which takes focus) and `Draw with {n} OPEN`.
 
-The draw itself is `crypto.getRandomValues` in `secureDraw.ts`: one permutation of 0–9 per axis, each digit exactly once (`isExactAxis`). The result appears over the axes as a `Draft draw` with `Draw again` and `Use these numbers`; `Cancel` discards it. Once committed, the island shows `Drawn` / `Numbers set` and offers `Replace draft draw` while the board remains unpublished.
+The draw itself is `crypto.getRandomValues` in `secureDraw.ts`: one permutation of 0–9 per axis, each digit exactly once (`isExactAxis`). The result appears over the axes as a `Draft draw` with `Draw again` and `Use these numbers`; `Cancel` discards it. Once committed, the island shows `Numbers drawn` and offers `Preview` as its primary action when allowed. `Replace draft draw` remains secondary while the board is unpublished.
 
 Dynamic axes are not supported at launch (`dynamic_axes_not_supported`). Do not flatten a legacy dynamic board without an approved preservation plan.
 
@@ -179,3 +179,12 @@ The setup page includes collapsed **Help people join** and **Family access (opti
 **Create private family link** rotates a seven-day scoped link. **Revoke family links** ends that family's access. Only a clean saved draft can perform these actions. **Change responsible family** shows selected squares and previous/new families and requires payment-note acknowledgement; names remain unchanged, old payment notes are archived/reset and previous affected links stop working. Finalized boards never show these controls.
 
 The family editor exposes only its assigned names and availability. Save failures preserve input. Revision conflict disables resubmission until a deliberate reload, with unsaved-change confirmation.
+
+
+## Organizer island and private Payments (September 10)
+
+The centered organizer island reserves its compact height above the workspace; deliberate expansion is bounded and dismissible. Compact text prioritizes save failures/conflicts, then the organizer's active payment task, then lifecycle/game state. An explicit touch hold may expand it without interfering with scrolling; click/tap and keyboard remain equivalent. Meaningful changes are politely announced. Paid/Unpaid/Not asked yet counts are square counts, never people or balances. The viewer island is unchanged.
+
+`Payments` remains a visible workspace action before and after publication. Its private full-height sheet groups by exact responsible allocation, falling back to exact joint displayed names only for legacy unallocated squares. Allocation-only squares count; entirely unallocated unnamed squares do not. Search matches responsibility, displayed names, and permanent square numbers. Filters never imply selection. `Select {n} shown squares for {name}` selects only the matching group rows; individual checkboxes and explicit status actions update selected squares. Mixed groups show separate counts. Unknown payment status is `Not asked yet`, never unpaid.
+
+Payment-only writes preserve all other private metadata and public board fields. Pending writes serialize against family changes; UI success requires returned receipts for every requested square. Failure preserves the intended selection/status and offers retry; a changed selection invalidates a pending retry. Public/family projections never receive payment statuses. `View on board` closes the sheet, scrolls to and focuses the chosen square without opening its editor. Name entry and assignment shortcuts retain their existing behavior.

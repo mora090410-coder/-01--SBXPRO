@@ -78,30 +78,30 @@ describe('ReconcileCard', () => {
     const { rerender } = render(
       <ReconcileCard model={model()} unpaidCount={3} highlightOpen={false} onToggleHighlightOpen={onToggle} />,
     );
-    const button = screen.getByRole('button', { name: '42 filled · 58 open · 3 unpaid' });
+    const button = screen.getByRole('button', { name: '42 filled · 58 open · 3 unpaid · 0 not asked yet' });
     expect(button).toHaveAttribute('aria-pressed', 'false');
     fireEvent.click(button);
     expect(onToggle).toHaveBeenCalledTimes(1);
 
     rerender(<ReconcileCard model={model()} unpaidCount={3} highlightOpen onToggleHighlightOpen={onToggle} />);
-    expect(screen.getByRole('button', { name: '42 filled · 58 open · 3 unpaid' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: '42 filled · 58 open · 3 unpaid · 0 not asked yet' })).toHaveAttribute('aria-pressed', 'true');
   });
 
   it('shows ready copy only when the model permits publishing', () => {
     render(<ReconcileCard model={model({ canPublish: true })} unpaidCount={0} highlightOpen={false} onToggleHighlightOpen={vi.fn()} />);
-    expect(screen.getByText('Nothing blocking publish.')).toBeInTheDocument();
+    expect(screen.getByText('Ready for preview.')).toBeInTheDocument();
     expect(screen.getByText('No private follow-up.')).toBeInTheDocument();
   });
 
   it('shows the next selling step instead of claiming an empty board is ready', () => {
     render(<ReconcileCard model={model({ assignedCount: 0, openCount: 100, phase: 'Fill' })} unpaidCount={0} highlightOpen={false} onToggleHighlightOpen={vi.fn()} />);
-    expect(screen.queryByText('Nothing blocking publish.')).not.toBeInTheDocument();
+    expect(screen.queryByText('Ready for preview.')).not.toBeInTheDocument();
     expect(screen.getByText('Allocate squares to a person or family, then draw game numbers when ready.')).toBeInTheDocument();
   });
 
   it('explains the missing draw when there are no other blockers', () => {
     render(<ReconcileCard model={model({ phase: 'Draw', canEnterDraw: true })} unpaidCount={0} highlightOpen={false} onToggleHighlightOpen={vi.fn()} />);
-    expect(screen.queryByText('Nothing blocking publish.')).not.toBeInTheDocument();
+    expect(screen.queryByText('Ready for preview.')).not.toBeInTheDocument();
     expect(screen.getByText('When sales are finished, draw game numbers, then review and finalize the board.')).toBeInTheDocument();
   });
 

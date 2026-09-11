@@ -13,6 +13,7 @@ export interface WorkspaceHeaderProps {
   onRetry: () => void;
   onReload: () => void;
   onLogout: () => void;
+  actions?: React.ReactNode;
 }
 
 function formatKickoff(game: GameState): string {
@@ -68,6 +69,7 @@ export default function WorkspaceHeader({
   onRetry,
   onReload,
   onLogout,
+  actions,
 }: WorkspaceHeaderProps) {
   const [title, setTitle] = useState(game.title);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -94,8 +96,13 @@ export default function WorkspaceHeader({
 
   return (
     <header className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
       <a href="/dashboard" className="inline-flex min-h-11 w-fit items-center rounded-control font-ui text-[14px] text-fg-2 focus-visible:ring-2 focus-visible:ring-action">My boards</a>
-      <div className="flex min-w-0 flex-wrap items-start justify-between gap-4 [&>*:first-child]:min-w-0 [&>*:first-child]:flex-1">
+      {isPublished
+        ? <div><CapsuleTag tone="gold">Published</CapsuleTag></div>
+        : <SavePill saveState={saveState} onRetry={onRetry} onReload={onReload} />}
+      </div>
+      <div className="flex min-w-0 flex-col items-start justify-between gap-3 sm:flex-row [&>*:first-child]:min-w-0 [&>*:first-child]:w-full [&>*:first-child]:flex-1">
         <div className="flex-1 min-w-0">
           <Eyebrow>{isPublished ? 'Published board' : 'Organizer'}</Eyebrow>
           <input
@@ -114,7 +121,7 @@ export default function WorkspaceHeader({
               }
             }}
           />
-          <div className="flex items-center gap-3 mt-1">
+          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0">
             <p className="font-ui text-[15px] text-fg-2">
               {game.leftAbbr} at {game.topAbbr} · {formatKickoff(game)}
             </p>
@@ -125,11 +132,8 @@ export default function WorkspaceHeader({
             )}
           </div>
         </div>
-        <CapsuleButton variant="ghost" size="md" onClick={onLogout}>Log out</CapsuleButton>
+        <div className="flex flex-wrap items-center gap-2">{actions}<CapsuleButton variant="ghost" size="md" onClick={onLogout}>Log out</CapsuleButton></div>
       </div>
-      {isPublished
-        ? <div><CapsuleTag tone="gold">Published</CapsuleTag></div>
-        : <SavePill saveState={saveState} onRetry={onRetry} onReload={onReload} />}
       {!isPublished && (
         <Sheet open={pickerOpen} onClose={() => setPickerOpen(false)} title="Pick the game">
           <p className="font-ui text-[14px] text-fg-2">Changing the game clears any score state on this board.</p>

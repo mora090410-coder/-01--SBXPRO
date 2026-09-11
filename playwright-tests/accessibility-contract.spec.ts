@@ -571,7 +571,8 @@ test.describe('Slice 2 signed-out accessibility contract automation', () => {
     // First save fails; the second edit meets a revision that moved underneath it.
     await page.getByLabel('Board name').fill('Conflicting title');
     await page.getByLabel('Board name').press('Enter');
-    await expect(page.getByRole('status').filter({ hasText: 'Save failed' })).toBeVisible();
+    await expect(page.getByRole('main').getByRole('status').filter({ hasText: 'Save failed' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Organizer status', exact: true })).toHaveAccessibleDescription(/Save failed/);
     await page.getByLabel('Board name').fill('Conflicting title again');
     await page.getByLabel('Board name').press('Enter');
 

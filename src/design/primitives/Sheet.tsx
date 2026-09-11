@@ -13,10 +13,12 @@ interface SheetProps {
    * preview sheet but opens on top of it.
    */
   layer?: 'base' | 'raised';
+  /** Opaque surface and sticky header for long, scrolling forms. */
+  solidSurface?: boolean;
 }
 
 /** Bottom sheet dialog. Springs up from the bottom edge; Escape or backdrop closes it. */
-export function Sheet({ open, onClose, title, children, height = 'auto', layer = 'base' }: SheetProps) {
+export function Sheet({ open, onClose, title, children, height = 'auto', layer = 'base', solidSurface = false }: SheetProps) {
   const panelRef = useRef<HTMLElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const openerRef = useRef<HTMLElement | null>(null);
@@ -91,12 +93,13 @@ export function Sheet({ open, onClose, title, children, height = 'auto', layer =
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
+        style={solidSurface ? { backgroundColor: 'var(--g-ground)' } : undefined}
         className={`relative w-full max-w-[640px] ${heightClass} overflow-y-auto rounded-b-none animate-[sheet-rise_var(--g-dur-spring)_var(--g-ease-state)] outline-none`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="sticky top-0 flex items-center justify-between px-6 pt-2 pb-2 bg-transparent">
+        <div className={`sticky top-0 z-10 flex items-center justify-between px-6 pt-2 pb-2 ${solidSurface ? 'bg-ground' : 'bg-transparent'}`}>
           <h2 id={titleId} className="font-ui text-[17px] font-medium text-fg">{title}</h2>
-          <button type="button" onClick={onClose} className="font-ui text-[15px] text-fg-2 hover:text-fg rounded-capsule px-4 h-11 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action">Close</button>
+          <button type="button" onClick={onClose} className="font-ui text-[17px] text-fg-2 hover:text-fg rounded-capsule px-4 h-11 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action">Close</button>
         </div>
         <div ref={contentRef} className="px-6 pb-8">{children}</div>
       </Glass>

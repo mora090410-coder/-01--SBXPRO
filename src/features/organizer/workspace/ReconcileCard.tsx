@@ -5,6 +5,7 @@ import type { OrganizerLifecycleModel } from '../lifecycle/organizerLifecycle';
 export interface ReconcileCardProps {
   model: OrganizerLifecycleModel;
   unpaidCount: number;
+  unknownCount?: number;
   highlightOpen: boolean;
   onToggleHighlightOpen: () => void;
 }
@@ -30,7 +31,7 @@ const blockerText: Record<string, string> = {
   save_recovered: 'Review and save the recovered draft before publishing.',
 };
 
-export default function ReconcileCard({ model, unpaidCount, highlightOpen, onToggleHighlightOpen }: ReconcileCardProps) {
+export default function ReconcileCard({ model, unpaidCount, unknownCount = 0, highlightOpen, onToggleHighlightOpen }: ReconcileCardProps) {
   return (
     <Glass padding="lg" className="flex flex-col gap-4">
       <Eyebrow>Reconcile</Eyebrow>
@@ -40,7 +41,7 @@ export default function ReconcileCard({ model, unpaidCount, highlightOpen, onTog
         onClick={onToggleHighlightOpen}
         className="min-h-11 w-full rounded-control px-2 text-left font-ui text-[15px] text-fg hover:bg-panel-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action"
       >
-        {`${model.assignedCount} filled · ${model.openCount} open · ${unpaidCount} unpaid`}
+        {`${model.assignedCount} filled · ${model.openCount} open · ${unpaidCount} unpaid · ${unknownCount} not asked yet`}
       </button>
       <div role="region" aria-label="Before you can publish" className="border border-hairline rounded-control p-4">
         <h3 className="font-semibold">Before you can publish</h3>
@@ -52,7 +53,7 @@ export default function ReconcileCard({ model, unpaidCount, highlightOpen, onTog
           </ul>
         ) : (
           <p>{model.canPublish
-            ? 'Nothing blocking publish.'
+            ? 'Ready for preview.'
             : model.assignedCount === 0
               ? 'Allocate squares to a person or family, then draw game numbers when ready.'
               : model.canEnterDraw

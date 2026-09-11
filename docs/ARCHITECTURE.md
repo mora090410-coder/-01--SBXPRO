@@ -132,3 +132,10 @@ functions/api/stripe/webhook.ts
 `POST /api/pools/:id/family` verifies the organizer and issues, revokes, or reassigns scoped family access. `POST /api/family` accepts a family bearer token, hashes it with SHA-256 and invokes service-only `gridone_family_access`. The private table has RLS enabled and no anon/authenticated grants. The RPC serializes on the contest row before checking credential, revision and cell scope. Tokens are randomly generated 256-bit values in URL fragments; they are never stored plaintext, included in public payloads, or sent in referrers. Mutating POST requests are never automatically retried. A conflict preserves UI edits until deliberate reload.
 
 Migration `027_family_access.sql` is additive and must be installed before releasing these controls. Rollback revokes active family links while retaining all edited names and history; do not drop the data or break existing public share links.
+
+
+## Organizer Payments and adaptive island
+
+`src/features/organizer/payments/paymentModel.ts` groups private statuses by responsible allocation and derives filtered square lists. `PaymentsPanel` owns search and explicit selection in the existing Sheet. `entryMetaService.savePaymentStatuses` sends only identity keys and `paid_status` in one owner-RLS upsert, then verifies the returned receipt. It neither writes public board state nor replaces seller/contact fields.
+
+The organizer uses a feature-local island with `organizerIslandModel` and token-based CSS, leaving the shared viewer island unchanged. `OrganizerWorkspace` coordinates payment writes, save/failure state, sheet and board focus, and existing lifecycle actions. No database migration or public payload field is added.

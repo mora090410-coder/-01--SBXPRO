@@ -170,6 +170,20 @@ describe('scoped family database access', () => {
     expect(await queryScalar(`SELECT board_data->'allocationLabels'->>0 FROM public.contests WHERE id='${id}'`)).toBe('Mora');
     expect(await queryScalar(`SELECT paid_status||':'||contact_value FROM public.contest_entries WHERE contest_id='${id}' AND cell_index=0`)).toBe('paid:private@example.test');
   });
+
+  it('keeps payment-only bulk updates private and preserves the other entry fields', async () => {
+    await executeSql(`INSERT INTO public.contest_entries(contest_id,cell_index,paid_status,seller_label,contact_type,contact_value,notify_opt_in) VALUES('${id}',0,'unpaid','Coach','email','private@example.test',true);`);
+    // Match the narrow columns sent by the payment-only PostgREST upsert.
+    await executeSql(asUser(OWNER_ID, `INSERT INTO public.contest_entries(contest_id,cell_index,paid_status) VALUES('${id}',0,'paid'),('${id}',1,'paid') ON CONFLICT(contest_id,cell_index) DO UPDATE SET paid_status=EXCLUDED.paid_status;`));
+    expect(await queryScalar(`SELECT paid_status||':'||seller_label||':'||contact_value||':'||notify_opt_in FROM public.contest_entries WHERE contest_id='${id}' AND cell_index=0`)).toBe('paid:Coach:private@example.test:true');
+    expect(await queryScalar(asUser(STRANGER_ID, `SELECT count(*) FROM public.contest_entries WHERE contest_id='${id}'`))).toContain('0');
+    await expect(executeSql(asUser(STRANGER_ID, `INSERT INTO public.contest_entries(contest_id,cell_index,paid_status) VALUES('${id}',0,'unpaid') ON CONFLICT(contest_id,cell_index) DO UPDATE SET paid_status=EXCLUDED.paid_status;`))).rejects.toThrow();
+    await expect(queryScalar(`SET ROLE anon; SELECT count(*) FROM public.contest_entries WHERE contest_id='${id}'`)).rejects.toThrow(/permission denied/);
+    await invite();
+    const family = await read();
+    expect(family).not.toContain('paid_status');
+    expect(family).not.toContain('private@example.test');
+  });
   it('rejects unknown keys, out-of-scope cells, missing names and stale writes', async () => {
     await invite();
     for (const change of [{index:2,name:'Bill'}, {index:0,name:'Bill',paid_status:'paid'}, {index:0,name:''}, {index:0,name:'Bill',availability:'sold'}]) {

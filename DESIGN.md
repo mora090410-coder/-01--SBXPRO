@@ -132,7 +132,11 @@ State ease 200ms `cubic-bezier(0.2, 0, 0, 1)`. Soft spring ~450ms, no overshoot,
 
 ## The Island
 
-Capsule hugging the top edge on phone, bottom-right on desktop. Collapsed: rings or score. Expanded on tap or hover: full state and exactly one primary action. Always dark. Keyboard operable; Escape collapses. The island's outer `<section>` is the single named landmark (present even when collapsed); the expanded content is an unnamed region referenced by aria-controls.
+Viewer: the existing score capsule appears only after the main score leaves view. Its interaction remains unchanged.
+
+Organizer: a dark, horizontally centered capsule sits in a reserved sticky top strip on phone and desktop. Its compact text follows the active task and explicitly labels assignment, payment, save, and game states. Tap/click or a cancellable touch hold expands the same surface; hover never opens it. Width and height use the soft state transition without scaling text; reduced motion uses a 120ms fade. Expansion preserves the strip height and is bounded by the viewport. Escape, outside activation, or focus leaving collapses it; actions restore focus to the trigger before opening another sheet. The outer section is named `Organizer status`; expanded `Board details` contains one primary next action and secondary shortcuts. Full private payment lists use the Payments sheet.
+
+Payment counts always describe squares. Paid, Unpaid and Not asked yet remain separate; payment follow-up never blocks publishing. The organizer's cream workspace, square editing, and allocation flows retain their established controls.
 
 Score freshness is information, not decoration: viewer updates arrive about every minute, and the island's expanded state always shows the source and the retrieved time. Never imply realtime delivery.
 

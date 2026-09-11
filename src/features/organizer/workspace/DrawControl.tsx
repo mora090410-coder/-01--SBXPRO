@@ -91,11 +91,11 @@ export default function DrawControl({
             </div>
           </Glass>
         )}
-        <Glass className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3 px-1">
           <span className="font-mono text-[14px] text-fg">Numbers set</span>
           <CapsuleTag tone="gold">Drawn</CapsuleTag>
           <CapsuleButton variant="ghost" onClick={onReplace} disabled={disabled}>Replace draft draw</CapsuleButton>
-        </Glass>
+        </div>
       </>
     );
   }

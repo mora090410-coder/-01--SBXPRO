@@ -1,6 +1,24 @@
 import { supabase } from '../../../../services/supabase';
 import type { EntryMeta } from '../../../../types';
 
+/** One atomic, owner-scoped payment update. Omitted private columns are never overwritten. */
+export async function savePaymentStatuses(poolId: string, indices: number[], status: EntryMeta['paid_status']): Promise<EntryMeta[]> {
+  if (!poolId || !['paid', 'unpaid', 'unknown'].includes(status)) throw new Error('Invalid payment update.');
+  if (indices.some(index => !Number.isInteger(index) || index < 0 || index > 99)) throw new Error('Invalid square selection.');
+  const unique = [...new Set(indices)];
+  if (!unique.length) return [];
+  const { data, error } = await supabase.from('contest_entries').upsert(
+    unique.map(cell_index => ({ contest_id: poolId, cell_index, paid_status: status })),
+    { onConflict: 'contest_id, cell_index', defaultToNull: false },
+  ).select('cell_index,paid_status,notify_opt_in,contact_type,contact_value,seller_label');
+  if (error) throw new Error(error.message);
+  const saved = (data ?? []) as EntryMeta[];
+  if (saved.length !== unique.length || unique.some(index => !saved.some(row => row.cell_index === index && row.paid_status === status))) {
+    throw new Error('Could not confirm all payment changes. Refresh private notes before trying again.');
+  }
+  return saved;
+}
+
 /** Upserts a square's private metadata (paid status, seller, contact) for a pool. */
 export async function saveEntryMeta(poolId: string, meta: EntryMeta): Promise<void> {
   const { error } = await supabase

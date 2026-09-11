@@ -1,0 +1,83 @@
+import React from 'react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { expect, it, vi } from 'vitest';
+import { buildPaymentModel } from '../../src/features/organizer/payments/paymentModel';
+import { PaymentsPanel } from '../../src/features/organizer/payments/PaymentsPanel';
+const model = buildPaymentModel({ leftAxis: [], topAxis: [], squares: [['Buyer'], ['Other']], allocationLabels: ['Family', 'Family'] }, {});
+const props = { open: true, onClose: vi.fn(), model, onViewSquare: vi.fn(), onSave: vi.fn(async () => {}) };
+it('searches permanent numbers and never updates hidden selections', async () => {
+  render(<PaymentsPanel {...props} />);
+  fireEvent.click(screen.getByRole('button', { name: /Show squares for Family/ }));
+  fireEvent.click(screen.getByLabelText('Select square 1'));
+  fireEvent.change(screen.getByLabelText('Search people, names or square number'), { target: { value: '2' } });
+  expect(screen.queryByRole('button', { name: 'Mark 0 selected paid' })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByLabelText('Select square 2'));
+  fireEvent.click(screen.getByRole('button', { name: 'Mark 1 selected paid' }));
+  await waitFor(() => expect(props.onSave).toHaveBeenCalledWith([1], 'paid'));
+});
+it('awaits persistence and preserves selection and requested status for retry', async () => {
+  let reject!: (reason: Error) => void;
+  const onSave = vi.fn().mockImplementationOnce(() => new Promise((_, fail) => { reject = fail; })).mockResolvedValue(undefined);
+  render(<PaymentsPanel {...props} onSave={onSave} />);
+  fireEvent.click(screen.getByRole('button', { name: /Show squares for Family/ }));
+  fireEvent.click(screen.getByLabelText('Select square 1'));
+  fireEvent.click(screen.getByRole('button', { name: 'Mark 1 selected unpaid' }));
+  expect(screen.getByRole('status')).toHaveTextContent('Saving');
+  reject(new Error('Offline'));
+  await screen.findByRole('alert');
+  expect(screen.getByLabelText('Select square 1')).toBeChecked();
+  fireEvent.click(screen.getByRole('button', { name: 'Retry marking 1 selected unpaid' }));
+  await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('Saved'));
+  expect(onSave).toHaveBeenLastCalledWith([0], 'unpaid');
+  expect(screen.getByLabelText('Select square 1')).not.toBeChecked();
+});
+it('supports initial filtering, private copy, view on board and empty results', () => {
+  const onViewSquare = vi.fn();
+  render(<PaymentsPanel {...props} initialQuery="Buyer" initialFilter="unknown" onViewSquare={onViewSquare} />);
+  expect(screen.getByText(/Private to you/)).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: /Show squares for Family/ }));
+  fireEvent.click(screen.getByRole('button', { name: 'View square 1 on board' }));
+  expect(onViewSquare).toHaveBeenCalledWith(0);
+  fireEvent.change(screen.getByLabelText('Search people, names or square number'), { target: { value: 'Missing' } });
+  expect(screen.getByText('No matching squares.')).toBeInTheDocument();
+});
+it('clears selections when collapsing a group and closes with Escape', () => {
+  const onClose = vi.fn();
+  render(<PaymentsPanel {...props} onClose={onClose} />);
+  expect(screen.getByLabelText('Search people, names or square number')).toHaveFocus();
+  fireEvent.click(screen.getByRole('button', { name: /Show squares for Family/ }));
+  fireEvent.click(screen.getByLabelText('Select square 1'));
+  fireEvent.click(screen.getByRole('button', { name: /Hide squares for Family/ }));
+  expect(screen.queryByRole('button', { name: 'Mark 0 selected paid' })).not.toBeInTheDocument();
+  fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
+  expect(onClose).toHaveBeenCalledOnce();
+});
+it('never treats a status filter or search as bulk selection', () => {
+  render(<PaymentsPanel {...props} initialFilter="unknown" />);
+  fireEvent.click(screen.getByRole('button', { name: /Show squares for Family/ }));
+  expect(screen.queryByRole('button', { name: 'Mark 0 selected paid' })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByLabelText('Select square 1'));
+  fireEvent.click(screen.getByRole('button', { name: 'Paid · 0 squares' }));
+  expect(screen.queryByRole('button', { name: 'Mark 0 selected paid' })).not.toBeInTheDocument();
+});
+it('selects only shown squares for a family and supports clearing the group', () => {
+  render(<PaymentsPanel {...props} initialQuery="Buyer" />);
+  fireEvent.click(screen.getByRole('button', { name: 'Select 1 shown squares for Family' }));
+  expect(screen.getByLabelText('Select square 1')).toBeChecked();
+  expect(screen.queryByLabelText('Select square 2')).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Mark 1 selected paid' })).toBeEnabled();
+  fireEvent.click(screen.getByRole('button', { name: 'Clear 1 shown squares for Family' }));
+  expect(screen.getByText('Select squares below to update payment status.')).toBeInTheDocument();
+});
+it('requires a new selection when refresh changes the failed save scope', async () => {
+  const onSave = vi.fn().mockRejectedValue(new Error('Offline'));
+  const { rerender } = render(<PaymentsPanel {...props} initialFilter="unknown" onSave={onSave} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Select 2 shown squares for Family' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Mark 2 selected paid' }));
+  await screen.findByRole('alert');
+  const refreshed = { ...model, groups: model.groups.map(group => ({ ...group, squares: group.squares.map(square => square.index === 0 ? { ...square, status: 'paid' as const } : square) })) };
+  rerender(<PaymentsPanel {...props} model={refreshed} initialFilter="unknown" onSave={onSave} />);
+  expect(screen.queryByRole('button', { name: /Retry marking/ })).not.toBeInTheDocument();
+  expect(screen.getByText(/The shown squares changed/)).toBeInTheDocument();
+  expect(onSave).toHaveBeenCalledTimes(1);
+});

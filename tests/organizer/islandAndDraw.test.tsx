@@ -6,7 +6,7 @@ import DrawControl from '../../src/features/organizer/workspace/DrawControl';
 import { secureShuffleDigits } from '../../src/features/organizer/workspace/secureDraw';
 
 describe('OrganizerIsland', () => {
-  it('renders the three collapsed rings with correct captions and labels', () => {
+  it('describes assignment progress in the compact button', () => {
     render(
       <OrganizerIsland
         filled={40}
@@ -16,15 +16,10 @@ describe('OrganizerIsland', () => {
         primary={{ label: 'Start assigning', onClick: vi.fn() }}
       />,
     );
-    expect(screen.getByRole('img', { name: '40 of 100 squares filled' })).toBeInTheDocument();
-    expect(screen.getByText('40%')).toBeInTheDocument();
-    expect(screen.getByRole('img', { name: '20 of 40 paid' })).toBeInTheDocument();
-    expect(screen.getByText('50%')).toBeInTheDocument();
-    expect(screen.getByRole('img', { name: 'Numbers not drawn' })).toBeInTheDocument();
-    expect(screen.getByText('Draw')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Organizer status' })).toHaveAccessibleDescription(/40 of 100 assigned/);
   });
 
-  it('shows Drawn ring caption and label when drawn is true', () => {
+  it('shows committed number status when drawn is true', () => {
     render(
       <OrganizerIsland
         filled={100}
@@ -34,11 +29,10 @@ describe('OrganizerIsland', () => {
         primary={{ label: 'Review and publish', onClick: vi.fn() }}
       />,
     );
-    expect(screen.getByRole('img', { name: 'Numbers drawn' })).toBeInTheDocument();
-    expect(screen.getByText('Drawn')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Organizer status' })).toHaveAccessibleDescription(/Numbers drawn/);
   });
 
-  it('shows 0% paid ring when nothing is filled yet', () => {
+  it('shows zero assigned without a misleading payment percentage', () => {
     render(
       <OrganizerIsland
         filled={0}
@@ -48,7 +42,7 @@ describe('OrganizerIsland', () => {
         primary={{ label: 'Create draft', onClick: vi.fn() }}
       />,
     );
-    expect(screen.getByRole('img', { name: '0 of 0 paid' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Organizer status' })).toHaveAccessibleDescription(/0 of 100 assigned/);
   });
 
   it('expands to show the phase eyebrow, note, primary action, and ghost secondaries', () => {
@@ -71,6 +65,8 @@ describe('OrganizerIsland', () => {
     const primaryButton = screen.getByRole('button', { name: 'Continue anyway' });
     fireEvent.click(primaryButton);
     expect(onPrimary).toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Organizer status' })).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.click(screen.getByRole('button', { name: 'Organizer status' }));
     const secondaryButton = screen.getByRole('button', { name: 'Edit board' });
     fireEvent.click(secondaryButton);
     expect(onSecondary).toHaveBeenCalled();
